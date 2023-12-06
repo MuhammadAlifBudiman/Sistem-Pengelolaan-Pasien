@@ -3,12 +3,24 @@
   <head>
     <title>Klinik Google Login</title>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsonwebtoken/8.5.1/jsonwebtoken.min.js"></script>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css')}}"
     />
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.js"
+      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
     <script>
+      $(document).ready(function () {
+        $("#loginForm").on("submit", function (e) {
+          e.preventDefault();
+          sign_in();
+        });
+      });
       function sign_in() {
         let username = $("#username").val(); // Update this line
         let password = $("#password").val(); // Update this line
@@ -51,7 +63,7 @@
   <body>
     <div class="container">
       <h2>Login</h2>
-      <form id="loginForm" action="/" method="post">
+      <form id="loginForm">
         <input
           type="text"
           id="username"
@@ -68,7 +80,7 @@
         />
         <button type="submit">Login</button>
       </form>
-      <p>Belum Punya akun? <a href="register.html">Klik Disini</a></p>
+      <p>Belum Punya akun? <a href="/register">Klik Disini</a></p>
     </div>
   </body>
 </html>

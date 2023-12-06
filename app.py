@@ -25,7 +25,7 @@ TOKEN_KEY = 'mytoken'
 SECRET_KEY = 'SPARTA'
 
 
-@app.route('/', methods=['GET'])
+@app.route('/' , methods=['GET', 'POST'])
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
@@ -105,6 +105,7 @@ def user(username):
 
 @app.route("/sign_in", methods=["POST"])
 def sign_in():
+    print('signin')
     # Sign in
     username_receive = request.form["username_give"]
     password_receive = request.form["password_give"]
