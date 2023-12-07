@@ -35,9 +35,9 @@ def home():
         user_info = db.users.find_one({"username": payload['id']})
         return render_template('index.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
-        return redirect(url_for('login', msg="Your login token has expired"))
+        return render_template('index.html', msg="Your login token has expired")
     except jwt.exceptions.DecodeError:
-        return redirect(url_for('login', msg="There was an error logging you in"))
+        return render_template('index.html', msg="There was an error logging you in")
     
 @app.route('/api/get_jadwal', methods=['GET'])
 def get_jadwal():
@@ -163,8 +163,8 @@ def sign_in():
             }
         )
     
-@app.route('/pendaftaran_pasien', methods=['GET', 'POST'])
-def pendaftaran_pasien():
+@app.route('/pendaftaran_formulir', methods=['GET', 'POST'])
+def pendaftaran_formulir():
     if request.method == 'POST':
         poli = request.form['poli']
         tanggal = request.form['tanggal']
@@ -178,14 +178,16 @@ def pendaftaran_pasien():
         }
         db.registrations.insert_one(data_pendaftaran)
 
-        # Ambil data dari MongoDB
         pendaftaran_data = list(db.registrations.find())
 
-        return render_template('pendaftaran_sukses.html', data=pendaftaran_data)
+        return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
     
-    return render_template('pendaftaran.html') 
+    return render_template('pendaftaran_formulir.html') 
 
-
+@app.route('/api/pendaftaran', methods=['GET'])
+def riwayat_pendaftaran():
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
+    return jsonify(pendaftaran_data)
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)

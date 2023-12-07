@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendaftaran</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         $(document).ready(function () {
-            $('form').submit(function (event) {
-                event.preventDefault(); // Mencegah pengiriman formulir default
+            $('.btn-submit-form').click(function (event) {
+                event.preventDefault();
 
                 // Dapatkan data formulir
                 var formData = {
@@ -21,23 +22,28 @@
                     keluhan: $('#keluhan').val()
                 };
 
-                // Kirim data formulir ke rute Flask
+                if (formData.poli === '' || formData.tanggal === '' || formData.keluhan === '') {
+                    alert('Harap lengkapi semua bidang sebelum mengirim formulir.');
+                    return;
+                }
+                
                 $.ajax({
                     type: 'POST',
-                    url: '/pendaftaran',
+                    url: '/pendaftaran_formulir',
                     data: formData,
                     success: function () {
-                        alert('Pendaftaran berhasil!');
-                        // Alihkan ke halaman utama atau lakukan tindakan lain
-                        window.location.href = '/pendaftaran1_pasien';
+                        alert('Formulir telah diproses. Silakan tunggu');
+                        window.location.href = '/pendaftaran_pasien';
                     },
                     error: function () {
-                        alert('Gagal melakukan pendaftaran.');
+                        alert('Gagal melakukan pendaftaran');
                     }
                 });
             });
         });
+
     </script>
+
 </head>
 
 <body>
@@ -60,7 +66,7 @@
                     <a class="nav-link" href="/riwayat_pendaftaran">Riwayat Pendaftaran</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/riwayat_checkup">Riwayat Check-up</a>
+                    <a class="nav-link" href="#">Riwayat Check-up</a>
                 </li>
                 <li class="nav-item">
                     <span class="nav-link disabled">Nama Anda</span>
@@ -71,12 +77,14 @@
 
     <!-- Formulir Pendaftaran -->
     <div class="container mt-5 d-flex justify-content-center">
-      <div class="card" style="width: 500px;">
-          <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
-          <div class="card-body">
-              <form>
-                  <div class="form-group">
-                        <label for="poli">Poli</label>
+        <div class="card" style="width: 500px;">
+            <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
+            <div class="card-body">
+                <form action="/pendaftaran_formulir" method="POST">
+                    <div class="form-group">
+                        <label for="poli" class="mr-2">
+                            Poli
+                        </label>
                         <select class="form-control" id="poli" name="poli">
                             <option value="" selected disabled>Pilih Poli</option>
                             <option value="poli_umum">Poli Umum</option>
@@ -87,24 +95,30 @@
                             <option value="poli_jantung">Poli Jantung</option>
                         </select>
                     </div>
-                    
-                  <div class="form-group">
-                      <label for="tanggal">Tanggal Berobat</label>
-                      <input type="date" class="form-control" id="tanggal" name="tanggal">
-                  </div>
-                  <div class="form-group">
-                      <label for="keluhan">Keluhan</label>
-                      <textarea class="form-control" id="keluhan" name="keluhan" rows="3"></textarea>
-                  </div>
-                  <div class="d-flex justify-content-between">
-                    <div class="ml-auto">
-                        <button type="submit" class="btn btn-primary">Kirim</button>
+
+                    <div class="form-group">
+                        <label for="tanggal" class="mr-2">
+                            Tanggal Berobat
+                        </label>
+                        <input type="date" class="form-control" id="tanggal" name="tanggal">
                     </div>
-                </div>
-              </form>
-          </div>
-      </div>
-  </div>
+
+                    <div class="form-group">
+                        <label for="keluhan" class="mr-2">
+                            Keluhan
+                        </label>
+                        <textarea class="form-control" id="keluhan" name="keluhan" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-submit-form">Kirim</button>
+                    </div>
+            </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
 </body>
 
 </html>
