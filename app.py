@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+from bson import ObjectId
+
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -36,6 +38,24 @@ def home():
         return redirect(url_for('login', msg="Your login token has expired"))
     except jwt.exceptions.DecodeError:
         return redirect(url_for('login', msg="There was an error logging you in"))
+    
+@app.route('/api/get_jadwal', methods=['GET'])
+def get_jadwal():
+    try:
+        # Mengambil data jadwal
+        jadwal_data = list(db.jadwal_praktek.find({}, {'_id': False}))
+        return jsonify({"jadwal": jadwal_data})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/api/get_antrian', methods=['GET'])
+def get_antrian():
+    try:
+        # Mengambil data antrian
+        antrian_data = list(db.antrian.find({}, {'_id': False}))
+        return jsonify({"antrian": antrian_data})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 @app.route('/login', methods=['GET'])
@@ -142,6 +162,29 @@ def sign_in():
                 "msg": "We could not find a user with that id/password combination",
             }
         )
+    
+@app.route('/pendaftaran_pasien', methods=['GET', 'POST'])
+def pendaftaran_pasien():
+    if request.method == 'POST':
+        poli = request.form['poli']
+        tanggal = request.form['tanggal']
+        keluhan = request.form['keluhan']
+
+        # Masukkan data ke MongoDB
+        data_pendaftaran = {
+            'poli': poli,
+            'tanggal': tanggal,
+            'keluhan': keluhan
+        }
+        db.registrations.insert_one(data_pendaftaran)
+
+        # Ambil data dari MongoDB
+        pendaftaran_data = list(db.registrations.find())
+
+        return render_template('pendaftaran_sukses.html', data=pendaftaran_data)
+    
+    return render_template('pendaftaran.html') 
+
 
 
 if __name__ == '__main__':

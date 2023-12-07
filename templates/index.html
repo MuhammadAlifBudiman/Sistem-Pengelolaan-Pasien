@@ -14,23 +14,53 @@
       <!-- DataTables JS -->
       <script type="text/javascript" charset="utf8"
             src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+      <script>
+            $(document).ready(function () {
+                  // Inisialisasi DataTables
+                  let jadwalTable = $('#jadwalTable').DataTable();
+                  let antrianTable = $('#antrianTable').DataTable();
 
+                  // Ambil data jadwal praktek
+                  $.ajax({
+                        url: '/api/get_jadwal',
+                        type: 'GET',
+                        success: function (data) {
+                              // Isi tabel jadwal praktek
+                              jadwalTable.clear().draw();
+                              data.jadwal.forEach(function (row) {
+                                    jadwalTable.row.add([
+                                          row.nama,
+                                          row.poli,
+                                          row.hari,
+                                          row.jam_praktek
+                                    ]).draw(false);
+                              });
+                        }
+                  });
+
+                  // Ambil data antrian hari ini
+                  $.ajax({
+                        url: '/api/get_antrian',
+                        type: 'GET',
+                        success: function (data) {
+                              // Isi tabel antrian hari ini
+                              antrianTable.clear().draw();
+                              data.antrian.forEach(function (row) {
+                                    antrianTable.row.add([
+                                          row.poli,
+                                          row.jumlah_pendaftar,
+                                          row.dalam_antrian
+                                    ]).draw(false);
+                              });
+                        }
+                  });
+
+                  $('.navbar-toggler').on('click', function () {
+                        $('.navbar-collapse').toggleClass('show');
+                  });
+            });
+      </script>
 </head>
-<script>
-      // Jadwal Table
-      $(document).ready(function () {
-            let jadwalTable = $('#jadwalTable').DataTable();
-      });
-
-      // Antrian Table
-      $(document).ready(function () {
-            let antrianTable = $('#antrianTable').DataTable();
-      });
-
-      $('.navbar-toggler').on('click', function () {
-            $('.navbar-collapse').toggleClass('show');
-      });
-</script>
 
 <body>
       <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
