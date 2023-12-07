@@ -16,29 +16,31 @@
 
 <script>
       $(document).ready(function () {
-          $.ajax({
-              url: '/api/pendaftaran_formulir',
-              method: 'GET',
-              dataType: 'json',
-              success: function (data) {
-                  let table = $('#myTable').DataTable({
-                      data: data,
-                      columns: [
-                          { data: 'no' },
-                          { data: 'nama' },
-                          { data: 'nik' },
-                          { data: 'poli' },
-                          { data: 'tanggal' },
-                          { data: 'status' }
-                      ]
-                  });
-              },
-              error: function (error) {
-                    console.error('Error saat mengambil data:', error);
-                }
-          });
+            // Inisialisasi DataTables
+            let myTable = $('#myTable').DataTable();
+
+            // Ambil data riwayat pendaftaran
+            $.ajax({
+                  url: '/api/get_riwayat_pendaftaran',
+                  type: 'GET',
+                  success: function (data) {
+                        // Isi tabel riwayat pendaftaran
+                        myTable.clear().draw();
+                        data.riwayat.forEach(function (row, index) {
+                              myTable.row.add([
+                                    index + 1,
+                                    row.nama,
+                                    row.nik,
+                                    row.poli,
+                                    row.tanggal,
+                                    row.status
+                              ]).draw(false);
+                        });
+                  }
+            });
       });
-  </script>
+</script>
+
 <body>
       <!-- Navbar -->
       <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
@@ -86,7 +88,7 @@
                                     </tr>
                               </thead>
                               <tbody>
-                                    
+
                               </tbody>
                         </table>
                   </div>
