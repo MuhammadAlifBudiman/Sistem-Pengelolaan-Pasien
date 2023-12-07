@@ -27,7 +27,7 @@ TOKEN_KEY = 'mytoken'
 SECRET_KEY = 'SPARTA'
 
 
-@app.route('/' , methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
@@ -39,7 +39,6 @@ def home():
     except jwt.exceptions.DecodeError:
         return render_template('index.html', msg="There was an error logging you in")
     
-<<<<<<< HEAD
 @app.route('/pegawai' , methods=['GET', 'POST'])
 def home_pegawai():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -52,7 +51,6 @@ def home_pegawai():
     except jwt.exceptions.DecodeError:
         return redirect(url_for('login', msg="There was an error logging you in"))
 
-=======
 @app.route('/api/get_jadwal', methods=['GET'])
 def get_jadwal():
     try:
@@ -70,7 +68,6 @@ def get_antrian():
         return jsonify({"antrian": antrian_data})
     except Exception as e:
         return jsonify({"error": str(e)})
->>>>>>> c28b1181dcf53679e4bba55c667f2bb1d9a4ace3
 
 
 @app.route('/login', methods=['GET'])
@@ -240,7 +237,7 @@ def get_profile():
         alamat = payload.get('alamat', '')
         no_telp = payload.get('no_telp', '')
         db.users.update_one(
-            {'username': username},
+            {'username': payload['id']},
             {'$set': {'name': name, 'nik': nik, 'tgl_lahir': tgl_lahir, 'gender': gender,
                       'agama': agama, 'status': status, 'alamat': alamat, 'no_telp': no_telp}}
         )
@@ -281,6 +278,109 @@ def edit_profile():
         return jsonify({'result': 'fail', 'msg': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'msg': 'There was an error decoding your token'})
+
+
+@app.route('/kelola-praktik')
+def kelola_praktik():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        jadwal = list(db.jadwal.find())
+        jadwal[0]["_id"] = str(jadwal[0]["_id"])
+        if user_info['role'] != 'pegawai':
+            return redirect(url_for('home'))
+        return render_template('praktik.html', jadwal=jadwal)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+@app.route("/api/tambah-jadwal", methods=["POST"])
+def api_tambah_jadwal():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        if user_info['role'] != 'pegawai':
+            return redirect(url_for('home'))
+        nama = request.form.get("nama")
+        poli = request.form.get("poli")
+        hari = request.form.getlist("hari")
+        jam_buka = request.form.get("jam_buka")
+        jam_tutup = request.form.get("jam_tutup")
+        jadwal_data = {
+            "nama": nama,
+            "poli": poli,
+            "hari": hari,
+            "jam_buka": jam_buka,
+            "jam_tutup": jam_tutup,
+        }
+
+        result = db.jadwal.insert_one(jadwal_data)
+        jadwal_data["_id"] = str(result.inserted_id)
+
+        return jsonify(jadwal_data)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+@app.route("/api/get-jadwal/<id>", methods=["GET"])
+def get_jadwal_by_id(id):
+    jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
+    jadwal["_id"] = str(jadwal["_id"])
+
+    return jsonify(jadwal)
+
+
+@app.route("/api/edit-jadwal/<id>", methods=["POST"])
+def edit_jadwal(id):
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        if user_info['role'] != 'pegawai':
+            return redirect(url_for('home'))
+        nama = request.form.get("nama")
+        poli = request.form.get("poli")
+        hari = request.form.getlist("hari")
+        jam_buka = request.form.get("jam_buka")
+        jam_tutup = request.form.get("jam_tutup")
+
+        # Update jadwal data
+        db.jadwal.update_one({"_id": ObjectId(id)}, {"$set": {
+            "nama": nama,
+            "poli": poli,
+            "hari": hari,
+            "jam_buka": jam_buka,
+            "jam_tutup": jam_tutup,
+        }})
+
+        jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
+        jadwal["_id"] = str(jadwal["_id"])
+
+        return jsonify(jadwal)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+@app.route("/api/hapus-jadwal/<id>", methods=["POST"])
+def hapus_jadwal(id):
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        if user_info['role'] != 'pegawai':
+            return redirect(url_for('home'))
+    # hapus jadwal data dari database
+        db.jadwal.delete_one({"_id": ObjectId(id)})
+
+        return jsonify({"message": "Jadwal berhasil dihapus"})
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
