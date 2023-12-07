@@ -185,8 +185,12 @@ def pendaftaran_formulir():
     
     return render_template('pendaftaran_formulir.html') 
 
-@app.route('/api/pendaftaran', methods=['GET'])
+@app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
+    return render_template("riwayat_pendaftaran.html")
+
+@app.route('/api/pendaftaran_formulir', methods=['GET'])
+def api_riwayat_pendaftaran():
     pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
     return jsonify(pendaftaran_data)
 
