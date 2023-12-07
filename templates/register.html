@@ -94,6 +94,38 @@
             return;
           }
 
+          // Validasi agama
+          const agama = $("#agama").val();
+          if (!agama) {
+            alert("Agama tidak boleh kosong");
+            event.preventDefault();
+            return;
+          }
+
+          // Validasi status
+          const status = $("#status").val();
+          if (!status) {
+            alert("Status tidak boleh kosong");
+            event.preventDefault();
+            return;
+          }
+
+          // Validasi alamat
+          const alamat = $("#alamat").val();
+          if (!alamat) {
+            alert("Alamat tidak boleh kosong");
+            event.preventDefault();
+            return;
+          }
+
+          // Validasi nomor telepon
+          const noTelp = $("#no-telp").val();
+          if (!noTelp) {
+            alert("Nomor telepon tidak boleh kosong");
+            event.preventDefault();
+            return;
+          }
+
           // Validasi password
           const password = $("#password").val();
           const confirmPassword = $("#confirm").val();
