@@ -39,17 +39,6 @@ def home():
     except jwt.exceptions.DecodeError:
         return render_template('index.html', msg="There was an error logging you in")
     
-@app.route('/pegawai' , methods=['GET', 'POST'])
-def home_pegawai():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        user_info = db.users.find_one({"username": payload['id']})
-        return render_template('pegawai.html', user_info=user_info)
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for('login', msg="Your login token has expired"))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for('login', msg="There was an error logging you in"))
 
 @app.route('/api/get_jadwal', methods=['GET'])
 def get_jadwal():
