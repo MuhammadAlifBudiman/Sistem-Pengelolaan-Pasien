@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Profile</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
@@ -22,387 +22,480 @@
     ></script>
 
     <style>
-        body {
-    background: rgb(99, 39, 120)
-}
+      body {
+        background: rgb(99, 39, 120);
+      }
 
-.form-control:focus {
-    box-shadow: none;
-    border-color: #BA68C8
-}
+      .form-control:focus {
+        box-shadow: none;
+        border-color: #ba68c8;
+      }
 
-.profile-button {
-    background: rgb(99, 39, 120);
-    box-shadow: none;
-    border: none
-}
+      .profile-button {
+        background: rgb(99, 39, 120);
+        box-shadow: none;
+        border: none;
+      }
 
-.profile-button:hover {
-    background: #682773
-}
+      .profile-button:hover {
+        background: #682773;
+      }
 
-.profile-button:focus {
-    background: #682773;
-    box-shadow: none
-}
+      .profile-button:focus {
+        background: #682773;
+        box-shadow: none;
+      }
 
-.profile-button:active {
-    background: #682773;
-    box-shadow: none
-}
+      .profile-button:active {
+        background: #682773;
+        box-shadow: none;
+      }
 
-.back:hover {
-    color: #682773;
-    cursor: pointer
-}
+      .back:hover {
+        color: #682773;
+        cursor: pointer;
+      }
 
-.labels {
-    font-size: 11px
-}
+      .labels {
+        font-size: 11px;
+      }
 
-.add-experience:hover {
-    background: #BA68C8;
-    color: #fff;
-    cursor: pointer;
-    border: solid 1px #BA68C8
-}
+      .add-experience:hover {
+        background: #ba68c8;
+        color: #fff;
+        cursor: pointer;
+        border: solid 1px #ba68c8;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <a class="navbar-brand">Klinik Google</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-              <ul class="navbar-nav">
-                    <li class="nav-item">
-                          <a class="nav-link active" href="#home">Home</a>
-                    </li>
-                    <li class="nav-item">
-                          <a class="nav-link" href="#pendaftaran">Pendaftaran</a>
-                    </li>
-                    <li class="nav-item">
-                          <a class="nav-link" href="#riwayat_pendaftaran">Riwayat Pendaftaran</a>
-                    </li>
-                    <li class="nav-item">
-                          <a class="nav-link" href="#riwayat_check_up">Riwayat Check Up</a>
-                    </li>
-                    <li class="nav-item">
-                          <a class="nav-link" href="#user">{{ user_info.name }}</a>
-                    </li>
-                    <li class="nav-item">
-                          <a class="btn btn-danger" href="">Loqout</a>
-                    </li>
-              </ul>
-        </div>
+      <a class="navbar-brand">Klinik Google</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#home">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#pendaftaran">Pendaftaran</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#riwayat_pendaftaran"
+              >Riwayat Pendaftaran</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#riwayat_check_up">Riwayat Check Up</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#user">{{ user_info.name }}</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-danger" href="">Loqout</a>
+          </li>
+        </ul>
+      </div>
     </nav>
     <div class="container rounded bg-white mt-5 mb-5">
-        <div class="row justify-content-center">
-            <div class="col-md-5 border-right mx-auto">
-                <div class="d-flex flex-column align-items-center text-center p-3 py-5">
-                    <div class="card-body text-center">
-                      <div class="mt-3 mb-4">
-                        <img src="https://img.icons8.com/bubbles/100/000000/user.png"
-                          class="rounded-circle img-fluid" style="width: 100px;" />
-                      </div>
-                    <!-- Button trigger modal -->
-                    </div>
-                    <span class="font-weight-bold">{{ user_info.name }}</span>
-                    <span class="text-black-50">{{ user_info.username }}</span>
-                    <div class="d-grid gap-2 col-6 mx-auto mt-3 mb-5">
-                      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" type="button">Edit</button>
-                    </div>
-                    <!-- Database -->
-                    <div class="container mt-3">
+      <div class="row justify-content-center">
+        <div class="col-md-5 border-right mx-auto">
+          <div
+            class="d-flex flex-column align-items-center text-center p-3 py-5"
+          >
+            <div class="card-body text-center">
+              <div class="mt-3 mb-4">
+                <img
+                  src="{% if user_info.profile_pic %} {{ url_for('static', filename=user_info.profile_pic) }} {% else %} {{ url_for('static', filename='profile_pics/profile_placeholder.png') }} {% endif %}"
+                  class="rounded-circle img-fluid"
+                  style="width: 100px"
+                />
+              </div>
+              <!-- Button trigger modal -->
+            </div>
+            <span class="font-weight-bold">{{ user_info.name }}</span>
+            <span class="text-black-50">{{ user_info.username }}</span>
+            <div class="d-grid gap-2 col-6 mx-auto mt-3 mb-5">
+              <button
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#exampleModal"
+                type="button"
+              >
+                Edit
+              </button>
+            </div>
+            <!-- Database -->
+            <div class="container mt-3">
+              <div class="row mb-3">
+                <label
+                  for="nik"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >NIK:</label
+                >
+                <div class="col-sm-10">
+                  <p class="form-control form-control-sm" id="nik" name="nik">
+                    {{ user_info.nik }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="tgl_lahir"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Tgl Lahir:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="tgl_lahir"
+                    name="tgl_lahir"
+                  >
+                    {{ user_info.tgl_lahir }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="gender"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Jenis Kelamin:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="gender"
+                    name="gender"
+                  >
+                    {{ user_info.gender }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="agama"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Agama:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="agama"
+                    name="agama"
+                  >
+                    {{ user_info.agama }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="status"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Status:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="status"
+                    name="status"
+                  >
+                    {{ user_info.status }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="alamat"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Alamat:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="alamat"
+                    name="alamat"
+                  >
+                    {{ user_info.alamat }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <label
+                  for="no_telp"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >No Tlp:</label
+                >
+                <div class="col-sm-10">
+                  <p
+                    class="form-control form-control-sm"
+                    id="no_telp"
+                    name="no_telp"
+                  >
+                    {{ user_info.no_telp }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal -->
+            <div
+              class="modal fade"
+              id="exampleModal"
+              tabindex="-1"
+              aria-labelledby="exampleModalLabel"
+              aria-hidden="true"
+            >
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel" onclick="">
+                      Edit Profile
+                    </h5>
+                    <button
+                      type="button"
+                      class="btn-close"
+                      data-bs-dismiss="modal"
+                      aria-label="Close"
+                    ></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row">
                       <div class="row mb-3">
-                        <label for="nik" class="col-sm-2 col-form-label col-form-label-sm">NIK:</label>
+                        <label
+                          for="nama"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Profile Picture</label
+                        >
                         <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="nik" name="nik">{{ user_info.nik }}</p>
+                          <input
+                            id="input-pic"
+                            class="file-input"
+                            type="file"
+                            name="resume"
+                          />
                         </div>
                       </div>
-                    
                       <div class="row mb-3">
-                        <label for="tgl_lahir" class="col-sm-2 col-form-label col-form-label-sm">Tgl Lahir:</label>
+                        <label
+                          for="name"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Nama
+                        </label>
                         <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="tgl_lahir" name="tgl_lahir">{{ user_info.tgl_lahir }}</p>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="input-name"
+                            name="name"
+                            value="{{user_info.name}}"
+                          />
                         </div>
                       </div>
-                    
                       <div class="row mb-3">
-                        <label for="gender" class="col-sm-2 col-form-label col-form-label-sm">Jenis Kelamin:</label>
+                        <label
+                          for="nik"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >NIK
+                        </label>
                         <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="gender" name="gender">{{ user_info.gender }}</p>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="input-nik"
+                            name="nik"
+                            value="{{user_info.nik}}"
+                          />
                         </div>
                       </div>
-                    
                       <div class="row mb-3">
-                        <label for="agama" class="col-sm-2 col-form-label col-form-label-sm">Agama:</label>
+                        <label
+                          for="tgl-lahir"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Tgl Lahir
+                        </label>
                         <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="agama" name="agama">{{ user_info.agama }}</p>
+                          <input
+                            type="date"
+                            class="form-control form-control-sm"
+                            id="input-tgl-lahir"
+                            name="tgl-lahir"
+                            value="{{user_info.tgl_lahir}}"
+                          />
                         </div>
                       </div>
-                    
                       <div class="row mb-3">
-                        <label for="status" class="col-sm-2 col-form-label col-form-label-sm">Status:</label>
+                        <label
+                          for="gender"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Jenis Kelamin</label
+                        >
                         <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="status" name="status">{{ user_info.status }}</p>
-                        </div>
-                      </div>
-                    
-                      <div class="row mb-3">
-                        <label for="alamat" class="col-sm-2 col-form-label col-form-label-sm">Alamat:</label>
-                        <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="alamat" name="alamat">{{ user_info.alamat }}</p>
-                        </div>
-                      </div>
-                    
-                      <div class="row mb-3">
-                        <label for="no_telp" class="col-sm-2 col-form-label col-form-label-sm">No Tlp:</label>
-                        <div class="col-sm-10">
-                          <p class="form-control form-control-sm" id="no_telp" name="no_telp">{{ user_info.no_telp }}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Modal -->
-                    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                      <div class="modal-dialog">
-                        <div class="modal-content">
-                          <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel" onclick="">Edit Profile</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                          </div>
-                          <div class="modal-body">
-                            <div class="row">
-                              <div class="row mb-3">
-                                <label for="nama" class="col-sm-2 col-form-label col-form-label-sm">Profile Picture</label>
-                                <div class="col-sm-10">
-                                  <input id="input-pic" class="file-input" type="file" name="resume" />
-                                  </label>
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="name"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Nama
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    id="input-name"
-                                    name="name"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label for="nik" class="col-sm-2 col-form-label col-form-label-sm"
-                                  >NIK
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    id="input-nik"
-                                    name="nik"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="tgl-lahir"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Tgl Lahir
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="date"
-                                    class="form-control form-control-sm"
-                                    id="input-tgl-lahir"
-                                    name="tgl-lahir"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="gender"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Jenis Kelamin</label
-                                >
-                                <div class="col-sm-10">
-                                  <div class="form-check form-check-inline">
-                                    <input
-                                      type="radio"
-                                      class="form-check-input"
-                                      id="input-gender"
-                                      name="gender"
-                                      value="laki-laki"
-                                    />
-                                    <label class="form-check-label" for="gender-laki"
-                                      >Laki-Laki</label
-                                    >
-                                  </div>
-                                  <div class="form-check form-check-inline">
-                                    <input
-                                      type="radio"
-                                      class="form-check-input"
-                                      id="input-gender"
-                                      name="gender"
-                                      value="perempuan"
-                                    />
-                                    <label class="form-check-label" for="gender-perempuan"
-                                      >Perempuan</label
-                                    >
-                                  </div>
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="agama"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Agama
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    id="agama"
-                                    name="agama"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="status"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Status
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    id="input-status"
-                                    name="status"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="alamat"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >Alamat
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="text"
-                                    class="form-control form-control-sm"
-                                    id="input-alamat"
-                                    name="alamat"
-                                  />
-                                </div>
-                              </div>
-                              <div class="row mb-3">
-                                <label
-                                  for="no-telp"
-                                  class="col-sm-2 col-form-label col-form-label-sm"
-                                  >No Telp
-                                </label>
-                                <div class="col-sm-10">
-                                  <input
-                                    type="tel"
-                                    class="form-control form-control-sm"
-                                    id="input-no-telp"
-                                    name="no-telp"
-                                    pattern="\d{10,13}"
-                                  />
-                                </div>
-                              </div>
+                          <div class="form-check form-check-inline">
+                            <input type="radio" class="form-check-input" id="gender-laki" name="input-gender" value="laki-laki" {% if user_info.gender == 'laki-laki' %} checked='checked' {% endif %} />
+                            <label class="form-check-label" for="gender-laki">Laki-Laki</label>
                           </div>
                           
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-primary" onclick="updateProfile()">Save changes</button>
+                          <div class="form-check form-check-inline">
+                            <input type="radio" class="form-check-input" id="gender-perempuan" name="input-gender" value="perempuan" {% if user_info.gender == 'perempuan' %} checked='checked' {% endif %} />
+                            <label class="form-check-label" for="gender-perempuan">Perempuan</label>
                           </div>
+                        </div>
+                        
+                      </div>
+                      <div class="row mb-3">
+                        <label
+                          for="agama"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Agama
+                        </label>
+                        <div class="col-sm-10">
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="input-agama"
+                            name="agama"
+                            value="{{user_info.agama}}"
+                          />
+                        </div>
+                      </div>
+                      <div class="row mb-3">
+                        <label
+                          for="status"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Status
+                        </label>
+                        <div class="col-sm-10">
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="input-status"
+                            name="status"
+                            value="{{user_info.status}}"
+                          />
+                        </div>
+                      </div>
+                      <div class="row mb-3">
+                        <label
+                          for="alamat"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >Alamat
+                        </label>
+                        <div class="col-sm-10">
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="input-alamat"
+                            name="alamat"
+                            value="{{user_info.alamat}}"
+                          />
+                        </div>
+                      </div>
+                      <div class="row mb-3">
+                        <label
+                          for="no-telp"
+                          class="col-sm-2 col-form-label col-form-label-sm"
+                          >No Telp
+                        </label>
+                        <div class="col-sm-10">
+                          <input
+                            type="tel"
+                            class="form-control form-control-sm"
+                            id="input-no-telp"
+                            name="no-telp"
+                            pattern="\d{10,13}"
+                            value="{{user_info.no_telp}}"
+                          />
                         </div>
                       </div>
                     </div>
 
-    
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="updateProfile()"
+                      >
+                        Save changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <script>
+      // Function to update the profile
+      function updateProfile() {
+        // Fetch updated data from modal inputs (you can add more fields as needed)
+        var updatedName = $("#input-name").val();
+        var updatedPic = $("#input-pic")[0].files[0];
+        var updatednik = $("#input-nik").val();
+        var updatedtlg_lahir = $("#input-tgl-lahir").val();
+        var updatedtgender = $("input[name='input-gender']:checked").val();
+        var updatedtagama = $("#input-agama").val();
+        var updatedtstatus = $("#input-status").val();
+        var updatedtalamat = $("#input-alamat").val();
+        var updatedtno_tlp = $("#input-no-telp").val();
+        // buat form data
+        let form_data = new FormData();
+        form_data.append("name", updatedName);
+        form_data.append("profile_pic", updatedPic);
+        form_data.append("nik", updatednik);
+        form_data.append("tgl_lahir", updatedtlg_lahir);
+        form_data.append("gender", updatedtgender);
+        form_data.append("agama", updatedtagama);
+        form_data.append("status", updatedtstatus);
+        form_data.append("alamat", updatedtalamat);
+        form_data.append("no_tlp", updatedtno_tlp);
 
-<script>
-    
-    // Function to update the profile
-    function updateProfile() {
-      // Fetch updated data from modal inputs (you can add more fields as needed)
-      var updatedName = $("#input-name").val();
-      var updatedPic = $("#input-pic").val();  // Update this line for file input
-      var updatednik = $("#input-nik").val();  // Update this line for file input
-      var updatedtlg_lahir = $("#input-tgl-lahir").val();  // Update this line for file input
-      var updatedtgender = $("#input-gender").val();  // Update this line for file input
-      var updatedtagama = $("#input-agama").val();  // Update this line for file input
-      var updatedtstatus = $("#input-status").val();  // Update this line for file input
-      var updatedtalamat = $("#input-alamat").val();  // Update this line for file input
-      var updatedtno_tlp = $("#input-no-tlp").val();  // Update this line for file input
-  
-      // Send the updated data to the server using AJAX
-      $.ajax({
-        url: "/update_profile",  // Replace with your actual endpoint for updating the profile
-        type: "POST",
-        data: {
-          name: updatedName,
-          profile_pic: updatedPic,
-          nik: updatednik,
-          tgl_lahir: updatedtlg_lahir,
-          gender: updatedtgender,
-          agama: updatedtagama,
-          status: updatedtstatus,
-          alamat: updatedtalamat,
-          no_tlp: updatedtno_tlp,
-
-          // Add more fields as needed
-        },
-        success: function (response) {
-          if (response.result === "success") {
-            // Optionally, you can update the displayed data on the page after a successful update
-            // e.g., $("#user-info-name").text(updatedName);
-  
-            // Close the modal
-            $("#modal-edit").removeClass("is-active");
-          } else {
-            console.error("Failed to update profile:", response.msg);
-          }
-        },
-        error: function (error) {
-          console.error("Error updating profile:", error);
-        },
-      });
-    }
-  
-  $.ajax({
-    url: "/get_profile",
-    type: "POST",
-    success: function(response) {
-        // Check if the response is successful and contains user_info
-        if (response.result === 'success' && response.user_info) {
-            // Update the elements with the fetched data
-            $("#user-name").text(response.user_info.name);
-            $("#user-username").text(response.user_info.username);
-            // Update other elements as needed
-        } else {
-            console.error("Error fetching profile data:", response.msg);
-        }
-    },
-    error: function(error) {
-        console.error("Error fetching profile data:", error);
-    }
-});
-
-</script>
-
-
-</body>
+        // Send the updated data to the server using AJAX
+        $.ajax({
+          url: "/profile/edit",
+          type: "POST",
+          data: form_data,
+          cache: false,
+          contentType: false,
+          processData: false,
+          success: function (response) {
+            if (response.result === "success") {
+              // reload page
+              window.location.reload();
+            } else {
+              console.error("Failed to update profile:", response.msg);
+            }
+          },
+          error: function (error) {
+            console.error("Error updating profile:", error);
+          },
+        });
+      }
+    </script>
+  </body>
 </html>

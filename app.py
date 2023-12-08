@@ -13,9 +13,6 @@ from bson import ObjectId
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
-MONGODB_URI = os.environ.get("MONGODB_URI")
-DB_NAME = os.environ.get("DB_NAME")
-
 app = Flask(__name__)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
@@ -38,18 +35,7 @@ def home():
         return render_template('index.html', msg="Your login token has expired")
     except jwt.exceptions.DecodeError:
         return render_template('index.html', msg="There was an error logging you in")
-    
-@app.route('/pegawai' , methods=['GET', 'POST'])
-def home_pegawai():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        user_info = db.users.find_one({"username": payload['id']})
-        return render_template('pegawai.html', user_info=user_info)
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for('login', msg="Your login token has expired"))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for('login', msg="There was an error logging you in"))
+
 
 @app.route('/api/get_jadwal', methods=['GET'])
 def get_jadwal():
@@ -59,6 +45,7 @@ def get_jadwal():
         return jsonify({"jadwal": jadwal_data})
     except Exception as e:
         return jsonify({"error": str(e)})
+
 
 @app.route('/api/get_antrian', methods=['GET'])
 def get_antrian():
@@ -99,6 +86,7 @@ def api_register():
 
     # Simpan data pengguna ke MongoDB
     user_data = {
+        'profile_pic': 'profile_pics/profile_placeholder.png',
         'username': username,
         'name': name,
         'nik': nik,
@@ -174,7 +162,8 @@ def sign_in():
                 "msg": "We could not find a user with that id/password combination",
             }
         )
-    
+
+
 @app.route('/pendaftaran_formulir', methods=['GET', 'POST'])
 def pendaftaran_formulir():
     if request.method == 'POST':
@@ -193,26 +182,90 @@ def pendaftaran_formulir():
         pendaftaran_data = list(db.registrations.find())
 
         return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
-    
-    return render_template('pendaftaran_formulir.html') 
+
+    return render_template('pendaftaran_formulir.html')
+
+
+@app.route("/pendaftaran_pegawai")
+def pendaftaran_pegawai():
+    return render_template("pendaftaran_pegawai.html")
+
+@app.route('/api/pendaftaran_pegawai', methods=['GET'])
+def api_pendaftaran_pegawai():
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
+    return jsonify(pendaftaran_data)
+
+@app.route('/api/update-pendaftaran-pegawai', methods=['POST'])
+def update_pendaftaran_pegawai():
+    try:
+        registration_id = request.form['registration_id']
+        status = request.form['status']
+
+        # Validasi ID Pendaftaran
+        if not ObjectId.is_valid(registration_id):
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+
+        # Validasi Status
+        valid_statuses = ['approve', 'reject', 'done']
+        if status not in valid_statuses:
+            return jsonify({'result': 'failed', 'message': 'Status tidak valid'})
+
+        # Update status pendaftaran di MongoDB
+        result = db.registrations.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': {'status': status}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'result': 'success'})
+        else:
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
+    except Exception as e:
+        return jsonify({'result': 'failed', 'message': str(e)})
+
+@app.route('/api/pendaftaran-pegawai-as-done', methods=['POST'])
+def pendaftaran_pegawai_as_done():
+    try:
+        registration_id = request.form['registration_id']
+
+        # Validasi ID Pendaftaran
+        if not ObjectId.is_valid(registration_id):
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+
+        # Tandai pendaftaran sebagai selesai di MongoDB
+        result = db.registrations.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': {'status': 'done'}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'result': 'success'})
+        else:
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
+    except Exception as e:
+        return jsonify({'result': 'failed', 'message': str(e)})
 
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
     return render_template("riwayat_pendaftaran.html")
 
+
 @app.route('/api/pendaftaran_formulir', methods=['GET'])
 def api_riwayat_pendaftaran():
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
+@app.route('/api/riwayat_pendaftaran', methods=['GET'])
+def riwayat_pendaftaran_api():
     pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
     return jsonify(pendaftaran_data)
+
 
 @app.route("/profile")
 def profile():
     token_receive = request.cookies.get(TOKEN_KEY)
-    print("Received Token:", token_receive)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        print("Decoded Payload:", payload)
-        user_info = db.users.find_one({"username": payload['id']}, {'_id': False, 'password': False})
+        user_info = db.users.find_one({"username": payload['id']}, {
+                                      '_id': False, 'password': False})
         return render_template('profile.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
         print("Expired Signature Error")
@@ -221,13 +274,13 @@ def profile():
         print("Decode Error")
         return jsonify({'result': 'fail', 'msg': 'There was an error decoding your token'})
 
-@app.route('/get_profile', methods=['POST'])
+
+@app.route('/get_profile/profile', methods=['GET'])
 def get_profile():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-
-        # Update user_info based on the payload
+        user_info = db.users.find_one({"username": payload['id']}, {'_id': False, 'password': False})
         name = payload.get('name', '')
         nik = payload.get('nik', '')
         tgl_lahir = payload.get('tgl_lahir', '')
@@ -236,18 +289,12 @@ def get_profile():
         status = payload.get('status', '')
         alamat = payload.get('alamat', '')
         no_telp = payload.get('no_telp', '')
-
-        # Update the user_info in the database
         db.users.update_one(
             {'username': payload['id']},
             {'$set': {'name': name, 'nik': nik, 'tgl_lahir': tgl_lahir, 'gender': gender,
                       'agama': agama, 'status': status, 'alamat': alamat, 'no_telp': no_telp}}
         )
-
-        # Fetch the updated user_info from the database
-        user_info = db.users.find_one({"username": payload['id']}, {'_id': False, 'password': False})
-
-        return render_template('profile.html', user_info=user_info)
+        return jsonify({'result': 'success', 'user_info': user_info})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'msg': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
@@ -263,21 +310,39 @@ def update_profile():
         username = payload['id']
 
         # Fetch user data from the request
+        user_info = db.users.find_one({"username": payload["id"]})
+        file_path = user_info["profile_pic"]
         name = request.form.get('name')
         nik = request.form.get('nik')
-        tgl_lahir = request.form.get('tgl-lahir')
+        tgl_lahir = request.form.get('tgl_lahir')
         gender = request.form.get('gender')
         agama = request.form.get('agama')
         status = request.form.get('status')
         alamat = request.form.get('alamat')
-        no_telp = request.form.get('no-telp')
+        no_telp = request.form.get('no_tlp')
 
         # Update user data in the database
-        db.users.update_one(
-            {'username': username},
-            {'$set': {'name': name, 'nik': nik, 'tgl_lahir': tgl_lahir, 'gender': gender,
-                      'agama': agama, 'status': status, 'alamat': alamat, 'no_telp': no_telp}}
-        )
+        doc = {
+            'name': name,
+            'nik': nik,
+            'tgl_lahir': tgl_lahir,
+            'gender': gender,
+            'agama': agama,
+            'status': status,
+            'alamat': alamat,
+            'no_telp': no_telp,
+        }
+
+        if 'profile_pic' in request.files:
+            file = request.files['profile_pic']
+            if file.filename != '':
+                filename = secure_filename(file.filename)
+                extension = filename.split(".")[-1]
+                file_path = f"profile_pics/{username}.{extension}"
+                file.save("./static/" + file_path)
+                doc["profile_pic"] = file_path
+
+        db.users.update_one({"username": username}, {"$set": doc})
 
         return jsonify({'result': 'success', 'msg': 'Profile updated successfully'})
     except jwt.ExpiredSignatureError:
