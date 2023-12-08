@@ -193,7 +193,7 @@
                                   <input
                                     type="text"
                                     class="form-control form-control-sm"
-                                    id="name"
+                                    id="input-name"
                                     name="name"
                                   />
                                 </div>
@@ -206,7 +206,7 @@
                                   <input
                                     type="text"
                                     class="form-control form-control-sm"
-                                    id="nik"
+                                    id="input-nik"
                                     name="nik"
                                   />
                                 </div>
@@ -221,7 +221,7 @@
                                   <input
                                     type="date"
                                     class="form-control form-control-sm"
-                                    id="tgl-lahir"
+                                    id="input-tgl-lahir"
                                     name="tgl-lahir"
                                   />
                                 </div>
@@ -237,7 +237,7 @@
                                     <input
                                       type="radio"
                                       class="form-check-input"
-                                      id="gender-laki"
+                                      id="input-gender"
                                       name="gender"
                                       value="laki-laki"
                                     />
@@ -249,7 +249,7 @@
                                     <input
                                       type="radio"
                                       class="form-check-input"
-                                      id="gender-perempuan"
+                                      id="input-gender"
                                       name="gender"
                                       value="perempuan"
                                     />
@@ -284,7 +284,7 @@
                                   <input
                                     type="text"
                                     class="form-control form-control-sm"
-                                    id="status"
+                                    id="input-status"
                                     name="status"
                                   />
                                 </div>
@@ -299,7 +299,7 @@
                                   <input
                                     type="text"
                                     class="form-control form-control-sm"
-                                    id="alamat"
+                                    id="input-alamat"
                                     name="alamat"
                                   />
                                 </div>
@@ -314,7 +314,7 @@
                                   <input
                                     type="tel"
                                     class="form-control form-control-sm"
-                                    id="no-telp"
+                                    id="input-no-telp"
                                     name="no-telp"
                                     pattern="\d{10,13}"
                                   />
@@ -338,15 +338,15 @@
     // Function to update the profile
     function updateProfile() {
       // Fetch updated data from modal inputs (you can add more fields as needed)
-      var updatedName = $("#name").val();
+      var updatedName = $("#input-name").val();
       var updatedPic = $("#input-pic").val();  // Update this line for file input
-      var updatednik = $("#nik").val();  // Update this line for file input
-      var updatedtlg_lahir = $("#tgl-lahir").val();  // Update this line for file input
-      var updatedtgender = $("#gender").val();  // Update this line for file input
-      var updatedtagama = $("#agama").val();  // Update this line for file input
-      var updatedtstatus = $("#status").val();  // Update this line for file input
-      var updatedtalamat = $("#alamat").val();  // Update this line for file input
-      var updatedtno_tlp = $("#no-tlp").val();  // Update this line for file input
+      var updatednik = $("#input-nik").val();  // Update this line for file input
+      var updatedtlg_lahir = $("#input-tgl-lahir").val();  // Update this line for file input
+      var updatedtgender = $("#input-gender").val();  // Update this line for file input
+      var updatedtagama = $("#input-agama").val();  // Update this line for file input
+      var updatedtstatus = $("#input-status").val();  // Update this line for file input
+      var updatedtalamat = $("#input-alamat").val();  // Update this line for file input
+      var updatedtno_tlp = $("#input-no-tlp").val();  // Update this line for file input
   
       // Send the updated data to the server using AJAX
       $.ajax({
@@ -382,6 +382,25 @@
       });
     }
   
+  $.ajax({
+    url: "/get_profile",
+    type: "POST",
+    success: function(response) {
+        // Check if the response is successful and contains user_info
+        if (response.result === 'success' && response.user_info) {
+            // Update the elements with the fetched data
+            $("#user-name").text(response.user_info.name);
+            $("#user-username").text(response.user_info.username);
+            // Update other elements as needed
+        } else {
+            console.error("Error fetching profile data:", response.msg);
+        }
+    },
+    error: function(error) {
+        console.error("Error fetching profile data:", error);
+    }
+});
+
 </script>
 
 

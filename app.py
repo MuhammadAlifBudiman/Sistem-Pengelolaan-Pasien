@@ -221,13 +221,13 @@ def profile():
         print("Decode Error")
         return jsonify({'result': 'fail', 'msg': 'There was an error decoding your token'})
 
-
-@app.route('/get_profile/profile', methods=['GET'])
+@app.route('/get_profile', methods=['POST'])
 def get_profile():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        user_info = db.users.find_one({"username": payload['id']}, {'_id': False, 'password': False})
+
+        # Update user_info based on the payload
         name = payload.get('name', '')
         nik = payload.get('nik', '')
         tgl_lahir = payload.get('tgl_lahir', '')
@@ -236,12 +236,18 @@ def get_profile():
         status = payload.get('status', '')
         alamat = payload.get('alamat', '')
         no_telp = payload.get('no_telp', '')
+
+        # Update the user_info in the database
         db.users.update_one(
             {'username': payload['id']},
             {'$set': {'name': name, 'nik': nik, 'tgl_lahir': tgl_lahir, 'gender': gender,
                       'agama': agama, 'status': status, 'alamat': alamat, 'no_telp': no_telp}}
         )
-        return jsonify({'result': 'success', 'user_info': user_info})
+
+        # Fetch the updated user_info from the database
+        user_info = db.users.find_one({"username": payload['id']}, {'_id': False, 'password': False})
+
+        return render_template('profile.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'msg': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
@@ -249,8 +255,8 @@ def get_profile():
 
 
 
-@app.route('/profile/edit', methods=['POST'])
-def edit_profile():
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
