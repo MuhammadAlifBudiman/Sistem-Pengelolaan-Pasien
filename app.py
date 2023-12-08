@@ -186,6 +186,65 @@ def pendaftaran_formulir():
     return render_template('pendaftaran_formulir.html')
 
 
+@app.route("/pendaftaran_pegawai")
+def pendaftaran_pegawai():
+    return render_template("pendaftaran_pegawai.html")
+
+@app.route('/api/pendaftaran_pegawai', methods=['GET'])
+def api_pendaftaran_pegawai():
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
+    return jsonify(pendaftaran_data)
+
+@app.route('/api/update-pendaftaran-pegawai', methods=['POST'])
+def update_pendaftaran_pegawai():
+    try:
+        registration_id = request.form['registration_id']
+        status = request.form['status']
+
+        # Validasi ID Pendaftaran
+        if not ObjectId.is_valid(registration_id):
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+
+        # Validasi Status
+        valid_statuses = ['approve', 'reject', 'done']
+        if status not in valid_statuses:
+            return jsonify({'result': 'failed', 'message': 'Status tidak valid'})
+
+        # Update status pendaftaran di MongoDB
+        result = db.registrations.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': {'status': status}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'result': 'success'})
+        else:
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
+    except Exception as e:
+        return jsonify({'result': 'failed', 'message': str(e)})
+
+@app.route('/api/pendaftaran-pegawai-as-done', methods=['POST'])
+def pendaftaran_pegawai_as_done():
+    try:
+        registration_id = request.form['registration_id']
+
+        # Validasi ID Pendaftaran
+        if not ObjectId.is_valid(registration_id):
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+
+        # Tandai pendaftaran sebagai selesai di MongoDB
+        result = db.registrations.update_one(
+            {'_id': ObjectId(registration_id)},
+            {'$set': {'status': 'done'}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'result': 'success'})
+        else:
+            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
+    except Exception as e:
+        return jsonify({'result': 'failed', 'message': str(e)})
+
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
     return render_template("riwayat_pendaftaran.html")
@@ -194,6 +253,9 @@ def riwayat_pendaftaran():
 @app.route('/api/pendaftaran_formulir', methods=['GET'])
 def api_riwayat_pendaftaran():
     pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
+@app.route('/api/riwayat_pendaftaran', methods=['GET'])
+def riwayat_pendaftaran_api():
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
     return jsonify(pendaftaran_data)
 
 
