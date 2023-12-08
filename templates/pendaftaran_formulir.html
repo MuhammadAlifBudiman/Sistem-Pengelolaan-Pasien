@@ -10,30 +10,67 @@
         integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
         $(document).ready(function () {
+            // Menampilkan atau menyembunyikan formulir dan antrian
+            function toggleFormAndAntrian(hasPendingOrApproved) {
+                if (hasPendingOrApproved) {
+                    // Jika ada pendaftaran dengan status pending/approve, tampilkan antrian
+                    $('#formulir-container').hide();
+                    $('#antrian-container').show();
+                } else {
+                    // Jika tidak ada, tampilkan formulir
+                    $('#formulir-container').show();
+                    $('#antrian-container').hide();
+                }
+            }
+    
+            // Untuk menampilkan atau menyembunyikan formulir dan antrian saat halaman dimuat
+            $.ajax({
+                type: 'GET',
+                url: '/pendaftaran_formulir',
+                success: function (data) {
+                    console.log("Has Pending or Approved: " + data.has_pending_or_approved);
+                    toggleFormAndAntrian(data.has_pending_or_approved);
+                },
+                error: function () {
+                    console.error('Gagal mendapatkan status pendaftaran');
+                }
+            });
+    
             $('.btn-submit-form').click(function (event) {
                 event.preventDefault();
-
+    
                 // Dapatkan data formulir
                 var formData = {
                     poli: $('#poli').val(),
                     tanggal: $('#tanggal').val(),
                     keluhan: $('#keluhan').val()
                 };
-
-                if (formData.poli === '' || formData.tanggal === '' || formData.keluhan === '') {
-                    alert('Harap lengkapi semua bidang sebelum mengirim formulir.');
+    
+                if (formData.poli === '') {
+                    alert('Harap pilih jenis poli sebelum mengirim formulir');
                     return;
                 }
-                
+    
+                if (formData.tanggal === '') {
+                    alert('Harap pilih tanggal berobat sebelum mengirim formulir');
+                    return;
+                }
+    
+                if (formData.keluhan === '') {
+                    alert('Harap isi keluhan Anda sebelum mengirim formulir');
+                    return;
+                }
+    
                 $.ajax({
                     type: 'POST',
                     url: '/pendaftaran_formulir',
                     data: formData,
                     success: function () {
                         alert('Formulir telah diproses. Silakan tunggu');
-                        window.location.href = '';
+                        toggleFormAndAntrian(true);
                     },
                     error: function () {
                         alert('Gagal melakukan pendaftaran');
@@ -41,9 +78,7 @@
                 });
             });
         });
-
     </script>
-
 </head>
 
 <body>
@@ -74,9 +109,9 @@
             </ul>
         </div>
     </nav>
-    
+
     <!-- Formulir Pendaftaran -->
-    <div class="container mt-5 d-flex justify-content-center">
+    <div class="container mt-5 d-flex justify-content-center" id="formulir-container">
         <div class="card" style="width: 500px;">
             <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
             <div class="card-body">
@@ -113,10 +148,36 @@
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn btn-primary btn-submit-form">Kirim</button>
                     </div>
+                </form>
             </div>
-            </form>
         </div>
     </div>
+
+    <!-- Antrian Pendaftaran -->
+    <div class="container mt-5" id="antrian-container" style="display:none;">
+        <h3 class="text-center">Antrian Pendaftaran</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">No Urut</th>
+                    <th scope="col">Nama</th>
+                    <th scope="col">NIK</th>
+                    <th scope="col">Tanggal</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in data %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ data.name }}</td>
+                    <td>{{ data.nik }}</td>
+                    <td>{{ data.tanggal }}</td>
+                    <td>{{ data.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
 </body>

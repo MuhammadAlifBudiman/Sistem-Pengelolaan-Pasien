@@ -13,9 +13,6 @@ from bson import ObjectId
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
-MONGODB_URI = os.environ.get("MONGODB_URI")
-DB_NAME = os.environ.get("DB_NAME")
-
 app = Flask(__name__)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
@@ -171,19 +168,46 @@ def pendaftaran_formulir():
         tanggal = request.form['tanggal']
         keluhan = request.form['keluhan']
 
-        # Masukkan data ke MongoDB
-        data_pendaftaran = {
-            'poli': poli,
-            'tanggal': tanggal,
-            'keluhan': keluhan
-        }
-        db.registrations.insert_one(data_pendaftaran)
+        # Ambil data pengguna dari koleksi users
+        user_data = db.users.find_one({})
 
-        pendaftaran_data = list(db.registrations.find())
+        if user_data:
+            # Masukkan data pendaftaran ke MongoDB
+            data_pendaftaran = {
+                'username': user_data['username'],
+                'name': user_data['name'],
+                'nik': user_data['nik'],
+                'tgl_lahir': user_data['tgl_lahir'],
+                'gender': user_data['gender'],
+                'agama': user_data['agama'],
+                'status': user_data['status'],
+                'alamat': user_data['alamat'],
+                'no_telp': user_data['no_telp'],
+                'poli': poli,
+                'tanggal': tanggal,
+                'keluhan': keluhan
+            }
 
-        return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
-    
-    return render_template('pendaftaran_formulir.html') 
+            db.registrations.insert_one(data_pendaftaran)
+
+            has_pending_or_approved = db.registrations.count_documents({
+            "status": {"$in": ["pending", "approve"]}
+        }) > 0
+            
+            # Ambil data antrian dari MongoDB
+            antrian_data = list(db.registrations.find(
+                {"status": {"$in": ["pending", "approve"]}},
+                {"no_urut": True, 
+                 "name": True, 
+                 "nik": True, 
+                 "tanggal": True, 
+                 "status": True, 
+                 "_id": False}
+            ))
+
+            return render_template('pendaftaran_formulir.html', data=antrian_data, has_pending_or_approved=has_pending_or_approved)
+        return render_template('error.html', message='Data pengguna tidak ditemukan')
+    return render_template('pendaftaran_formulir.html')
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
