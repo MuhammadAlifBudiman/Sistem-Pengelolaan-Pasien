@@ -37,16 +37,6 @@ def home():
         return render_template('index.html', msg="There was an error logging you in")
 
 
-@app.route('/api/get_jadwal', methods=['GET'])
-def get_jadwal():
-    try:
-        # Mengambil data jadwal
-        jadwal_data = list(db.jadwal_praktek.find({}, {'_id': False}))
-        return jsonify({"jadwal": jadwal_data})
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
-
 @app.route('/api/get_antrian', methods=['GET'])
 def get_antrian():
     try:
@@ -74,7 +64,7 @@ def api_register():
 
     if not data:
         return jsonify({'result': 'failed', 'message': 'Invalid JSON data'})
-        
+
     username = data.get('username')
     name = data.get('name')
     nik = data.get('nik')
@@ -93,12 +83,12 @@ def api_register():
     # Cek apakah username sudah ada di database
     existing_user = db.users.find_one({'username': username})
     if existing_user:
-        return jsonify({'result': 'failed', 'message': 'Username sudah digunakan'})  
-    
+        return jsonify({'result': 'failed', 'message': 'Username sudah digunakan'})
+
     # Cek apakah nik memiliki 16 digit angka
     if len(nik) != 16 or not nik.isdigit():
         return jsonify({'result': 'failed', 'message': 'NIK harus 16 digit angka'})
-    
+
     existing_nik = db.users.find_one({'nik': nik})
     if existing_nik:
         return jsonify({'result': 'failed', 'message': 'NIK sudah digunakan'})
@@ -379,15 +369,33 @@ def kelola_praktik():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
-        jadwal = list(db.jadwal.find())
-        jadwal[0]["_id"] = str(jadwal[0]["_id"])
         if user_info['role'] != 'pegawai':
             return redirect(url_for("login", msg="You must login as pegawai"))
-        return render_template('praktik.html', jadwal=jadwal)
+        return render_template('praktik.html')
     except jwt.ExpiredSignatureError:
         return redirect(url_for("login", msg="Your token has expired"))
     except jwt.exceptions.DecodeError:
         return redirect(url_for("login", msg="There was problem logging you in"))
+
+
+@app.route('/api/get_jadwal', methods=['GET'])
+def get_jadwal():
+    try:
+        # Mengambil data jadwal
+        jadwal_data = list(db.jadwal.find())
+        for jadwal in jadwal_data:
+            jadwal["_id"] = str(jadwal["_id"])
+        return jsonify({"result": "success", "jadwal": jadwal_data})
+    except Exception as e:
+        return jsonify({"result": "fail", "error": str(e)})
+
+
+@app.route("/api/get-jadwal/<id>", methods=["GET"])
+def get_jadwal_by_id(id):
+    jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
+    jadwal["_id"] = str(jadwal["_id"])
+
+    return jsonify({"result": "success", "jadwal": jadwal})
 
 
 @app.route("/api/tambah-jadwal", methods=["POST"])
@@ -398,7 +406,7 @@ def api_tambah_jadwal():
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for('home'))
+            return redirect(url_for("login", msg="You must login as pegawai"))
         nama = request.form.get("nama")
         poli = request.form.get("poli")
         hari = request.form.getlist("hari")
@@ -415,17 +423,11 @@ def api_tambah_jadwal():
         result = db.jadwal.insert_one(jadwal_data)
         jadwal_data["_id"] = str(result.inserted_id)
 
-        return jsonify(jadwal_data)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route("/api/get-jadwal/<id>", methods=["GET"])
-def get_jadwal_by_id(id):
-    jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
-    jadwal["_id"] = str(jadwal["_id"])
-
-    return jsonify(jadwal)
+        return jsonify({"result": "success", "jadwal": jadwal_data})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 @app.route("/api/edit-jadwal/<id>", methods=["POST"])
@@ -436,7 +438,7 @@ def edit_jadwal(id):
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for('home'))
+            return redirect(url_for("login", msg="You must login as pegawai"))
         nama = request.form.get("nama")
         poli = request.form.get("poli")
         hari = request.form.getlist("hari")
@@ -455,9 +457,11 @@ def edit_jadwal(id):
         jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
         jadwal["_id"] = str(jadwal["_id"])
 
-        return jsonify(jadwal)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
+        return jsonify({"result": "success", "jadwal": jadwal})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 @app.route("/api/hapus-jadwal/<id>", methods=["POST"])
@@ -468,13 +472,15 @@ def hapus_jadwal(id):
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for('home'))
-    # hapus jadwal data dari database
+            return redirect(url_for("login", msg="You must login as pegawai"))
+        # hapus jadwal data dari database
         db.jadwal.delete_one({"_id": ObjectId(id)})
 
-        return jsonify({"message": "Jadwal berhasil dihapus"})
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
+        return jsonify({"result": "success","message": "Jadwal berhasil dihapus"})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 if __name__ == '__main__':
