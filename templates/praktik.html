@@ -60,6 +60,9 @@
             $(rowNode).attr("id", row._id);
           });
         },
+        error: function (error) {
+          alert(error.responseJSON.message);
+        },
       });
 
       // Event listener for Add button
@@ -87,32 +90,36 @@
         let formData = $(this).serializeArray();
 
         $.ajax({
-          url: "/api/tambah-jadwal",
+          url: "/api/tambah_jadwal",
           type: "POST",
           data: formData,
           success: function (response) {
-            let jadwal = response.jadwal;
-            // Update tabel
-            let newRow = [
-              jadwal.nama,
-              jadwal.poli,
-              jadwal.hari,
-              jadwal.jam_buka + " - " + jadwal.jam_tutup,
-              "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-            ];
-            let rowNode = jadwalTable.row.add(newRow).draw().node();
-            $(rowNode).attr("id", jadwal._id); // Set ID for the new row
+            if (response.result == "success") {
+              let jadwal = response.jadwal;
+              // Update tabel
+              let newRow = [
+                jadwal.nama,
+                jadwal.poli,
+                jadwal.hari,
+                jadwal.jam_buka + " - " + jadwal.jam_tutup,
+                "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
+              ];
+              let rowNode = jadwalTable.row.add(newRow).draw().node();
+              $(rowNode).attr("id", jadwal._id); // Set ID for the new row
 
-            // Reset the form
-            $("#tambahJadwal")[0].reset();
+              alert(response.message);
+              // Reset the form
+              $("#tambahJadwal")[0].reset();
 
-            // Close the modal
-            $("#exampleModal").modal("hide");
+              // Close the modal
+              $("#exampleModal").modal("hide");
 
-            alert("Jadwal berhasil ditambahkan!");
+            } else {
+              alert(response.message);
+            }
           },
           error: function (error) {
-            alert(error.responseJSON.message)
+            alert(error.responseJSON.message);
           },
         });
       });
@@ -125,7 +132,7 @@
         let rowId = $(this).parents("tr").attr("id");
         let editModal = $("#editModal");
         $.ajax({
-          url: "/api/get-jadwal/" + rowId,
+          url: "/api/get_jadwal/" + rowId,
           type: "GET",
           success: function (response) {
             let jadwal = response.jadwal;
@@ -144,7 +151,7 @@
             }
           },
           error: function (error) {
-            alert(error.responseJSON.message)
+            alert(error.responseJSON.message);
           },
         });
 
@@ -176,32 +183,36 @@
             let formData = $(this).serializeArray();
 
             $.ajax({
-              url: "/api/edit-jadwal/" + rowId,
+              url: "/api/edit_jadwal/" + rowId,
               type: "POST",
               data: formData,
               success: function (response) {
-                let jadwal = response.jadwal;
-                // Update the row
-                row
-                  .data([
-                    jadwal.nama,
-                    jadwal.poli,
-                    jadwal.hari,
-                    jadwal.jam_buka + " - " + jadwal.jam_tutup,
-                    "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-                  ])
-                  .draw();
+                if (response.result == "success") {
+                  let jadwal = response.jadwal;
+                  // Update the row
+                  row
+                    .data([
+                      jadwal.nama,
+                      jadwal.poli,
+                      jadwal.hari,
+                      jadwal.jam_buka + " - " + jadwal.jam_tutup,
+                      "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
+                    ])
+                    .draw();
 
-                // Reset the form
-                editModal.find("#editJadwal")[0].reset();
+                  alert(response.message);
 
-                // Close the modal
-                editModal.modal("hide");
+                  // Reset the form
+                  editModal.find("#editJadwal")[0].reset();
 
-                alert("Jadwal berhasil diubah!");
+                  // Close the modal
+                  editModal.modal("hide");
+                } else {
+                  alert(response.message);
+                }
               },
               error: function (error) {
-                alert(error.responseJSON.message)
+                alert(error.responseJSON.message);
               },
             });
           });
@@ -216,22 +227,25 @@
             e.preventDefault();
 
             $.ajax({
-              url: "/api/hapus-jadwal/" + rowId,
+              url: "/api/hapus_jadwal/" + rowId,
               type: "POST",
               success: function (response) {
-                // Delete the row
-                jadwalTable
-                  .row("#" + rowId)
-                  .remove()
-                  .draw();
+                if (response.result == "success") {
+                  // Delete the row
+                  jadwalTable
+                    .row("#" + rowId)
+                    .remove()
+                    .draw();
 
-                // Close the modal
-                $("#deleteModal").modal("hide");
-
-                alert("Jadwal berhasil dihapus!");
+                  alert(response.message);
+                  // Close the modal
+                  $("#deleteModal").modal("hide");
+                } else {
+                  alert(response.message);
+                }
               },
               error: function (error) {
-                alert(error.responseJSON.message)
+                alert(error.responseJSON.message);
               },
             });
           });

@@ -16,7 +16,11 @@ load_dotenv(dotenv_path)
 app = Flask(__name__)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
+if not MONGODB_CONNECTION_STRING:
+    raise ValueError("MONGODB_CONNECTION_STRING environment variable is not set")
 DB_NAME = os.environ.get("DB_NAME")
+if not DB_NAME:
+    raise ValueError("DB_NAME environment variable is not set")
 client = MongoClient(MONGODB_CONNECTION_STRING)
 db = client[DB_NAME]
 
@@ -42,6 +46,14 @@ def is_valid_nik(nik):
 def is_valid_date(date_str):
     try:
         datetime.strptime(date_str, '%d-%m-%Y')
+        return True
+    except ValueError:
+        return False
+
+
+def is_valid_time(time_str):
+    try:
+        datetime.strptime(time_str, '%H:%M')
         return True
     except ValueError:
         return False
@@ -124,36 +136,36 @@ def api_register():
     existing_nik = db.users.find_one({'nik': nik})
     if existing_nik:
         return jsonify({'result': 'failed', 'message': 'NIK sudah digunakan'})
-    
+
     # Cek apakah format tanggal lahir valid
     if not is_valid_date(tgl_lahir):
         return jsonify({'result': 'failed', 'message': 'Format tanggal lahir tidak valid'})
-    
+
     # Cek apakah tanggal lahir valid
     if datetime.strptime(tgl_lahir, '%d-%m-%Y') > datetime.now():
         return jsonify({'result': 'failed', 'message': 'Tanggal lahir tidak valid'})
-    
+
     # Cek apakah jenis kelamin valid
     if not is_valid_gender(gender):
         return jsonify({'result': 'failed', 'message': 'Jenis kelamin tidak valid'})
-    
+
     # Cek apakah nomor telepon valid
     if not is_valid_phone_number(no_telp):
         return jsonify({'result': 'failed', 'message': 'Nomor telepon tidak valid'})
-    
+
     # Cek apakah password sesuai
     if len(password) < 8:
         return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 8 karakter'})
-    
+
     if not any(char.isupper() for char in password):
         return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 huruf kapital'})
-    
+
     if not any(char.isdigit() for char in password):
         return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 angka'})
-    
+
     if not any(not char.isalnum() for char in password):
         return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 symbol'})
-    
+
     if password != confirm_password:
         return jsonify({'result': 'failed', 'message': 'Password tidak sesuai'})
 
@@ -374,7 +386,8 @@ def profile():
         user_info = db.users.find_one({"username": payload['id']}, {
                                       '_id': False, 'password': False})
         # format tgl_lahir to yyyy-mm-dd
-        user_info["tgl_lahir"] = datetime.strptime(user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
+        user_info["tgl_lahir"] = datetime.strptime(
+            user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
         return render_template('profile.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
         return redirect(url_for("login", msg="Your token has expired"))
@@ -389,7 +402,7 @@ def api_profile():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         user_info = db.users.find_one({"username": payload['id']}, {
                                       '_id': False, 'password': False})
-        return jsonify({'result': 'success', 'user_info': user_info})
+        return jsonify({'result': 'success', 'user_info': user_info, 'message': 'Profile fetched successfully'})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
@@ -468,9 +481,9 @@ def edit_profile():
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
-@app.route('/kelola-praktik')
+@app.route('/kelola_praktik')
 def kelola_praktik():
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
@@ -491,33 +504,65 @@ def get_jadwal():
         jadwal_data = list(db.jadwal.find())
         for jadwal in jadwal_data:
             jadwal["_id"] = str(jadwal["_id"])
-        return jsonify({"result": "success", "jadwal": jadwal_data})
+        return jsonify({"result": "success", "jadwal": jadwal_data, "message": "Jadwal fetched successfully"})
     except Exception as e:
         return jsonify({"result": "fail", "error": str(e)})
 
 
-@app.route("/api/get-jadwal/<id>", methods=["GET"])
+@app.route("/api/get_jadwal/<id>", methods=["GET"])
 def get_jadwal_by_id(id):
     jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
+    if not jadwal:
+        return jsonify({"result": "fail", "message": "Jadwal not found"})
     jadwal["_id"] = str(jadwal["_id"])
 
-    return jsonify({"result": "success", "jadwal": jadwal})
+    return jsonify({"result": "success", "jadwal": jadwal, "message": "Jadwal fetched successfully"})
 
 
-@app.route("/api/tambah-jadwal", methods=["POST"])
+@app.route("/api/tambah_jadwal", methods=["POST"])
 def api_tambah_jadwal():
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for("login", msg="You must login as pegawai"))
+            return jsonify({'result': 'fail', 'message': 'You must login as pegawai'})
         nama = request.form.get("nama")
         poli = request.form.get("poli")
         hari = request.form.getlist("hari")
         jam_buka = request.form.get("jam_buka")
         jam_tutup = request.form.get("jam_tutup")
+
+        if not nama:
+            return jsonify({'result': 'fail', 'message': 'Nama tidak boleh kosong'})
+
+        if not poli:
+            return jsonify({'result': 'fail', 'message': 'Poli tidak boleh kosong'})
+
+        if not hari:
+            return jsonify({'result': 'fail', 'message': 'Hari tidak boleh kosong'})
+
+        if not jam_buka:
+            return jsonify({'result': 'fail', 'message': 'Jam buka tidak boleh kosong'})
+
+        if not jam_tutup:
+            return jsonify({'result': 'fail', 'message': 'Jam tutup tidak boleh kosong'})
+
+        if not isinstance(hari, list):
+            return jsonify({'result': 'fail', 'message': 'Hari harus merupakan list'})
+        
+        if any(x for x in hari if x.lower() not in ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']):
+            return jsonify({'result': 'fail', 'message': 'Hari tidak valid'})
+        
+        if not is_valid_time(jam_buka):
+            return jsonify({'result': 'fail', 'message': 'Format jam buka tidak valid'})
+        
+        if not is_valid_time(jam_tutup):
+            return jsonify({'result': 'fail', 'message': 'Format jam tutup tidak valid'})
+
+
+        # Insert jadwal data to MongoDB
         jadwal_data = {
             "nama": nama,
             "poli": poli,
@@ -529,56 +574,71 @@ def api_tambah_jadwal():
         result = db.jadwal.insert_one(jadwal_data)
         jadwal_data["_id"] = str(result.inserted_id)
 
-        return jsonify({"result": "success", "jadwal": jadwal_data})
+        return jsonify({"result": "success", "jadwal": jadwal_data, "message": "Jadwal added successfully"})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
-@app.route("/api/edit-jadwal/<id>", methods=["POST"])
+@app.route("/api/edit_jadwal/<id>", methods=["POST"])
 def edit_jadwal(id):
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for("login", msg="You must login as pegawai"))
+            return jsonify({'result': 'fail', 'message': 'You must login as pegawai'})
         nama = request.form.get("nama")
         poli = request.form.get("poli")
         hari = request.form.getlist("hari")
         jam_buka = request.form.get("jam_buka")
         jam_tutup = request.form.get("jam_tutup")
 
+        doc = {}
+        if nama:
+            doc['nama'] = nama
+        if poli:
+            doc['poli'] = poli
+        if hari:
+            if not isinstance(hari, list):
+                return jsonify({'result': 'fail', 'message': 'Hari harus merupakan list'})
+            
+            if any(x for x in hari if x.lower() not in ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']):
+                return jsonify({'result': 'fail', 'message': 'Hari tidak valid'})
+            doc['hari'] = hari
+        if jam_buka:
+            if not is_valid_time(jam_buka):
+                return jsonify({'result': 'fail', 'message': 'Format jam buka tidak valid'})
+            doc['jam_buka'] = jam_buka
+        if jam_tutup:
+            if not is_valid_time(jam_tutup):
+                return jsonify({'result': 'fail', 'message': 'Format jam tutup tidak valid'})
+            doc['jam_tutup'] = jam_tutup
+
         # Update jadwal data
-        db.jadwal.update_one({"_id": ObjectId(id)}, {"$set": {
-            "nama": nama,
-            "poli": poli,
-            "hari": hari,
-            "jam_buka": jam_buka,
-            "jam_tutup": jam_tutup,
-        }})
+        db.jadwal.update_one({"_id": ObjectId(id)}, {"$set": doc })
 
         jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
         jadwal["_id"] = str(jadwal["_id"])
 
-        return jsonify({"result": "success", "jadwal": jadwal})
+        return jsonify({"result": "success", "jadwal": jadwal, "message": "Jadwal updated successfully"})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
-@app.route("/api/hapus-jadwal/<id>", methods=["POST"])
+@app.route("/api/hapus_jadwal/<id>", methods=["POST"])
 def hapus_jadwal(id):
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
-            return redirect(url_for("login", msg="You must login as pegawai"))
+            return jsonify({'result': 'fail', 'message': 'You must login as pegawai'})
         # hapus jadwal data dari database
         db.jadwal.delete_one({"_id": ObjectId(id)})
 

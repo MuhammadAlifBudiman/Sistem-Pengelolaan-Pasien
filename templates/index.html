@@ -43,7 +43,12 @@
             jadwalTable.clear().draw();
             data.jadwal.forEach(function (row) {
               jadwalTable.row
-                .add([row.nama, row.poli, row.hari, row.jam_buka + " - " + row.jam_tutup])
+                .add([
+                  row.nama,
+                  row.poli,
+                  row.hari,
+                  row.jam_buka + " - " + row.jam_tutup,
+                ])
                 .draw();
             });
           },
@@ -144,7 +149,7 @@
             <a class="nav-link" href="#">Rekam Medis</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/kelola-praktik">Kelola Praktik</a>
+            <a class="nav-link" href="/kelola_praktik">Kelola Praktik</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/profile">{{ user_info.username }}</a>
