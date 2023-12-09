@@ -323,7 +323,7 @@ def profile():
         return redirect(url_for("login", msg="There was problem logging you in"))
 
 
-@app.route('/profile/edit', methods=['POST'])
+@app.route('/api/profile/edit', methods=['POST'])
 def edit_profile():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
@@ -365,11 +365,11 @@ def edit_profile():
 
         db.users.update_one({"username": username}, {"$set": doc})
 
-        return jsonify({'result': 'success', 'msg': 'Profile updated successfully'})
+        return jsonify({'result': 'success', 'message': 'Profile updated successfully'})
     except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'msg': 'Your login token has expired'})
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'msg': 'There was an error decoding your token'})
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 @app.route('/kelola-praktik')

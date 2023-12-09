@@ -477,7 +477,7 @@
 
         // Send the updated data to the server using AJAX
         $.ajax({
-          url: "/profile/edit",
+          url: "/api/profile/edit",
           type: "POST",
           data: form_data,
           cache: false,
@@ -486,13 +486,14 @@
           success: function (response) {
             if (response.result === "success") {
               // reload page
+              alert(response.message)
               window.location.reload();
             } else {
-              console.error("Failed to update profile:", response.msg);
+              alert(response.message)
             }
           },
           error: function (error) {
-            console.error("Error updating profile:", error);
+            alert("Failed to update profile")
           },
         });
       }
