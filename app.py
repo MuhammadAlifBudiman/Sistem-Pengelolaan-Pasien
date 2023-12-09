@@ -126,26 +126,13 @@ def api_register():
     return jsonify({'result': 'success', 'message': 'Pendaftaran berhasil'})
 
 
-@app.route('/user/<username>', methods=['GET'])
-def user(username):
-    token_receive = request.cookies.get(TOKEN_KEY)
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        status = username == payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        return render_template('user.html', user_info=user_info, status=status)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route("/sign_in", methods=["POST"])
+@app.route("/api/login", methods=["POST"])
 def sign_in():
-    print('signin')
     # Sign in
     username_receive = request.form["username_give"]
     password_receive = request.form["password_give"]
 
-    # Use bcrypt for password hashing
+    # Use hashlib for password hashing
     hashed_password = hashlib.sha256(
         password_receive.encode('utf-8')).hexdigest()
 
@@ -168,13 +155,14 @@ def sign_in():
             {
                 "result": "success",
                 "token": token,
+                "message": "Login Success"
             }
         )
     else:
         return jsonify(
             {
                 "result": "fail",
-                "msg": "We could not find a user with that id/password combination",
+                "message": "We could not find a user with that id/password combination",
             }
         )
 
@@ -330,11 +318,9 @@ def profile():
                                       '_id': False, 'password': False})
         return render_template('profile.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
-        print("Expired Signature Error")
-        return jsonify({'result': 'fail', 'msg': 'Your login token has expired'})
+        return redirect(url_for("login", msg="Your token has expired"))
     except jwt.exceptions.DecodeError:
-        print("Decode Error")
-        return jsonify({'result': 'fail', 'msg': 'There was an error decoding your token'})
+        return redirect(url_for("login", msg="There was problem logging you in"))
 
 
 @app.route('/profile/edit', methods=['POST'])
@@ -396,10 +382,12 @@ def kelola_praktik():
         jadwal = list(db.jadwal.find())
         jadwal[0]["_id"] = str(jadwal[0]["_id"])
         if user_info['role'] != 'pegawai':
-            return redirect(url_for('home'))
+            return redirect(url_for("login", msg="You must login as pegawai"))
         return render_template('praktik.html', jadwal=jadwal)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
+    except jwt.ExpiredSignatureError:
+        return redirect(url_for("login", msg="Your token has expired"))
+    except jwt.exceptions.DecodeError:
+        return redirect(url_for("login", msg="There was problem logging you in"))
 
 
 @app.route("/api/tambah-jadwal", methods=["POST"])

@@ -21,29 +21,22 @@
           sign_in();
         });
       });
-      function sign_in() {
-        let username = $("#username").val(); // Update this line
-        let password = $("#password").val(); // Update this line
 
-        if (username === "") {
-          $("#help-id-login").text("Please input your id.");
-          $("#username").focus(); // Update this line
-          return;
-        } else {
-          $("#help-id-login").text("");
+      function sign_in() {
+        const username = $("#username").val(); 
+        const password = $("#password").val(); 
+
+        if (!username) {
+          alert("Please input your username.");
         }
 
-        if (password === "") {
-          $("#help-password").text("Please input your password.");
-          $("#password").focus(); // Update this line
-          return;
-        } else {
-          $("#help-password-login").text("");
+        if (!password) {
+          alert("Please input your password.");
         }
 
         $.ajax({
           type: "POST",
-          url: "/sign_in",
+          url: "/api/login",
           data: {
             username_give: username,
             password_give: password,
@@ -51,9 +44,10 @@
           success: function (response) {
             if (response["result"] === "success") {
               $.cookie("mytoken", response["token"], { path: "/" });
+              alert(response["message"]);
               window.location.replace("/");
             } else {
-              alert(response["msg"]);
+              alert(response["message"]);
             }
           },
         });
