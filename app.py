@@ -70,16 +70,38 @@ def register():
 
 @app.route("/api/register", methods=["POST"])
 def api_register():
-    username = request.form['username']
-    name = request.form['name']
-    nik = request.form['nik']
-    tgl_lahir = request.form['tgl-lahir']
-    gender = request.form['gender']
-    agama = request.form['agama']
-    status = request.form['status']
-    alamat = request.form['alamat']
-    no_telp = request.form['no-telp']
-    password = request.form['password']
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'result': 'failed', 'message': 'Invalid JSON data'})
+        
+    username = data.get('username')
+    name = data.get('name')
+    nik = data.get('nik')
+    tgl_lahir = data.get('tglLahir')
+    gender = data.get('gender')
+    agama = data.get('agama')
+    status = data.get('status')
+    alamat = data.get('alamat')
+    no_telp = data.get('noTelp')
+    password = data.get('password')
+
+    # Cek apakah semua input sudah diisi
+    if not all([username, name, nik, tgl_lahir, gender, agama, status, alamat, no_telp, password]):
+        return jsonify({'result': 'failed', 'message': 'Mohon isi semua kolom'})
+
+    # Cek apakah username sudah ada di database
+    existing_user = db.users.find_one({'username': username})
+    if existing_user:
+        return jsonify({'result': 'failed', 'message': 'Username sudah digunakan'})  
+    
+    # Cek apakah nik memiliki 16 digit angka
+    if len(nik) != 16 or not nik.isdigit():
+        return jsonify({'result': 'failed', 'message': 'NIK harus 16 digit angka'})
+    
+    existing_nik = db.users.find_one({'nik': nik})
+    if existing_nik:
+        return jsonify({'result': 'failed', 'message': 'NIK sudah digunakan'})
 
     # Hash password sebelum disimpan
     hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -101,14 +123,7 @@ def api_register():
     }
 
     db.users.insert_one(user_data)
-    return redirect(url_for('login'))
-
-
-@app.route("/api/check-username", methods=["POST"])
-def check_username():
-    username_receive = request.form['username']
-    exists = bool(db.users.find_one({"username": username_receive}))
-    return jsonify({'result': 'success', 'exists': exists})
+    return jsonify({'result': 'success', 'message': 'Pendaftaran berhasil'})
 
 
 @app.route('/user/<username>', methods=['GET'])
@@ -175,7 +190,6 @@ def pendaftaran_formulir():
                 poli = request.form['poli']
                 tanggal = request.form['tanggal']
                 keluhan = request.form['keluhan']
-                
 
                 # Ambil data pengguna dari koleksi users
                 user_data = db.users.find_one({'username': username})
@@ -203,20 +217,19 @@ def pendaftaran_formulir():
                     # Ambil data antrian dari MongoDB
                     antrian_data = list(db.registrations.find(
                         {"status": {"$in": ["pending", "approve"]}},
-                        {"no_urut": True, 
-                        "name": True, 
-                        "nik": True, 
-                        "tanggal": True, 
-                        "status": True, 
-                        "_id": False}
+                        {"no_urut": True,
+                         "name": True,
+                         "nik": True,
+                         "tanggal": True,
+                         "status": True,
+                         "_id": False}
                     ))
                     return render_template('pendaftaran_formulir.html', data=antrian_data)
 
             has_pending_or_approved = db.registrations.count_documents({
-            "status": {"$in": ["pending", "approve"]}
-        }) > 0
-            
-            
+                "status": {"$in": ["pending", "approve"]}
+            }) > 0
+
             print(has_pending_or_approved)
 
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
@@ -233,10 +246,12 @@ def pendaftaran_formulir():
 def pendaftaran_pegawai():
     return render_template("pendaftaran_pegawai.html")
 
+
 @app.route('/api/pendaftaran_pegawai', methods=['GET'])
 def api_pendaftaran_pegawai():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
     return jsonify(pendaftaran_data)
+
 
 @app.route('/api/update-pendaftaran-pegawai', methods=['POST'])
 def update_pendaftaran_pegawai():
@@ -266,6 +281,7 @@ def update_pendaftaran_pegawai():
     except Exception as e:
         return jsonify({'result': 'failed', 'message': str(e)})
 
+
 @app.route('/api/pendaftaran-pegawai-as-done', methods=['POST'])
 def pendaftaran_pegawai_as_done():
     try:
@@ -288,6 +304,7 @@ def pendaftaran_pegawai_as_done():
     except Exception as e:
         return jsonify({'result': 'failed', 'message': str(e)})
 
+
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
     return render_template("riwayat_pendaftaran.html")
@@ -296,9 +313,11 @@ def riwayat_pendaftaran():
 @app.route('/api/pendaftaran_formulir', methods=['GET'])
 def api_riwayat_pendaftaran():
     pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
+
+
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))  
+    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
     return jsonify(pendaftaran_data)
 
 
