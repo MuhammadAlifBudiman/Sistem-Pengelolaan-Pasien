@@ -59,6 +59,9 @@
           return;
         }
 
+        // Update the tglLahir property in the formData
+        formData.tglLahir = formatDateString(formData.tglLahir);
+
         try {
           // Perform registration
           const registrationResponse = await registerUser(formData);
@@ -145,6 +148,12 @@
         }
 
         return response.json();
+      }
+
+      // Function to format date from yyyy-mm-dd to dd-mm-yyyy
+      function formatDateString(dateString) {
+        const [year, month, day] = dateString.split("-");
+        return `${day}-${month}-${year}`;
       }
     </script>
   </head>

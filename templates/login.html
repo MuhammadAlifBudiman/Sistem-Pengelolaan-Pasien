@@ -38,13 +38,13 @@
           type: "POST",
           url: "/api/login",
           data: {
-            username_give: username,
-            password_give: password,
+            username,
+            password,
           },
           success: function (response) {
             if (response["result"] === "success") {
-              $.cookie("mytoken", response["token"], { path: "/" });
               alert(response["message"]);
+              $.cookie("mytoken", response["token"]);
               window.location.replace("/");
             } else {
               alert(response["message"]);

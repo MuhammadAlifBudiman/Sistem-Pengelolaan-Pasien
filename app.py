@@ -24,6 +24,37 @@ TOKEN_KEY = 'mytoken'
 SECRET_KEY = 'SPARTA'
 
 
+def get_authorization():
+    cookie = request.cookies.get(TOKEN_KEY)
+    header = request.headers.get('Authorization')
+    if cookie:
+        return cookie
+    if header:
+        return header.split()[1]
+
+    return None
+
+
+def is_valid_nik(nik):
+    return nik.isdigit() and len(nik) == 16
+
+
+def is_valid_date(date_str):
+    try:
+        datetime.strptime(date_str, '%d-%m-%Y')
+        return True
+    except ValueError:
+        return False
+
+
+def is_valid_gender(gender):
+    return gender.lower() in ['laki-laki', 'perempuan']
+
+
+def is_valid_phone_number(phone_number):
+    return phone_number.isdigit() and 10 <= len(phone_number) <= 13
+
+
 @app.route('/', methods=['GET', 'POST'])
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -75,6 +106,7 @@ def api_register():
     alamat = data.get('alamat')
     no_telp = data.get('noTelp')
     password = data.get('password')
+    confirm_password = data.get('confirmPassword')
 
     # Cek apakah semua input sudah diisi
     if not all([username, name, nik, tgl_lahir, gender, agama, status, alamat, no_telp, password]):
@@ -86,12 +118,44 @@ def api_register():
         return jsonify({'result': 'failed', 'message': 'Username sudah digunakan'})
 
     # Cek apakah nik memiliki 16 digit angka
-    if len(nik) != 16 or not nik.isdigit():
+    if not is_valid_nik(nik):
         return jsonify({'result': 'failed', 'message': 'NIK harus 16 digit angka'})
 
     existing_nik = db.users.find_one({'nik': nik})
     if existing_nik:
         return jsonify({'result': 'failed', 'message': 'NIK sudah digunakan'})
+    
+    # Cek apakah format tanggal lahir valid
+    if not is_valid_date(tgl_lahir):
+        return jsonify({'result': 'failed', 'message': 'Format tanggal lahir tidak valid'})
+    
+    # Cek apakah tanggal lahir valid
+    if datetime.strptime(tgl_lahir, '%d-%m-%Y') > datetime.now():
+        return jsonify({'result': 'failed', 'message': 'Tanggal lahir tidak valid'})
+    
+    # Cek apakah jenis kelamin valid
+    if not is_valid_gender(gender):
+        return jsonify({'result': 'failed', 'message': 'Jenis kelamin tidak valid'})
+    
+    # Cek apakah nomor telepon valid
+    if not is_valid_phone_number(no_telp):
+        return jsonify({'result': 'failed', 'message': 'Nomor telepon tidak valid'})
+    
+    # Cek apakah password sesuai
+    if len(password) < 8:
+        return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 8 karakter'})
+    
+    if not any(char.isupper() for char in password):
+        return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 huruf kapital'})
+    
+    if not any(char.isdigit() for char in password):
+        return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 angka'})
+    
+    if not any(not char.isalnum() for char in password):
+        return jsonify({'result': 'failed', 'message': 'Password harus memiliki minimal 1 symbol'})
+    
+    if password != confirm_password:
+        return jsonify({'result': 'failed', 'message': 'Password tidak sesuai'})
 
     # Hash password sebelum disimpan
     hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -119,8 +183,13 @@ def api_register():
 @app.route("/api/login", methods=["POST"])
 def sign_in():
     # Sign in
-    username_receive = request.form["username_give"]
-    password_receive = request.form["password_give"]
+    username_receive = request.form.get("username")
+    password_receive = request.form.get("password")
+
+    if not username_receive:
+        return jsonify({"result": "fail", "message": "Username tidak boleh kosong"})
+    if not password_receive:
+        return jsonify({"result": "fail", "message": "Password tidak boleh kosong"})
 
     # Use hashlib for password hashing
     hashed_password = hashlib.sha256(
@@ -141,13 +210,11 @@ def sign_in():
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-        return jsonify(
-            {
-                "result": "success",
-                "token": token,
-                "message": "Login Success"
-            }
-        )
+        return jsonify({
+            "result": "success",
+            "token": token,
+            "message": "Login Success"
+        })
     else:
         return jsonify(
             {
@@ -301,11 +368,13 @@ def riwayat_pendaftaran_api():
 
 @app.route("/profile")
 def profile():
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         user_info = db.users.find_one({"username": payload['id']}, {
                                       '_id': False, 'password': False})
+        # format tgl_lahir to yyyy-mm-dd
+        user_info["tgl_lahir"] = datetime.strptime(user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
         return render_template('profile.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
         return redirect(url_for("login", msg="Your token has expired"))
@@ -313,9 +382,23 @@ def profile():
         return redirect(url_for("login", msg="There was problem logging you in"))
 
 
+@app.route("/api/profile")
+def api_profile():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        user_info = db.users.find_one({"username": payload['id']}, {
+                                      '_id': False, 'password': False})
+        return jsonify({'result': 'success', 'user_info': user_info})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
 @app.route('/api/profile/edit', methods=['POST'])
 def edit_profile():
-    token_receive = request.cookies.get(TOKEN_KEY)
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload['id']
@@ -323,6 +406,7 @@ def edit_profile():
         # Fetch user data from the request
         user_info = db.users.find_one({"username": payload["id"]})
         file_path = user_info["profile_pic"]
+
         name = request.form.get('name')
         nik = request.form.get('nik')
         tgl_lahir = request.form.get('tgl_lahir')
@@ -332,23 +416,45 @@ def edit_profile():
         alamat = request.form.get('alamat')
         no_telp = request.form.get('no_tlp')
 
-        # Update user data in the database
-        doc = {
-            'name': name,
-            'nik': nik,
-            'tgl_lahir': tgl_lahir,
-            'gender': gender,
-            'agama': agama,
-            'status': status,
-            'alamat': alamat,
-            'no_telp': no_telp,
-        }
+        # Prepare the update document
+        doc = {}
+        if name:
+            doc['name'] = name
+        if nik:
+            if not is_valid_nik(nik):
+                return jsonify({'result': 'fail', 'message': 'NIK harus 16 digit angka'})
+            existing_nik = db.users.find_one({'nik': nik})
+            if existing_nik and existing_nik['username'] != username:
+                return jsonify({'result': 'fail', 'message': 'NIK sudah digunakan'})
+            doc['nik'] = nik
+        if tgl_lahir:
+            if not is_valid_date(tgl_lahir):
+                return jsonify({'result': 'fail', 'message': 'Format tanggal lahir tidak valid'})
+            if datetime.strptime(tgl_lahir, '%d-%m-%Y') > datetime.now():
+                return jsonify({'result': 'fail', 'message': 'Tanggal lahir tidak valid'})
+            doc['tgl_lahir'] = tgl_lahir
+        if gender:
+            if not is_valid_gender(gender):
+                return jsonify({'result': 'fail', 'message': 'Jenis kelamin tidak valid'})
+            doc['gender'] = gender
+        if agama:
+            doc['agama'] = agama
+        if status:
+            doc['status'] = status
+        if alamat:
+            doc['alamat'] = alamat
+        if no_telp:
+            if not is_valid_phone_number(no_telp):
+                return jsonify({'result': 'fail', 'message': 'Nomor telepon tidak valid'})
+            doc['no_telp'] = no_telp
 
         if 'profile_pic' in request.files:
             file = request.files['profile_pic']
             if file.filename != '':
                 filename = secure_filename(file.filename)
                 extension = filename.split(".")[-1]
+                if extension not in ["jpg", "jpeg", "png"]:
+                    return jsonify({'result': 'fail', 'message': 'Profile picture harus berupa file gambar'})
                 file_path = f"profile_pics/{username}.{extension}"
                 file.save("./static/" + file_path)
                 doc["profile_pic"] = file_path
@@ -476,7 +582,7 @@ def hapus_jadwal(id):
         # hapus jadwal data dari database
         db.jadwal.delete_one({"_id": ObjectId(id)})
 
-        return jsonify({"result": "success","message": "Jadwal berhasil dihapus"})
+        return jsonify({"result": "success", "message": "Jadwal berhasil dihapus"})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
