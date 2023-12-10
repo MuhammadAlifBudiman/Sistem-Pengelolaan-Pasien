@@ -241,7 +241,8 @@ def pendaftaran_formulir():
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
-        if request.method == 'POST':
+
+        if request.method == 'POST' and request.form.get('submit'):
             if 'submit' in request.form:
                 poli = request.form['poli']
                 tanggal = request.form['tanggal']
@@ -267,133 +268,93 @@ def pendaftaran_formulir():
                         'keluhan': keluhan,
                         'status': 'pending'
                     }
-                    print(data_pendaftaran)
 
                     db.registrations.insert_one(data_pendaftaran)
-<<<<<<< HEAD
 
-                    # Ambil data antrian dari MongoDB
-                    antrian_data = list(db.registrations.find(
-                        {"status": {"$in": ["pending", "approve"]}},
-                        {"name": True,
-=======
-                    # Ambil data antrian dari MongoDB
-                    antrian_data = list(db.registrations.find(
-                        {"status": {"$in": ["pending", "approve"]}},
-                        {"no_urut": True,
-                         "name": True,
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
-                         "nik": True,
-                         "tanggal": True,
-                         "status": True,
-                         "_id": False}
-                    ))
-<<<<<<< HEAD
-
-                    for index, data in enumerate(antrian_data, start=1):
-                        data['no_urut'] = index
-
-                    return jsonify({'antrian_data': antrian_data})
-=======
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
-                    return render_template('pendaftaran_formulir.html', data=antrian_data)
 
             has_pending_or_approved = db.registrations.count_documents({
                 "status": {"$in": ["pending", "approve"]}
             }) > 0
 
-            print(has_pending_or_approved)
-
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
-<<<<<<< HEAD
-            
-        return render_template('pendaftaran_formulir.html')
-        
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-=======
-            return render_template('error.html', message='Data pengguna tidak ditemukan')
-        return render_template('pendaftaran_formulir.html')
-        return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
 
         return render_template('pendaftaran_formulir.html')
+
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
+    
+@app.route('/get_antrian_data', methods=['GET'])
+def get_antrian_data():
+    antrian_data = list(db.registrations.find(
+        {"status": {"$in": ["pending", "approve", "done"]}},
+        {"no_urut": True,
+         "name": True,
+         "nik": True,
+         "tanggal": True,
+         "status": True,
+         "_id": False}
+    ))
 
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
+    # Tambahkan nomor urut pada setiap data antrian
+    for index, data in enumerate(antrian_data, start=1):
+        data['no_urut'] = index
+
+    return jsonify({'antrian_data': antrian_data})
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
-    return render_template("pendaftaran_pegawai.html")
+    # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
+    data = list(db.registrations.find(
+        {"status": {"$in": ["pending", "approved"]}},
+        {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
+    ))
+
+    # Tambahkan nomor urut pada setiap data
+    for index, row in enumerate(data, start=1):
+        row['no_urut'] = index
+
+    return render_template('pendaftaran_pegawai.html', data=data)
 
 
-@app.route('/api/pendaftaran_pegawai', methods=['GET'])
-def api_pendaftaran_pegawai():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-    return jsonify(pendaftaran_data)
+@app.route('/update_status', methods=['POST'])
+def update_status():
+    token_receive = request.cookies.get('your_token_cookie_name')
 
-
-@app.route('/api/update-pendaftaran-pegawai', methods=['POST'])
-def update_pendaftaran_pegawai():
     try:
-        registration_id = request.form['registration_id']
-        status = request.form['status']
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
 
-        # Validasi ID Pendaftaran
-        if not ObjectId.is_valid(registration_id):
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+        if username:
+            registration_id = request.form.get('registration_id')
+            new_status = request.form.get('new_status')
 
-        # Validasi Status
-        valid_statuses = ['approve', 'reject', 'done']
-        if status not in valid_statuses:
-            return jsonify({'result': 'failed', 'message': 'Status tidak valid'})
+            # Pastikan pengguna yang memperbarui status adalah pegawai yang sesuai
+            user_data = db.users.find_one({'username': username, 'role': 'pegawai'})
+            if user_data:
+                allowed_statuses = ["pending", "approved", "rejected", "done"]
 
-        # Update status pendaftaran di MongoDB
-        result = db.registrations.update_one(
-            {'_id': ObjectId(registration_id)},
-            {'$set': {'status': status}}
-        )
+                if new_status in allowed_statuses:
+                    # Logika untuk memperbarui status formulir di MongoDB
+                    db.registrations.update_one(
+                        {'_id': ObjectId(registration_id)},
+                        {'$set': {'status': new_status}}
+                    )
 
-        if result.modified_count > 0:
-            return jsonify({'result': 'success'})
-        else:
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
-    except Exception as e:
-        return jsonify({'result': 'failed', 'message': str(e)})
+                    return jsonify({"message": "Status formulir berhasil diperbarui"})
+                else:
+                    return jsonify({"message": "Status tidak valid"})
 
+        return jsonify({"message": "Gagal memperbarui status formulir"})
 
-@app.route('/api/pendaftaran-pegawai-as-done', methods=['POST'])
-def pendaftaran_pegawai_as_done():
-    try:
-        registration_id = request.form['registration_id']
-
-        # Validasi ID Pendaftaran
-        if not ObjectId.is_valid(registration_id):
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
-
-        # Tandai pendaftaran sebagai selesai di MongoDB
-        result = db.registrations.update_one(
-            {'_id': ObjectId(registration_id)},
-            {'$set': {'status': 'done'}}
-        )
-
-        if result.modified_count > 0:
-            return jsonify({'result': 'success'})
-        else:
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
-    except Exception as e:
-        return jsonify({'result': 'failed', 'message': str(e)})
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
+    except jwt.exceptions.DecodeError:
+        return jsonify({"message": "Token tidak valid. Silakan login kembali."})
 
 
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
     return render_template("riwayat_pendaftaran.html")
-
-
-@app.route('/api/pendaftaran_formulir', methods=['GET'])
-def api_riwayat_pendaftaran():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-
 
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():

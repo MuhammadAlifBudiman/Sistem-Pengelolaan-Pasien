@@ -2,208 +2,178 @@
 <html lang="en">
 
 <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Pendaftaran</title>
-      <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-      <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
-      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-      <script type="text/javascript" charset="utf8"
-            src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
 
-      <script>
-            $(document).ready(function () {
-                  // Inisialisasi DataTable
-                  let myTable = new DataTable('#myTable');
+    <script>
+        $(document).ready(function () {
+            $('#myTable').DataTable();
 
-                  function PendaftaranPegawai() {
-                        $.ajax({
-                              url: '/api/pendaftaran_pegawai',
-                              type: 'GET',
-                              success: function (data) {
-                                    // Isi tabel pendaftaran pegawai
-                                    myTable.clear().draw();
-                                    data.data.forEach(function (row, index) {
-                                          myTable.row.add([
-                                                index + 1,
-                                                row.nama,
-                                                row.poli,
-                                                row.tanggal,
-                                                row.status
-                                          ]).draw(false);
-                                    });
-                              },
-                              error: function () {
-                                    console.error('Gagal mengambil data pendaftaran pegawai');
-                              }
-                        });
-                  }
+            $(".btn-action").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var status = $(this).data("status");
+                var btnDone = $(this).closest("tr").find(".btn-action-done");
 
-                  // Mengambil data saat halaman dimuat
-                  PendaftaranPegawai();
+                $.ajax({
+                    type: "POST",
+                    url: "/update_status",
+                    data: {
+                        registration_id: registrationId,
+                        new_status: status,
+                    },
+                    success: function (response) {
+                        location.reload();
 
-                  // Memperbarui status pendaftaran
-                  function updatePendaftaran(registrationId, status) {
-                        $.ajax({
-                              url: "/api/update-pendaftaran-pegawai",
-                              method: "POST",
-                              data: {
-                                    registration_id: registrationId,
-                                    status: status
-                              },
-                              success: function (data) {
-                                    if (data.result === 'success') {
-                                          // Muat ulang DataTable setelah pembaruan berhasil
-                                          myTable.ajax.reload();
-                                    } else {
-                                          console.error('Gagal memperbarui status pendaftaran');
-                                    }
-                              },
-                              error: function () {
-                                    console.error('Gagal memperbarui status pendaftaran');
-                              }
-                        });
-                  }
-
-                  // Menandai pendaftaran sebagai selesai
-                  function pendaftaranAsDone(registrationId) {
-                        $.ajax({
-                              url: "/api/pendaftaran-pegawai-as-done",
-                              method: "POST",
-                              data: {
-                                    registration_id: registrationId
-                              },
-                              success: function (data) {
-                                    if (data.result === 'success') {
-                                          // Muat ulang DataTable setelah pembaruan berhasil
-                                          myTable.ajax.reload();
-                                    } else {
-                                          console.error('Gagal menandai pendaftaran sebagai selesai');
-                                    }
-                              },
-                              error: function () {
-                                    console.error('Gagal menandai pendaftaran sebagai selesai');
-                              }
-                        });
-                  }
-
-                  // Tangani peristiwa klik tombol untuk approve, reject, dan done
-                  $('#myTable tbody').on('click', 'button.action-btn, button.update-status-btn', function () {
-                        const action = $(this).data('action');
-                        const registrationId = $(this).data('registration-id');
-
-                        if (action === 'approve' || action === 'reject' || action === 'done') {
-                              updatePendaftaran(registrationId, action);
-                        } else if (action === 'update-status') {
-                              const newStatus = $('#statusSelect_' + registrationId).val();
-                              updatePendaftaran(registrationId, newStatus);
+                        if (response.show_done_button) {
+                            btnDone.show();
                         }
-                  });
+                    },
+                    error: function () {
+                        console.error("Gagal memperbarui status formulir");
+                    },
+                });
             });
-      </script>
+
+            $(".btn-action-approve").click(function () {
+                var row = $(this).closest("tr");
+                var btnDone = row.find(".btn-action-done");
+
+                // Logika untuk tombol Approve di sini
+
+                // Menampilkan tombol Done
+                btnDone.show();
+            });
+
+            $(".btn-action-reject").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var row = $(this).closest("tr");
+
+                // Menghapus dari tampilan tabel
+                row.remove();
+
+                // Menghapus dari MongoDB
+                $.ajax({
+                    type: "POST",
+                    url: "/delete_registration",
+                    data: {
+                        registration_id: registrationId,
+                    },
+                    success: function (response) {
+                        console.log("Formulir berhasil dihapus dari MongoDB");
+                    },
+                    error: function () {
+                        console.error("Gagal menghapus formulir dari MongoDB");
+                    },
+                });
+            });
+
+            $(".btn-action-done").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var row = $(this).closest("tr");
+
+                // Menghapus dari tampilan tabel
+                row.remove();
+
+                // Logika untuk tombol Done di sini
+                // (Anda dapat menambahkan lebih banyak logika jika diperlukan)
+
+                // Catatan: Data tetap ada di MongoDB
+            });
+        });
+    </script>
+
 </head>
 
 <body>
-      <!-- Navbar -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-            <a class="navbar-brand" href="#">Klinik Google</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                  aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                  <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                  <ul class="navbar-nav">
-                        <li class="nav-item">
-                              <a class="nav-link" href="#">Home</a>
-                        </li>
-                        <li class="nav-item active">
-                              <a class="nav-link" href="#">Pendaftaran</a>
-                        </li>
-                        <li class="nav-item">
-                              <a class="nav-link" href="#">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                              <a class="nav-link" href="#">Rekam Medis</a>
-                        </li>
-                        <li class="nav-item">
-                              <a class="nav-link" href="#">Kelola Praktek</a>
-                        </li>
-                        <li class="nav-item">
-                              <span class="nav-link disabled">Nama Anda</span>
-                        </li>
-                  </ul>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <a class="navbar-brand" href="#">Klinik Google</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Home</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Pendaftaran</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Rekam Medis</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Kelola Praktek</a>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link disabled">Nama Anda</span>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Pendaftaran</h3>
             </div>
-      </nav>
+            <div class="card-body">
+                <table class="table" id="myTable">
+                    <thead>
+                        <tr>
+                            <th scope="col">No Urut</th>
+                            <th scope="col">Nama</th>
+                            <th scope="col">Poli</th>
+                            <th scope="col">Tanggal Periksa</th>
+                            <th scope="col">Keluhan</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
 
-      <div class="container mt-5">
-            <div class="card">
-                  <div class="card-header">
-                        <h3 class="text-center">Pendaftaran</h3>
-                  </div>
-                  <div class="card-body">
-                        <table class="table" id="myTable">
-                              <thead>
-                                    <tr>
-                                          <th scope="col">No Urut</th>
-                                          <th scope="col">Nama</th>
-                                          <th scope="col">Poli</th>
-                                          <th scope="col">Tanggal Periksa</th>
-                                          <th scope="col">Status</th>
-                                          <th scope="col">Action</th>
-                                    </tr>
-                              </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            <td>{{ row.no_urut }}</td>
+                            <td>{{ row.name }}</td>
+                            <td>{{ row.poli }}</td>
+                            <td>{{ row.tanggal }}</td>
+                            <td>{{ row.keluhan }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if data.status == 'pending' %}
+                                    <button class="btn btn-primary btn-action" data-action="approve"
+                                        data-registration-id="{{ data._id }}" data-status="approved">Approve</button>
+                                    <button class="btn btn-danger btn-action" data-action="reject"
+                                        data-registration-id="{{ data._id }}" data-status="rejected">Reject</button>
+                                    {% elif data.status == 'approved' %}
+                                    <span class="badge badge-success">Approved</span>
+                                    <!-- Tampilkan tombol Done di sini -->
+                                    <button class="btn btn-success btn-action btn-action-done" data-action="done"
+                                        data-registration-id="{{ data._id }}" data-status="done"
+                                        style="display: none;">Done</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
 
-                              <tbody>
-                                    {% for row in data %}
-                                    <tr>
-                                          <td>{{ loop.index }}</td>
-                                          <td>{{ row.nama }}</td>
-                                          <td>{{ row.poli }}</td>
-                                          <td>{{ row.tanggal }}</td>
-                                          <td>{{ row.status }}</td>
-                                          <td>
-                                                <button class="btn btn-primary action-btn" data-action="approve"
-                                                      data-registration-id="{{ str(row._id) }}">Approve</button>
-                                                <button class="btn btn-danger action-btn" data-action="reject"
-                                                      data-registration-id="{{ row._id }}">Reject</button>
-                                                <button class="btn btn-success action-btn" data-action="done"
-                                                      data-registration-id="{{ row._id }}">Done</button>
-
-                                                <!-- Dropdown untuk memperbarui status -->
-                                                <div class="dropdown">
-                                                      <button
-                                                            class="btn btn-secondary dropdown-toggle update-status-btn"
-                                                            type="button" id="updateStatusDropdown{{ row._id }}"
-                                                            data-toggle="dropdown" aria-haspopup="true"
-                                                            aria-expanded="false">
-                                                            Update Status
-                                                      </button>
-                                                      <div class="dropdown-menu"
-                                                            aria-labelledby="updateStatusDropdown{{ row._id }}">
-                                                            <input type="hidden" id="registrationId_{{ row._id }}"
-                                                                  value="{{ row._id }}">
-                                                            <select class="form-control"
-                                                                  id="statusSelect_{{ row._id }}">
-                                                                  <option value="pending">Pending</option>
-                                                                  <option value="approved">Approved</option>
-                                                                  <option value="rejected">Rejected</option>
-                                                            </select>
-                                                            <button class="btn btn-primary update-status-btn"
-                                                                  data-action="update-status"
-                                                                  data-registration-id="{{ row._id }}">Update</button>
-                                                      </div>
-                                                </div>
-                                          </td>
-                                    </tr>
-                                    {% endfor %}
-                              </tbody>
-
-                        </table>
-                  </div>
+                </table>
             </div>
-      </div>
+        </div>
+    </div>
 </body>
 
 </html>
