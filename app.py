@@ -235,7 +235,6 @@ def sign_in():
             }
         )
 
-
 @app.route('/pendaftaran_formulir', methods=['GET', 'POST'])
 def pendaftaran_formulir():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -271,16 +270,32 @@ def pendaftaran_formulir():
                     print(data_pendaftaran)
 
                     db.registrations.insert_one(data_pendaftaran)
+<<<<<<< HEAD
+
+                    # Ambil data antrian dari MongoDB
+                    antrian_data = list(db.registrations.find(
+                        {"status": {"$in": ["pending", "approve"]}},
+                        {"name": True,
+=======
                     # Ambil data antrian dari MongoDB
                     antrian_data = list(db.registrations.find(
                         {"status": {"$in": ["pending", "approve"]}},
                         {"no_urut": True,
                          "name": True,
+>>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
                          "nik": True,
                          "tanggal": True,
                          "status": True,
                          "_id": False}
                     ))
+<<<<<<< HEAD
+
+                    for index, data in enumerate(antrian_data, start=1):
+                        data['no_urut'] = index
+
+                    return jsonify({'antrian_data': antrian_data})
+=======
+>>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
                     return render_template('pendaftaran_formulir.html', data=antrian_data)
 
             has_pending_or_approved = db.registrations.count_documents({
@@ -290,6 +305,13 @@ def pendaftaran_formulir():
             print(has_pending_or_approved)
 
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
+<<<<<<< HEAD
+            
+        return render_template('pendaftaran_formulir.html')
+        
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+=======
             return render_template('error.html', message='Data pengguna tidak ditemukan')
         return render_template('pendaftaran_formulir.html')
         return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
@@ -298,6 +320,7 @@ def pendaftaran_formulir():
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
+>>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
