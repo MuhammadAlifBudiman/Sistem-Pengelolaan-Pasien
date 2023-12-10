@@ -163,61 +163,70 @@ def sign_in():
             }
         )
 
-
 @app.route('/pendaftaran_formulir', methods=['GET', 'POST'])
 def pendaftaran_formulir():
-    if request.method == 'POST':
-        poli = request.form['poli']
-        tanggal = request.form['tanggal']
-        keluhan = request.form['keluhan']
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        if request.method == 'POST':
+            if 'submit' in request.form:
+                poli = request.form['poli']
+                tanggal = request.form['tanggal']
+                keluhan = request.form['keluhan']
 
-        # Ambil data pengguna dari koleksi users
-        user_data = db.users.find_one({})
+                # Ambil data pengguna dari koleksi users
+                user_data = db.users.find_one({'username': username})
 
-        if user_data:
-            # Masukkan data pendaftaran ke MongoDB
-            data_pendaftaran = {
-                'username': user_data['username'],
-                'name': user_data['name'],
-                'nik': user_data['nik'],
-                'tgl_lahir': user_data['tgl_lahir'],
-                'gender': user_data['gender'],
-                'agama': user_data['agama'],
-                'status': user_data['status'],
-                'alamat': user_data['alamat'],
-                'no_telp': user_data['no_telp'],
-                'poli': poli,
-                'tanggal': tanggal,
-                'keluhan': keluhan
-            }
+                if user_data:
+                    # Masukkan data pendaftaran ke MongoDB
+                    data_pendaftaran = {
+                        'username': user_data['username'],
+                        'name': user_data['name'],
+                        'nik': user_data['nik'],
+                        'tgl_lahir': user_data['tgl_lahir'],
+                        'gender': user_data['gender'],
+                        'agama': user_data['agama'],
+                        'status_pernikahan': user_data['status'],
+                        'alamat': user_data['alamat'],
+                        'no_telp': user_data['no_telp'],
+                        'poli': poli,
+                        'tanggal': tanggal,
+                        'keluhan': keluhan,
+                        'status': 'pending'
+                    }
+                    print(data_pendaftaran)
 
-<<<<<<< HEAD
-            db.registrations.insert_one(data_pendaftaran)
+                    db.registrations.insert_one(data_pendaftaran)
+
+                    # Ambil data antrian dari MongoDB
+                    antrian_data = list(db.registrations.find(
+                        {"status": {"$in": ["pending", "approve"]}},
+                        {"name": True,
+                         "nik": True,
+                         "tanggal": True,
+                         "status": True,
+                         "_id": False}
+                    ))
+
+                    for index, data in enumerate(antrian_data, start=1):
+                        data['no_urut'] = index
+
+                    return jsonify({'antrian_data': antrian_data})
+                    return render_template('pendaftaran_formulir.html', data=antrian_data)
 
             has_pending_or_approved = db.registrations.count_documents({
-            "status": {"$in": ["pending", "approve"]}
-        }) > 0
+                "status": {"$in": ["pending", "approve"]}
+            }) > 0
+
+            print(has_pending_or_approved)
+
+            return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
             
-            # Ambil data antrian dari MongoDB
-            antrian_data = list(db.registrations.find(
-                {"status": {"$in": ["pending", "approve"]}},
-                {"no_urut": True, 
-                 "name": True, 
-                 "nik": True, 
-                 "tanggal": True, 
-                 "status": True, 
-                 "_id": False}
-            ))
-
-            return render_template('pendaftaran_formulir.html', data=antrian_data, has_pending_or_approved=has_pending_or_approved)
-        return render_template('error.html', message='Data pengguna tidak ditemukan')
-    return render_template('pendaftaran_formulir.html')
-=======
-        return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
-
-    return render_template('pendaftaran_formulir.html')
-
->>>>>>> d8870f2b9234d2a8e80678191d65b6aee654ba1b
+        return render_template('pendaftaran_formulir.html')
+        
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
