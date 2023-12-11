@@ -18,17 +18,21 @@
                 let tbody = $("#antrian-container tbody");
                 tbody.empty();
 
-                data.forEach(function (item, index) {
-                    let row = $("<tr>");
+                if (Array.isArray(data)) {
+                    data.forEach(function (item, index) {
+                        let row = $("<tr>");
 
-                    row.append(`<td>${index + 1}</td>`);
-                    row.append(`<td>${item.name}</td>`);
-                    row.append(`<td>${item.nik}</td>`);
-                    row.append(`<td>${item.tanggal}</td>`);
-                    row.append(`<td>${item.status}</td>`);
+                        row.append(`<td>${index + 1}</td>`);
+                        row.append(`<td>${item.name}</td>`);
+                        row.append(`<td>${item.nik}</td>`);
+                        row.append(`<td>${item.tanggal}</td>`);
+                        row.append(`<td>${item.status}</td>`);
 
-                    tbody.append(row);
-                });
+                        tbody.append(row);
+                    });
+                } else {
+                    console.error("Format data tidak valid:", data);
+                }
             }
 
             // Fungsi untuk menampilkan atau menyembunyikan formulir dan antrian berdasarkan data
@@ -38,7 +42,7 @@
             }
 
             // Periksa session storage saat halaman dimuat
-            var formStatus = sessionStorage.getItem('formStatus');
+            let formStatus = sessionStorage.getItem('formStatus');
 
             if (formStatus === 'pending' || formStatus === 'approved') {
                 // Jika status formulir adalah pending atau approved, tampilkan antrian
@@ -49,13 +53,14 @@
                     type: "GET",
                     url: "/get_antrian_data",
                     success: function (data) {
-                        console.log("Respons dari server:", data);
+                        console.log("Response from the server:", data);
                         renderTable(data.antrian_data);
                     },
                     error: function () {
-                        console.error("Gagal mengambil data antrian");
+                        console.error("Failed to fetch queue data");
                     },
                 });
+                
             } else if (formStatus === 'done' || formStatus === 'rejected') {
                 // Jika status formulir adalah 'done' atau 'rejected', tampilkan formulir
                 toggleFormAndAntrian(false);
@@ -75,12 +80,13 @@
                 let tanggal = $("#tanggal").val();
                 let keluhan = $("#keluhan").val();
 
-                var formData = {
+                let formData = {
                     poli: poli,
                     tanggal: tanggal,
                     keluhan: keluhan,
                     submit: "submit",
                 };
+
 
                 if (formData.poli === "") {
                     alert("Harap pilih jenis poli sebelum mengirim formulir");
@@ -106,7 +112,7 @@
                         console.log("Respons dari server setelah mengirim formulir:", data);
 
                         // Ambil status formulir dari respons
-                        var newStatus = data.new_status;
+                        let newStatus = data.new_status;
 
                         alert("Formulir telah diproses. Silakan tunggu");
 

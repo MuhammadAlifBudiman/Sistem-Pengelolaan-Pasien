@@ -271,11 +271,26 @@ def pendaftaran_formulir():
 
                     db.registrations.insert_one(data_pendaftaran)
 
+                    antrian_data = list(db.registrations.find(
+                      {"status": {"$in": ["pending", "approve", "done"]}},
+                      {"no_urut": True,
+                      "name": True,
+                      "nik": True,
+                      "tanggal": True,
+                      "status": True,
+                      "_id": False}
+                      ))
+
+    # Tambahkan nomor urut pada setiap data antrian
+                    for index, data in enumerate(antrian_data, start=1):
+                      data['no_urut'] = index
+
+                      return jsonify({'antrian_data': antrian_data})
 
             has_pending_or_approved = db.registrations.count_documents({
                 "status": {"$in": ["pending", "approve"]}
             }) > 0
-
+            
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
 
         return render_template('pendaftaran_formulir.html')
