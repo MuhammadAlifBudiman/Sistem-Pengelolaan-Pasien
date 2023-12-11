@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pendaftaran</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-    <script src="https://code.jquery.com/jquery-3.7.1.js"
-        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
@@ -17,22 +16,21 @@
             function renderTable(data) {
                 let tbody = $("#antrian-container tbody");
                 tbody.empty();
+                console.log(data[0])
 
-                if (Array.isArray(data)) {
-                    data.forEach(function (item, index) {
-                        let row = $("<tr>");
 
-                        row.append(`<td>${index + 1}</td>`);
-                        row.append(`<td>${item.name}</td>`);
-                        row.append(`<td>${item.nik}</td>`);
-                        row.append(`<td>${item.tanggal}</td>`);
-                        row.append(`<td>${item.status}</td>`);
+                data.forEach(function (item, index) {
+                    let row = $("<tr>");
 
-                        tbody.append(row);
-                    });
-                } else {
-                    console.error("Format data tidak valid:", data);
-                }
+                    row.append(`<td>${index + 1}</td>`);
+                    row.append(`<td>${item.name}</td>`);
+                    row.append(`<td>${item.nik}</td>`);
+                    row.append(`<td>${item.tanggal}</td>`);
+                    row.append(`<td>${item.status}</td>`);
+
+                    tbody.append(row);
+                });
+
             }
 
             // Fungsi untuk menampilkan atau menyembunyikan formulir dan antrian berdasarkan data
@@ -43,34 +41,33 @@
 
             // Periksa session storage saat halaman dimuat
             let formStatus = sessionStorage.getItem('formStatus');
-
-            if (formStatus === 'pending' || formStatus === 'approved') {
-                // Jika status formulir adalah pending atau approved, tampilkan antrian
+            console.log(formStatus)
+            if (formStatus === 'done' || formStatus === 'rejected' || formStatus === null) {
+                toggleFormAndAntrian(false);
+            } else {
+                // Jika status tidak sesuai, sembunyikan formulir
                 toggleFormAndAntrian(true);
 
-                // Ambil data antrian dari server dan tampilkan
-                $.ajax({
-                    type: "GET",
-                    url: "/get_antrian_data",
-                    success: function (data) {
-                        console.log("Response from the server:", data);
-                        renderTable(data.antrian_data);
-                    },
-                    error: function () {
-                        console.error("Failed to fetch queue data");
-                    },
-                });
-                
-            } else if (formStatus === 'done' || formStatus === 'rejected') {
-                // Jika status formulir adalah 'done' atau 'rejected', tampilkan formulir
-                toggleFormAndAntrian(false);
+                // Jika formulir sudah dikirim, ambil dan tampilkan data antrian
+                if (formStatus === 'pending' || formStatus === 'approved') {
+                    $.ajax({
+                        type: "GET",
+                        url: "/get_antrian_data",
+                        success: function (data) {
+                            console.log("Response from the server:", data);
+                            renderTable(data.antrian_data);
+                        },
+                        error: function () {
+                            console.error("Failed to fetch queue data");
+                        },
+                    });
+                }
             }
 
             // Perbarui peristiwa klik untuk tombol kirim
             $(".btn-submit-form").click(function (event) {
                 event.preventDefault();
 
-                // Periksa apakah formulir telah dikirim sebelumnya
                 if (formStatus === 'done' || formStatus === 'rejected') {
                     alert("Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.");
                     return;
@@ -86,7 +83,6 @@
                     keluhan: keluhan,
                     submit: "submit",
                 };
-
 
                 if (formData.poli === "") {
                     alert("Harap pilih jenis poli sebelum mengirim formulir");
@@ -109,16 +105,14 @@
                     url: "/pendaftaran_formulir",
                     data: formData,
                     success: function (data) {
-                        console.log("Respons dari server setelah mengirim formulir:", data);
+                        console.log("Response from the server after submitting the form:", data);
+                        let newStatus = data.antrian_data[0].status;
+                        console.log(data.antrian_data[0].status)
 
-                        // Ambil status formulir dari respons
-                        let newStatus = data.new_status;
+                        alert("Formulir telah diproses. Silakan tunggu.");
 
-                        alert("Formulir telah diproses. Silakan tunggu");
-
-                        // Perbarui session storage dan tampilkan formulir atau antrian berdasarkan status
                         sessionStorage.setItem('formStatus', newStatus);
-                        toggleFormAndAntrian(true);
+                        toggleFormAndAntrian(newStatus === 'pending' || newStatus === 'approved');
                         renderTable(data.antrian_data);
                     },
                     error: function () {
@@ -127,9 +121,8 @@
                 });
             });
         });
+
     </script>
-
-
 </head>
 
 <body>
@@ -248,7 +241,7 @@
 
     <!-- Formulir Pendaftaran jika reject/done -->
     {% if formStatus in ['rejected', 'done'] %}
-    <div class="container mt-5" id="formulir-container">
+    <div class="container mt-5 form-container" id="formulir-container-done-rejected">
         <div class="container mt-5 d-flex justify-content-center">
             <div class="card" style="width: 500px">
                 <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
