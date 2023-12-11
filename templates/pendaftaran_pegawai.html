@@ -13,86 +13,82 @@
     <script type="text/javascript" charset="utf8"
         src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
 
-        <script>
-            $(document).ready(function () {
-                // Inisialisasi DataTable
-                $('#myTable').DataTable();
-        
-                // Menangani klik tombol action (Approve, Reject, Done)
-                $('.btn-action').on('click', function () {
-                    let registrationId = $(this).data('registration-id');
-                    let status = $(this).data('status');
-        
-                    // Simpan referensi 'this' dalam variabel untuk digunakan di dalam fungsi success
-                    let currentRow = $(this).closest('tr');
-        
-                    // Kirim permintaan ke server untuk mengubah status
-                    $.ajax({
-                        url: '/pegawai/update_status',
-                        method: 'POST',
-                        data: { registrationId: registrationId, status: status },
-                        success: function (response) {
-                            // Perbarui tampilan setelah berhasil
-                            if (status === 'approved') {
-                                currentRow.find('.btn-action').hide();
-                                currentRow.find('.btn-action-done').show();
-                                currentRow.find('.badge').text('Approved').removeClass('badge-warning').addClass('badge-success');
-                            } else if (status === 'done') {
-                                currentRow.remove();
-                            }
-                        },
-                        error: function (error) {
-                            console.error('Gagal mengubah status:', error);
+    <script>
+        $(document).ready(function () {
+            $('#myTable').DataTable();
+
+            $(".btn-action").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var status = $(this).data("status");
+                var btnDone = $(this).closest("tr").find(".btn-action-done");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/update_status",
+                    data: {
+                        registration_id: registrationId,
+                        new_status: status,
+                    },
+                    success: function (response) {
+                        location.reload();
+
+                        if (response.show_done_button) {
+                            btnDone.show();
                         }
-                    });
-                });
-        
-                // Menangani klik tombol Reject
-                $('.btn-reject').on('click', function () {
-                    let registrationId = $(this).data('registration-id');
-        
-                    // Simpan referensi 'this' dalam variabel untuk digunakan di dalam fungsi success
-                    let currentRow = $(this).closest('tr');
-        
-                    // Kirim permintaan ke server untuk menolak pendaftaran
-                    $.ajax({
-                        url: '/pegawai/reject_registration',
-                        method: 'POST',
-                        data: { registrationId: registrationId },
-                        success: function (response) {
-                            // Perbarui tampilan setelah berhasil
-                            currentRow.remove();
-                        },
-                        error: function (error) {
-                            console.error('Gagal menolak pendaftaran:', error);
-                        }
-                    });
-                });
-        
-                // Menangani klik tombol Done
-                $('.btn-action-done').on('click', function () {
-                    let registrationId = $(this).data('registration-id');
-        
-                    // Simpan referensi 'this' dalam variabel untuk digunakan di dalam fungsi success
-                    let currentRow = $(this).closest('tr');
-        
-                    // Kirim permintaan ke server untuk menandai sebagai done
-                    $.ajax({
-                        url: '/pegawai/mark_as_done',
-                        method: 'POST',
-                        data: { registrationId: registrationId },
-                        success: function (response) {
-                            // Perbarui tampilan setelah berhasil
-                            currentRow.remove();
-                        },
-                        error: function (error) {
-                            console.error('Gagal menandai sebagai done:', error);
-                        }
-                    });
+                    },
+                    error: function () {
+                        console.error("Gagal memperbarui status formulir");
+                    },
                 });
             });
-        </script>
-        
+
+            $(".btn-action-approve").click(function () {
+                var row = $(this).closest("tr");
+                var btnDone = row.find(".btn-action-done");
+
+                // Logika untuk tombol Approve di sini
+
+                // Menampilkan tombol Done
+                btnDone.show();
+            });
+
+            $(".btn-action-reject").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var row = $(this).closest("tr");
+
+                // Menghapus dari tampilan tabel
+                row.remove();
+
+                // Menghapus dari MongoDB
+                $.ajax({
+                    type: "POST",
+                    url: "/delete_registration",
+                    data: {
+                        registration_id: registrationId,
+                    },
+                    success: function (response) {
+                        console.log("Formulir berhasil dihapus dari MongoDB");
+                    },
+                    error: function () {
+                        console.error("Gagal menghapus formulir dari MongoDB");
+                    },
+                });
+            });
+
+            $(".btn-action-done").click(function () {
+                var registrationId = $(this).data("registration-id");
+                var row = $(this).closest("tr");
+
+                // Menghapus dari tampilan tabel
+                row.remove();
+
+                // Logika untuk tombol Done di sini
+                // (Anda dapat menambahkan lebih banyak logika jika diperlukan)
+
+                // Catatan: Data tetap ada di MongoDB
+            });
+        });
+    </script>
 
 </head>
 
@@ -156,15 +152,16 @@
                             <td>{{ row.keluhan }}</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    {% if row.status == 'pending' %}
+                                    {% if data.status == 'pending' %}
                                     <button class="btn btn-primary btn-action" data-action="approve"
-                                        data-registration-id="{{ row._id }}" data-status="approved">Approve</button>
+                                        data-registration-id="{{ data._id }}" data-status="approved">Approve</button>
                                     <button class="btn btn-danger btn-action" data-action="reject"
-                                        data-registration-id="{{ row._id }}" data-status="rejected">Reject</button>
-                                    {% elif row.status == 'approved' %}
+                                        data-registration-id="{{ data._id }}" data-status="rejected">Reject</button>
+                                    {% elif data.status == 'approved' %}
                                     <span class="badge badge-success">Approved</span>
+                                    <!-- Tampilkan tombol Done di sini -->
                                     <button class="btn btn-success btn-action btn-action-done" data-action="done"
-                                        data-registration-id="{{ row._id }}" data-status="done"
+                                        data-registration-id="{{ data._id }}" data-status="done"
                                         style="display: none;">Done</button>
                                     {% endif %}
                                 </div>
