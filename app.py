@@ -272,20 +272,20 @@ def pendaftaran_formulir():
                     db.registrations.insert_one(data_pendaftaran)
 
                     antrian_data = list(db.registrations.find(
-                      {"status": {"$in": ["pending", "approve", "done"]}},
-                      {"no_urut": True,
-                      "name": True,
-                      "nik": True,
-                      "tanggal": True,
-                      "status": True,
-                      "_id": False}
-                      ))
+                        {"status": {"$in": ["pending", "approve", "done"]}},
+                        {"no_urut": True,
+                         "name": True,
+                         "nik": True,
+                         "tanggal": True,
+                         "status": True,
+                         "_id": False}
+                    ))
 
-    # Tambahkan nomor urut pada setiap data antrian
+                    # Tambahkan nomor urut pada setiap data antrian
                     for index, data in enumerate(antrian_data, start=1):
-                      data['no_urut'] = index
+                        data['no_urut'] = index
 
-                      return jsonify({'antrian_data': antrian_data})
+                    return jsonify({'antrian_data': antrian_data})
 
             has_pending_or_approved = db.registrations.count_documents({
                 "status": {"$in": ["pending", "approve"]}
@@ -314,6 +314,8 @@ def get_antrian_data():
     for index, data in enumerate(antrian_data, start=1):
         data['no_urut'] = index
 
+    app.logger.info(f"Data Antrian: {antrian_data}") 
+
     return jsonify({'antrian_data': antrian_data})
 
 @app.route("/pendaftaran_pegawai")
@@ -330,18 +332,16 @@ def pendaftaran_pegawai():
 
     return render_template('pendaftaran_pegawai.html', data=data)
 
-
 @app.route('/update_status', methods=['POST'])
 def update_status():
-    token_receive = request.cookies.get('your_token_cookie_name')
-
+    token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
 
         if username:
-            registration_id = request.form.get('registration_id')
-            new_status = request.form.get('new_status')
+            registration_id = request.form.get('registrationId')
+            new_status = request.form.get('status')
 
             # Pastikan pengguna yang memperbarui status adalah pegawai yang sesuai
             user_data = db.users.find_one({'username': username, 'role': 'pegawai'})
@@ -349,13 +349,27 @@ def update_status():
                 allowed_statuses = ["pending", "approved", "rejected", "done"]
 
                 if new_status in allowed_statuses:
-                    # Logika untuk memperbarui status formulir di MongoDB
-                    db.registrations.update_one(
-                        {'_id': ObjectId(registration_id)},
-                        {'$set': {'status': new_status}}
-                    )
+                    if new_status == "rejected":
+                        # Logika untuk menolak pendaftaran (menghapus data dari koleksi)
+                        db.registrations.delete_one({'_id': ObjectId(registration_id)})
+                        return jsonify({"message": "Pendaftaran berhasil ditolak"})
 
-                    return jsonify({"message": "Status formulir berhasil diperbarui"})
+                    elif new_status == "approved":
+                        # Logika untuk menyetujui pendaftaran (mengubah status menjadi approved)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status}}
+                        )
+                        return jsonify({"message": "Pendaftaran berhasil disetujui"})
+
+                    elif new_status == "done":
+                        # Logika untuk menyelesaikan pendaftaran (mengubah status menjadi done)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status}}
+                        )
+                        return jsonify({"message": "Pendaftaran selesai"})
+
                 else:
                     return jsonify({"message": "Status tidak valid"})
 
