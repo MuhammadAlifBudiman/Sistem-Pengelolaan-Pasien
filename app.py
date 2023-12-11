@@ -241,7 +241,8 @@ def pendaftaran_formulir():
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
-        if request.method == 'POST':
+
+        if request.method == 'POST' and request.form.get('submit'):
             if 'submit' in request.form:
                 poli = request.form['poli']
                 tanggal = request.form['tanggal']
@@ -267,109 +268,108 @@ def pendaftaran_formulir():
                         'keluhan': keluhan,
                         'status': 'pending'
                     }
-                    print(data_pendaftaran)
 
                     db.registrations.insert_one(data_pendaftaran)
-                    # Ambil data antrian dari MongoDB
+
                     antrian_data = list(db.registrations.find(
-                        {"status": {"$in": ["pending", "approve"]}},
-                        {"no_urut": True,
-                         "name": True,
-                         "nik": True,
-                         "tanggal": True,
-                         "status": True,
-                         "_id": False}
-                    ))
-                    return render_template('pendaftaran_formulir.html', data=antrian_data)
+                      {"status": {"$in": ["pending", "approve", "done"]}},
+                      {"no_urut": True,
+                      "name": True,
+                      "nik": True,
+                      "tanggal": True,
+                      "status": True,
+                      "_id": False}
+                      ))
+
+    # Tambahkan nomor urut pada setiap data antrian
+                    for index, data in enumerate(antrian_data, start=1):
+                      data['no_urut'] = index
+
+                      return jsonify({'antrian_data': antrian_data})
 
             has_pending_or_approved = db.registrations.count_documents({
                 "status": {"$in": ["pending", "approve"]}
             }) > 0
-
-            print(has_pending_or_approved)
-
+            
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
-            return render_template('error.html', message='Data pengguna tidak ditemukan')
-        return render_template('pendaftaran_formulir.html')
-        return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
 
         return render_template('pendaftaran_formulir.html')
+
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
+    
+@app.route('/get_antrian_data', methods=['GET'])
+def get_antrian_data():
+    antrian_data = list(db.registrations.find(
+        {"status": {"$in": ["pending", "approve", "done"]}},
+        {"no_urut": True,
+         "name": True,
+         "nik": True,
+         "tanggal": True,
+         "status": True,
+         "_id": False}
+    ))
 
+    # Tambahkan nomor urut pada setiap data antrian
+    for index, data in enumerate(antrian_data, start=1):
+        data['no_urut'] = index
+
+    return jsonify({'antrian_data': antrian_data})
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
-    return render_template("pendaftaran_pegawai.html")
+    # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
+    data = list(db.registrations.find(
+        {"status": {"$in": ["pending", "approved"]}},
+        {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
+    ))
+
+    # Tambahkan nomor urut pada setiap data
+    for index, row in enumerate(data, start=1):
+        row['no_urut'] = index
+
+    return render_template('pendaftaran_pegawai.html', data=data)
 
 
-@app.route('/api/pendaftaran_pegawai', methods=['GET'])
-def api_pendaftaran_pegawai():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-    return jsonify(pendaftaran_data)
+@app.route('/update_status', methods=['POST'])
+def update_status():
+    token_receive = request.cookies.get('your_token_cookie_name')
 
-
-@app.route('/api/update-pendaftaran-pegawai', methods=['POST'])
-def update_pendaftaran_pegawai():
     try:
-        registration_id = request.form['registration_id']
-        status = request.form['status']
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
 
-        # Validasi ID Pendaftaran
-        if not ObjectId.is_valid(registration_id):
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
+        if username:
+            registration_id = request.form.get('registration_id')
+            new_status = request.form.get('new_status')
 
-        # Validasi Status
-        valid_statuses = ['approve', 'reject', 'done']
-        if status not in valid_statuses:
-            return jsonify({'result': 'failed', 'message': 'Status tidak valid'})
+            # Pastikan pengguna yang memperbarui status adalah pegawai yang sesuai
+            user_data = db.users.find_one({'username': username, 'role': 'pegawai'})
+            if user_data:
+                allowed_statuses = ["pending", "approved", "rejected", "done"]
 
-        # Update status pendaftaran di MongoDB
-        result = db.registrations.update_one(
-            {'_id': ObjectId(registration_id)},
-            {'$set': {'status': status}}
-        )
+                if new_status in allowed_statuses:
+                    # Logika untuk memperbarui status formulir di MongoDB
+                    db.registrations.update_one(
+                        {'_id': ObjectId(registration_id)},
+                        {'$set': {'status': new_status}}
+                    )
 
-        if result.modified_count > 0:
-            return jsonify({'result': 'success'})
-        else:
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
-    except Exception as e:
-        return jsonify({'result': 'failed', 'message': str(e)})
+                    return jsonify({"message": "Status formulir berhasil diperbarui"})
+                else:
+                    return jsonify({"message": "Status tidak valid"})
 
+        return jsonify({"message": "Gagal memperbarui status formulir"})
 
-@app.route('/api/pendaftaran-pegawai-as-done', methods=['POST'])
-def pendaftaran_pegawai_as_done():
-    try:
-        registration_id = request.form['registration_id']
-
-        # Validasi ID Pendaftaran
-        if not ObjectId.is_valid(registration_id):
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak valid'})
-
-        # Tandai pendaftaran sebagai selesai di MongoDB
-        result = db.registrations.update_one(
-            {'_id': ObjectId(registration_id)},
-            {'$set': {'status': 'done'}}
-        )
-
-        if result.modified_count > 0:
-            return jsonify({'result': 'success'})
-        else:
-            return jsonify({'result': 'failed', 'message': 'ID Pendaftaran tidak ditemukan'})
-    except Exception as e:
-        return jsonify({'result': 'failed', 'message': str(e)})
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
+    except jwt.exceptions.DecodeError:
+        return jsonify({"message": "Token tidak valid. Silakan login kembali."})
 
 
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
     return render_template("riwayat_pendaftaran.html")
-
-
-@app.route('/api/pendaftaran_formulir', methods=['GET'])
-def api_riwayat_pendaftaran():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-
 
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
@@ -648,6 +648,7 @@ def hapus_jadwal(id):
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
     
 
+
 @app.route("/kelola_pendaftaran", methods=["GET"])
 def get_pending_and_approved_registrations():
     data = db.registrations.find({'status': {'$in': ['pending', 'approve']}})
@@ -694,43 +695,90 @@ def process_done_registration(nik):
 
 @app.route("/rekam_medis", methods=["GET"])
 def get_rekam_medis():
-    data_rekam_medis = []
-    for d in db.rekam_medis.find():
-        exist = db.registrations.find_one({'username': d['username'], 'status': 'done'})
-        if exist:
-            data_rekam_medis.append({
-                'username': d['username'],
-                'nik': d['nik'],
-                'action': 'lihat' if db.rekam_medis.find_one({'username': d['username']}) else 'buat'
-            })
-        print(data_rekam_medis)
-    return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis)
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        data_rekam_medis = []
+        for d in db.users.find():
+            exist = db.registrations.find_one({'username': d['username']})
+            if exist:
+                data_rekam_medis.append({
+                    'username': d['username'],
+                    'nik': d['nik'],
+                    'name': d['name'],
+                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
+                })
+        return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
 
 
 @app.route("/buat_rekam_medis/<nik>", methods=["POST"])
 def buat_rekam_medis(nik):
-    no_kartu = request.form.get('no_kartu')
+    no_kartu = request.form.get('no')
     dokter = request.form.get('dokter')
     hasil_anamnesa = request.form.get('hasil_anamnesa')
     user_info = db.users.find_one({'nik': nik})
-    nama = user_info['nama']
+    data_reg = db.registrations.find_one({'nik': nik})
+    nama = user_info['name']
     data_rekam_medis = {
         'no_kartu': no_kartu,
         'nama': nama,
         'nik': nik,
-        'umur': user_info['umur'],
+        'umur': user_info['tgl_lahir'],
         'alamat': user_info['alamat'],
         'no_telp': user_info['no_telp']
     }
     db.rekam_medis.insert_one(data_rekam_medis)
     data_list_checkup_user = {
+        'poli': data_reg['poli'],
+        'keluhan': data_reg['keluhan'],
+        'tgl_periksa': data_reg['tanggal'],
         'dokter': dokter,
         'hasil_anamnesa': hasil_anamnesa
     }
 
     db.list_checkup_user.update_one({'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
 
-    return 'Success', 
+    return 'Success' 
+
+@app.route("/lihat_rekam_medis/<nik>", methods=["GET"])
+def lihat_rekam_medis(nik):
+    data_rekam_medis = list(db.rekam_medis.find({'nik': nik, "_id": False})) 
+    list_checkup_user = list(db.list_checkup_user.find({'nik': nik}))
+    for user in list_checkup_user:
+        user['_id'] = str(user['_id'])
+    return jsonify({'data_rekam_medis': data_rekam_medis, 'list_checkup_user': list_checkup_user})
+
+
+@app.route("/api/get-edit_rekam_medis/<nik>", methods=["GET"])
+def get_edit_rekam_medis(nik):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    print(data_list_checkup_user)
+    return jsonify({'data_list_checkup_user': data_list_checkup_user}) 
+
+@app.route("/api/edit-rekam_medis/<id>", methods=["POST"])
+def edit_rekam_medis(id):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    db.list_checkup_user.update_one({'_id': ObjectId(id)}, {'$set': data_list_checkup_user}, upsert=True)
+    data_list_checkup_user = db.list_checkup_user.find_one({'_id': ObjectId(id)})
+    data_list_checkup_user['_id'] = str(data_list_checkup_user['_id'])
+    print(data_list_checkup_user)
+
+    return jsonify({'data_list_checkup_user': data_list_checkup_user})
+
 
 
 if __name__ == '__main__':

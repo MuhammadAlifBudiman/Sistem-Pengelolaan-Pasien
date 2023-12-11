@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+python<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -39,48 +39,93 @@
     $(document).ready(function () {
       // Inisialisasi datatables
       let rekam_medisTable = $("#rekam_medisTable").DataTable();
+      let list_checkup_user = $("#list_checkup_user").DataTable();
+
+      // Event listener for Submit button
+      $("#rekam_medisTable").on("click", ".btn-buat", function (e) {
+        let row = rekam_medisTable.row($(this).parents("tr"));
+        let rowData = row.data();
+        let nik = rowData[1];
+        $("#buatrekam_medis")
+          .off("submit")
+          .submit(function (e) {
+            e.preventDefault();
+
+            // Ambil nilai input
+            let no_kartu = $("#no_kartu").val();
+            let dokter = $("#dokter").val();
+            let hasil_anamnesa = $("#hasil_anamnesa").val();
+
+            // Lakukan validasi
+            // if (!no_kartu || !dokter || !hasil_anamnesa || !nik) {
+            //   alert("Semua field harus diisi!");
+            //   return;
+            // }
+
+            let formData = $(this).serializeArray();
+            console.log("save");
+
+            $.ajax({
+              url: `/buat_rekam_medis/${nik}`,
+              type: "POST",
+              data: formData,
+              success: function (response) {
+                // // Update tabel
+                // let newRow = [
+                //   response.no_kartu,
+                //   response.dokter,
+                //   response.hasil_anamnesa,
+                //   response.nik,
+                //   "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
+                // ];
+                // let rowNode = rekam_medisTable.row.add(newRow).draw().node();
+                // $(rowNode).attr("id", response._id); // Set ID for the new row
+
+                // // Reset the form
+                // $("#buatrekam_medis")[0].reset();
+
+                // // Close the modal
+                // $("#buatModal").modal("hide");
+
+                alert("Jadwal berhasil ditambahkan!");
+                window.location.reload();
+              },
+              error: function (error) {
+                console.log("Error:", error);
+              },
+            });
+          });
+      });
 
       // Event listener for Add button
-      $("#rekam_medis").submit(function (e) {
+      $("#rekam_medisTable").on("click", ".btn-lihat", function (e) {
         e.preventDefault();
-
-        // Ambil nilai input
-        let no_kartu = $("#no_kartu").val();
-        let dokter = $("#dokter").val();
-        let hasil_anamnesa = $("#hasil_anamnesa").val();
-        let nik = $("#nik").val();
-
-        // Lakukan validasi
-        if (!no_kartu || !dokter || !hasil_anamnesa || !nik) {
-          alert("Semua field harus diisi!");
-          return;
-        }
-
-        let formData = $(this).serializeArray();
+        console.log("lihat");
+        let row = rekam_medisTable.row($(this).parents("tr"));
+        let rowData = row.data();
+        console.log(rowData);
+        let nik = rowData[1];
 
         $.ajax({
-          url: `/buat_rekam_medis/${nik}`,
-          type: "POST",
-          data: formData,
+          url: `/lihat_rekam_medis/${nik}`,
+          type: "GET",
           success: function (response) {
             // Update tabel
-            let newRow = [
-              response.no_kartu,
-              response.dokter,
-              response.hasil_anamnesa,
-              response.nik,
-              "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-            ];
-            let rowNode = jadwalTable.row.add(newRow).draw().node();
-            $(rowNode).attr("id", response._id); // Set ID for the new row
-
-            // Reset the form
-            $("#buatrekam_medis")[0].reset();
-
-            // Close the modal
-            $("#buatModal").modal("hide");
-
-            alert("Jadwal berhasil ditambahkan!");
+            console.log(response.list_checkup_user.length);
+            list_checkup_user.clear().draw();
+            for (let i = 0; i < response.list_checkup_user.length; i++) {
+              let newRow = [
+                i + 1,
+                response.list_checkup_user[i].tgl_periksa,
+                response.list_checkup_user[i].dokter,
+                response.list_checkup_user[i].poli,
+                response.list_checkup_user[i].keluhan,
+                response.list_checkup_user[i].hasil_anamnesa,
+                "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button>",
+              ];
+              let rowNode = list_checkup_user.row.add(newRow).draw().node();
+              $(rowNode).attr("id", response.list_checkup_user[i]._id);
+            }
           },
           error: function (error) {
             console.log("Error:", error);
@@ -89,30 +134,20 @@
       });
 
       // Event listener for Edit buttons
-      $("#jadwalTable").on("click", ".btn-edit", function () {
+      $("#list_checkup_user").on("click", ".btn-edit", function () {
         let action = $(this).text();
-        let row = jadwalTable.row($(this).parents("tr"));
+        let row = list_checkup_user.row($(this).parents("tr"));
         let rowData = row.data();
         let rowId = $(this).parents("tr").attr("id");
         let editModal = $("#editModal");
         console.log(rowData, row.id());
         $.ajax({
-          url: "/api/get-jadwal/" + rowId,
+          url: "/api/get-edit_rekam_medis/" + rowId,
           type: "GET",
           success: function (response) {
-            // populate the edit modal
-            editModal.find("#nama").val(response.nama);
-            editModal.find("#listPoli").val(response.poli);
-            editModal.find("#jamBuka").val(response.jam_buka);
-            editModal.find("#jamTutup").val(response.jam_tutup);
-            // Clear all checkboxes first
-            editModal.find("input[name='hari']").prop("checked", false);
-            // Check the checkboxes based on the received values
-            for (let i = 0; i < response.hari.length; i++) {
-              editModal
-                .find("input[name='hari'][value='" + response.hari[i] + "']")
-                .prop("checked", true);
-            }
+            console.log(response);
+            editModal.find("#dokter").val(response.dokter);
+            editModal.find("#hasil_anamnesa").val(response.hasil_anamnesa);
           },
           error: function (error) {
             console.log("Error:", error);
@@ -121,49 +156,38 @@
 
         // Event listener for Edit form submission
         editModal
-          .find("#editJadwal")
+          .find("#edit")
           .off("submit")
           .submit(function (e) {
             e.preventDefault();
 
             // Ambil nilai input
-            let nama = editModal.find("#nama").val();
-            let poli = editModal.find("#listPoli").val();
-            let hari = editModal.find("input[name='hari']:checked").val();
-            let jamBuka = editModal.find("#jamBuka").val();
-            let jamTutup = editModal.find("#jamTutup").val();
-
-            // Lakukan validasi
-            if (!nama || !poli || !hari || !jamBuka || !jamTutup) {
-              alert("Semua field harus diisi!");
-              return;
-            }
-
-            if (jamBuka >= jamTutup) {
-              alert("Jam buka harus lebih kecil dari jam tutup!");
-              return;
-            }
+            let dokter = editModal.find("#dokter").val();
+            let hasil_anamnesa = editModal.find("#hasil_anamnesa").val();
 
             let formData = $(this).serializeArray();
 
             $.ajax({
-              url: "/api/edit-jadwal/" + rowId,
+              url: "/api/edit-rekam_medis/" + rowId,
               type: "POST",
               data: formData,
               success: function (response) {
-                // Update the row
-                row
-                  .data([
-                    response.nama,
-                    response.poli,
-                    response.hari.join("/"),
-                    response.jam_buka + " - " + response.jam_tutup,
-                    "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-                  ])
-                  .draw();
+                console.log(response);
+                // // Update the row
+                // row
+                //   .data([
+                //     rowData[0],
+                //     response.tgl_periksa,
+                //     response.dokter,
+                //     response.poli,
+                //     response.keluhan,
+                //     response.hasil_anamnesa,
+                //     "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button>"
+                //   ])
+                //   .draw();
 
                 // Reset the form
-                editModal.find("#editJadwal")[0].reset();
+                editModal.find("#edit")[0].reset();
 
                 // Close the modal
                 editModal.modal("hide");
@@ -176,41 +200,10 @@
             });
           });
       });
-
-      // Event listener for Delete buttons
-      $("#jadwalTable").on("click", ".btn-delete", function () {
-        let rowId = $(this).parents("tr").attr("id");
-        $("#hapusJadwal")
-          .off("submit")
-          .submit(function (e) {
-            e.preventDefault();
-
-            $.ajax({
-              url: "/api/hapus-jadwal/" + rowId,
-              type: "POST",
-              success: function (response) {
-                // Delete the row
-                jadwalTable
-                  .row("#" + rowId)
-                  .remove()
-                  .draw();
-
-                // Close the modal
-                $("#deleteModal").modal("hide");
-
-                alert("Jadwal berhasil dihapus!");
-              },
-              error: function (error) {
-                console.log("Error:", error);
-              },
-            });
-          });
+    }),
+      $(".navbar-toggler").on("click", function () {
+        $(".navbar-collapse").toggleClass("show");
       });
-    });
-
-    $(".navbar-toggler").on("click", function () {
-      $(".navbar-collapse").toggleClass("show");
-    });
   </script>
 
   <body>
@@ -245,7 +238,7 @@
             <a class="nav-link" href="">Kelola Praktik</a>
           </li>
           <li class="nav-item">
-            <a class="" href="">pegawai</a>
+            <a class="" href="">{{ user_info.name }}</a>
           </li>
           <li class="nav-item">
             <a class="btn btn-primary" href="">Logout</a>
@@ -269,23 +262,26 @@
           <!-- Data will be populated here -->
           {% for item in data_rekam_medis %}
           <tr id="{{ item._id }}">
-            <td>{{ item.nama_pasien }}</td>
+            <td>{{ item.name }}</td>
             <td>{{ item.nik }}</td>
             <td>
+              {% if item.action == 'buat' %}
               <button
-                class="btn btn-warning btn-sm btn-edit"
+                class="btn btn-warning btn-sm btn-buat"
                 data-bs-toggle="modal"
                 data-bs-target="#buatModal"
               >
                 Buat
               </button>
+              {% else %}
               <button
-                class="btn btn-danger btn-sm btn-delete"
+                class="btn btn-danger btn-sm btn-lihat"
                 data-bs-toggle="modal"
                 data-bs-target="#lihatModal"
               >
                 Lihat
               </button>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -355,9 +351,10 @@
                     class="textarea"
                     placeholder="Introduce yourself"
                     cols="50"
+                    ,
+                    name="hasil_anamnesa"
                   >
-                    </textarea
-                  >
+                  </textarea>
                 </p>
               </div>
               <div class="d-flex justify-content-center">
@@ -377,49 +374,123 @@
       </div>
     </div>
 
-    <!-- Modal -->
-<div class="modal fade" id="lihatModal" tabindex="-1" role="dialog" aria-labelledby="lihatModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-      <div class="modal-content">
+    <!-- lihat Modal -->
+    <div
+      class="modal fade"
+      id="lihatModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="lihatModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
           <div class="modal-header">
-              <h2 class="modal-title" id="lihatModalLabel">Hasil Periksa</h2>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title" id="lihatModalLabel">Hasil Periksa</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
           </div>
           <div class="modal-body">
-              <table class="table">
-                  <thead>
-                      <tr>
-                          <th>No Tgl Periksa</th>
-                          <th>Dokter</th>
-                          <th>Poli</th>
-                          <th>Keluhan</th>
-                          <th>Anamnesa Hasil Pemeriksaan</th>
-                          <th>Action</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      <!-- Sample row, add more rows as needed -->
-                      <tr>
-                          <td>1</td>
-                          <td>Giacomo Guilizzon</td>
-                          <td>Umum</td>
-                          <td>Pusing</td>
-                          <td>Hasil pemeriksaan pusing</td>
-                          <td><a href="#">Edit</a></td>
-                      </tr>
-                      <!-- Add more rows as needed -->
-                  </tbody>
-              </table>
+            <table class="table" id="list_checkup_user">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tgl Periksa</th>
+                  <th>Dokter</th>
+                  <th>Poli</th>
+                  <th>Keluhan</th>
+                  <th>Anamnesa Hasil Pemeriksaan</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+            </table>
           </div>
           <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button type="button" class="btn btn-primary">Save changes</button>
           </div>
+        </div>
       </div>
-  </div>
-</div>
+    </div>
 
-    
+    <!-- edit Modal -->
+    <div
+      class="modal fade"
+      id="editModal"
+      tabindex="-1"
+      aria-labelledby="editModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="editModalLabel">
+              Tambah Data Rekam Medis
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit">
+              <div class="row mb-3">
+                <label
+                  for="dokter"
+                  class="col-sm-2 col-form-label col-form-label-sm"
+                  >Dokter
+                </label>
+                <div class="col-sm-10">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="dokter"
+                    name="dokter"
+                  />
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="textarea-about">Hasil Anamnesa</label>
+                <p class="control">
+                  <textarea
+                    id="textarea-about"
+                    class="textarea"
+                    placeholder="Introduce yourself"
+                    cols="45"
+                    ,
+                    name="hasil_anamnesa"
+                  >
+                  </textarea>
+                </p>
+              </div>
+              <div class="d-flex justify-content-center">
+                <button
+                  type="button"
+                  class="btn btn-secondary me-2"
+                  data-bs-dismiss="modal"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Footer -->
     <div class="footer text-center mt-5 py-3">
