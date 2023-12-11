@@ -102,7 +102,7 @@
             <a class="btn btn-primary active" href="#user">{{ user_info.name }}</a>
           </li>
           <li class="nav-item">
-            <a class="btn btn-danger" href="/">Loqout</a>
+            <a class="btn btn-danger" onclick="sign_out()">Loqout</a>
           </li>
         </ul>
       </div>
@@ -518,6 +518,12 @@
       function formatDateString(dateString) {
         const [year, month, day] = dateString.split("-");
         return `${day}-${month}-${year}`;
+      }
+
+      function sign_out() {
+        $.removeCookie("mytoken", { path: "/" });
+        alert("Logged out!");
+        window.location.href = "/";
       }
     </script>
   </body>

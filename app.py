@@ -270,32 +270,16 @@ def pendaftaran_formulir():
                     print(data_pendaftaran)
 
                     db.registrations.insert_one(data_pendaftaran)
-<<<<<<< HEAD
-
-                    # Ambil data antrian dari MongoDB
-                    antrian_data = list(db.registrations.find(
-                        {"status": {"$in": ["pending", "approve"]}},
-                        {"name": True,
-=======
                     # Ambil data antrian dari MongoDB
                     antrian_data = list(db.registrations.find(
                         {"status": {"$in": ["pending", "approve"]}},
                         {"no_urut": True,
                          "name": True,
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
                          "nik": True,
                          "tanggal": True,
                          "status": True,
                          "_id": False}
                     ))
-<<<<<<< HEAD
-
-                    for index, data in enumerate(antrian_data, start=1):
-                        data['no_urut'] = index
-
-                    return jsonify({'antrian_data': antrian_data})
-=======
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
                     return render_template('pendaftaran_formulir.html', data=antrian_data)
 
             has_pending_or_approved = db.registrations.count_documents({
@@ -305,13 +289,6 @@ def pendaftaran_formulir():
             print(has_pending_or_approved)
 
             return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
-<<<<<<< HEAD
-            
-        return render_template('pendaftaran_formulir.html')
-        
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-=======
             return render_template('error.html', message='Data pengguna tidak ditemukan')
         return render_template('pendaftaran_formulir.html')
         return render_template('pendaftaran_formulir.html', data=pendaftaran_data)
@@ -320,7 +297,6 @@ def pendaftaran_formulir():
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
->>>>>>> 4f8475eac47e8e8964e403da70d1548cd91e43a1
 
 @app.route("/pendaftaran_pegawai")
 def pendaftaran_pegawai():
@@ -670,6 +646,91 @@ def hapus_jadwal(id):
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+    
+
+@app.route("/kelola_pendaftaran", methods=["GET"])
+def get_pending_and_approved_registrations():
+    data = db.registrations.find({'status': {'$in': ['pending', 'approve']}})
+    return jsonify(list(data)), 
+
+@app.route("/approve_registration/<id>", methods=["PUT"])
+def approve_registration(id):
+    db.registrations.update_one({'_id': id}, {'$set': {'status': 'approve'}})
+    return 'Success', 
+
+@app.route("/reject_registration/<id>", methods=["PUT"])
+def reject_registration(id):
+    db.registrations.update_one({'_id': id}, {'$set': {'status': 'reject'}})
+    return 'Success', 
+
+@app.route("/done_registration/<nik>", methods=["PUT"])
+def process_done_registration(nik):
+    db.registrations.update_one({'nik': nik}, {'$set': {'status': 'done'}})
+    exist = db.rekam_medis.find_one({'nik': nik})
+    if exist:
+        data_pendaftaran = db.registrations.find_one({'nik': nik, 'status': 'done'})
+        data_rm = db.rekam_medis.find_one({'nik': nik})
+        data_list = {
+            'nik': data_rm['nik'],
+            'tgl_periksa': data_rm['tgl_periksa'],
+            'poli': data_rm['poli'],
+            'keluhan': data_rm['keluhan']
+        }
+        db.list_checkup_user.insert_one(data_list)
+    else:
+        data_pendaftaran = db.registrations.find_one({'nik': nik, 'status': 'done'})
+
+        data_list = {
+            'nik': data_pendaftaran['nik'],
+            'tgl_periksa': data_pendaftaran('tgl'),
+            'poli': data_pendaftaran['poli'],
+            'keluhan': data_pendaftaran['keluhan']
+        }
+        db.list_checkup_user.insert_one(data_list)
+
+    return 'Success', 
+
+
+
+@app.route("/rekam_medis", methods=["GET"])
+def get_rekam_medis():
+    data_rekam_medis = []
+    for d in db.rekam_medis.find():
+        exist = db.registrations.find_one({'username': d['username'], 'status': 'done'})
+        if exist:
+            data_rekam_medis.append({
+                'username': d['username'],
+                'nik': d['nik'],
+                'action': 'lihat' if db.rekam_medis.find_one({'username': d['username']}) else 'buat'
+            })
+        print(data_rekam_medis)
+    return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis)
+
+
+@app.route("/buat_rekam_medis/<nik>", methods=["POST"])
+def buat_rekam_medis(nik):
+    no_kartu = request.form.get('no_kartu')
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    user_info = db.users.find_one({'nik': nik})
+    nama = user_info['nama']
+    data_rekam_medis = {
+        'no_kartu': no_kartu,
+        'nama': nama,
+        'nik': nik,
+        'umur': user_info['umur'],
+        'alamat': user_info['alamat'],
+        'no_telp': user_info['no_telp']
+    }
+    db.rekam_medis.insert_one(data_rekam_medis)
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+
+    db.list_checkup_user.update_one({'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
+
+    return 'Success', 
 
 
 if __name__ == '__main__':
