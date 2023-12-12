@@ -417,6 +417,10 @@ def update_status():
                             {'_id': ObjectId(registration_id)},
                             {'$set': {'status': new_status}}
                         )
+                        # antrian_data = list(db.registrations.find(
+                        #     {"status": {"$in": ["pending", "approved", "done"]}},
+                        #     {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
+                        # ))
                         return jsonify({"message": "Pendaftaran berhasil disetujui"})
 
                     elif new_status == "done":

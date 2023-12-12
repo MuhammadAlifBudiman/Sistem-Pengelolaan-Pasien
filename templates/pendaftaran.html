@@ -1,288 +1,346 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pendaftaran</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            // Fungsi untuk merender tabel berdasarkan data yang diberikan
-            function renderTable(data) {
-                console.log("Data for rendering table:", data);
+      $(document).ready(function () {
+        // Fungsi untuk merender tabel berdasarkan data yang diberikan
+        function renderTable(data) {
+          console.log("Data for rendering table:", data);
 
-                let tbody = $("#antrian-container tbody");
-                tbody.empty();
+          let tbody = $("#antrian-container tbody");
+          tbody.empty();
 
-                data.forEach(function (item, index) {
-                    let row = $("<tr>");
+          data.forEach(function (item, index) {
+            let row = $("<tr>");
 
-                    row.append(`<td>${index + 1}</td>`);
-                    row.append(`<td>${item.name}</td>`);
-                    row.append(`<td>${item.nik}</td>`);
-                    row.append(`<td>${item.tanggal}</td>`);
-                    row.append(`<td>${item.status}</td>`);
+            row.append(`<td>${index + 1}</td>`);
+            row.append(`<td>${item.name}</td>`);
+            row.append(`<td>${item.nik}</td>`);
+            row.append(`<td>${item.tanggal}</td>`);
+            row.append(`<td>${item.status}</td>`);
 
-                    tbody.append(row);
-                });
+            tbody.append(row);
+          });
 
-                toggleFormAndAntrian(data.some(item => item.status === 'pending' || item.status === 'approved'));
-            }
+          toggleFormAndAntrian(
+            data.some(
+              (item) => item.status === "pending" || item.status === "approved"
+            )
+          );
+        }
 
-            // Fungsi untuk menampilkan atau menyembunyikan formulir dan antrian berdasarkan data
-            function toggleFormAndAntrian(hasPendingOrApproved) {
-                $("#formulir-container").toggle(!hasPendingOrApproved);
-                $("#antrian-container").toggle(hasPendingOrApproved);
-                $("#formulir-container-done-rejected").toggle(sessionStorage.getItem('formStatus') === 'rejected' || sessionStorage.getItem('formStatus') === 'done');
-            }
+        // Fungsi untuk menampilkan atau menyembunyikan formulir dan antrian berdasarkan data
+        function toggleFormAndAntrian(hasPendingOrApproved) {
+          $("#formulir-container").toggle(!hasPendingOrApproved);
+          $("#antrian-container").toggle(hasPendingOrApproved);
+          $("#formulir-container-done-rejected").toggle(
+            sessionStorage.getItem("formStatus") === "rejected" ||
+              sessionStorage.getItem("formStatus") === "done"
+          );
+        }
 
-            // Periksa sessionStorage saat halaman dimuat
-            let formStatus = sessionStorage.getItem('formStatus');
-            console.log("formStatus:", formStatus);
+        // Periksa sessionStorage saat halaman dimuat
+        let formStatus = sessionStorage.getItem("formStatus");
+        console.log("formStatus:", formStatus);
 
-            if (formStatus === 'done' || formStatus === 'rejected' || formStatus === null) {
-                toggleFormAndAntrian(false);
-            } else {
-                // Jika status tidak sesuai, sembunyikan formulir
-                toggleFormAndAntrian(true);
+        if (
+          formStatus === "done" ||
+          formStatus === "rejected" ||
+          formStatus === null
+        ) {
+          toggleFormAndAntrian(false);
+        } else {
+          // Jika status tidak sesuai, sembunyikan formulir
+          toggleFormAndAntrian(true);
 
-                // Jika formulir sudah dikirim, ambil dan tampilkan data antrian
-                if (formStatus === 'pending' || formStatus === 'approved') {
-                    $.ajax({
-                        type: "GET",
-                        url: "/get_antrian_data",
-                        success: function (data) {
-                            console.log("Response from the server:", data);
-                            renderTable(data.antrian_data);
-                        },
-                        error: function () {
-                            console.error("Failed to fetch queue data");
-                        },
-                    });
-                }
-            }
-
-            // Perbarui peristiwa klik untuk tombol kirim
-            $(".btn-submit-form").click(function (event) {
-                event.preventDefault();
-
-                if (formStatus === 'done' || formStatus === 'rejected') {
-                    alert("Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.");
-                    return;
-                }
-
-                let poli = $("#poli").val();
-                let tanggal = $("#tanggal").val();
-                let keluhan = $("#keluhan").val();
-
-                let formData = {
-                    poli: poli,
-                    tanggal: tanggal,
-                    keluhan: keluhan,
-                    submit: "submit",
-                };
-
-                if (formData.poli === "") {
-                    alert("Harap pilih jenis poli sebelum mengirim formulir");
-                    return;
-                }
-
-                if (formData.tanggal === "") {
-                    alert("Harap pilih tanggal berobat sebelum mengirim formulir");
-                    return;
-                }
-
-                if (formData.keluhan === "") {
-                    alert("Harap isi keluhan Anda sebelum mengirim formulir");
-                    return;
-                }
-
-                // Permintaan Ajax untuk mengirim formulir
-                $.ajax({
-                    type: "POST",
-                    url: "/pendaftaran_formulir",
-                    data: formData,
-                    success: function (data) {
-                        console.log("Response from the server after submitting the form:", data);
-                        let newStatus = data.antrian_data[0].status;
-                        alert("Formulir telah diproses. Silakan tunggu.");
-
-                        sessionStorage.setItem('formStatus', newStatus);
-                        toggleFormAndAntrian(newStatus === 'pending' || newStatus === 'approved');
-                        renderTable(data.antrian_data);
-                    },
-                    error: function () {
-                        alert("Gagal melakukan pendaftaran. Silakan coba lagi.");
-                    },
-                });
+          // Jika formulir sudah dikirim, ambil dan tampilkan data antrian
+          if (formStatus === "pending" || formStatus === "approved") {
+            $.ajax({
+              type: "GET",
+              url: "/get_antrian_data",
+              success: function (data) {
+                console.log("Response from the server:", data);
+                renderTable(data.antrian_data);
+              },
+              error: function () {
+                console.error("Failed to fetch queue data");
+              },
             });
-        });
-    </script>
-</head>
+          }
+        }
 
-<body>
+        // Perbarui peristiwa klik untuk tombol kirim
+        $(".btn-submit-form").click(function (event) {
+          event.preventDefault();
+
+          if (formStatus === "done" || formStatus === "rejected") {
+            alert(
+              "Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi."
+            );
+            return;
+          }
+
+          let poli = $("#poli").val();
+          let tanggal = $("#tanggal").val();
+          let keluhan = $("#keluhan").val();
+
+          let formData = {
+            poli: poli,
+            tanggal: tanggal,
+            keluhan: keluhan,
+            submit: "submit",
+          };
+
+          if (formData.poli === "") {
+            alert("Harap pilih jenis poli sebelum mengirim formulir");
+            return;
+          }
+
+          if (formData.tanggal === "") {
+            alert("Harap pilih tanggal berobat sebelum mengirim formulir");
+            return;
+          }
+
+          if (formData.keluhan === "") {
+            alert("Harap isi keluhan Anda sebelum mengirim formulir");
+            return;
+          }
+
+          // Permintaan Ajax untuk mengirim formulir
+          $.ajax({
+            type: "POST",
+            url: "/pendaftaran_formulir",
+            data: formData,
+            success: function (data) {
+              console.log(
+                "Response from the server after submitting the form:",
+                data
+              );
+              let newStatus = data.antrian_data[0].status;
+              alert("Formulir telah diproses. Silakan tunggu.");
+
+              sessionStorage.setItem("formStatus", newStatus);
+              toggleFormAndAntrian(
+                newStatus === "pending" || newStatus === "approved"
+              );
+              renderTable(data.antrian_data);
+            },
+            error: function () {
+              alert("Gagal melakukan pendaftaran. Silakan coba lagi.");
+            },
+          });
+        });
+      });
+    </script>
+  </head>
+
+  <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <a class="navbar-brand">Klinik Google</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item {% if active_tab == 'home' %}active{% endif %}">
-                    <a class="nav-link" href="/index">Home</a>
-                </li>
-                <li class="nav-item {% if active_tab == 'pendaftaran' %}active{% endif %}">
-                    <a class="nav-link" href="/pendaftaran">Pendaftaran</a>
-                </li>
-                <li class="nav-item {% if active_tab == 'riwayat_pendaftaran' %}active{% endif %}">
-                    <a class="nav-link" href="/riwayat_pendaftaran">Riwayat Pendaftaran</a>
-                </li>
-                <li class="nav-item {% if active_tab == 'riwayat_check_up' %}active{% endif %}">
-                    <a class="nav-link" href="/riwayat_check_up">Riwayat Check Up</a>
-                </li>
-                {% if user_info %}
-                <li class="nav-item">
-                    <a class="nav-link" href="/user">{{ user_info.name }}</a>
-                </li>
-                <li class="nav-item">
-                    <a class="btn btn-danger" href="">Logout</a>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
+      <a class="navbar-brand">Klinik Google</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="/index">Home</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/pendaftaran">Pendaftaran</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/riwayat_pendaftaran"
+              >Riwayat Pendaftaran</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/riwayat_check_up">Riwayat Check Up</a>
+          </li>
+          {% if user_info %}
+          <li class="nav-item">
+            <a class="nav-link" href="/profile">{{ user_info.name }}</a>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
     </nav>
 
     <!-- Formulir Pendaftaran -->
     <div id="formulir-container">
-        <div class="container mt-5 d-flex justify-content-center">
-            <div class="card" style="width: 500px">
-                <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
-                <div class="card-body">
-                    <form action="/pendaftaran" method="POST">
+      <div class="container mt-5 d-flex justify-content-center">
+        <div class="card" style="width: 500px">
+          <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
+          <div class="card-body">
+            <form action="/pendaftaran" method="POST">
+              <div class="form-group">
+                <label for="poli" class="mr-2"> Poli </label>
+                <select class="form-control" id="poli" name="poli">
+                  <option value="" selected disabled>Pilih Poli</option>
+                  <option value="poli_umum">Poli Umum</option>
+                  <option value="poli_gigi">Poli Gigi</option>
+                  <option value="poli_mata">Poli Mata</option>
+                  <option value="poli_anak">Poli Anak</option>
+                  <option value="poli_gizi">Poli Gizi</option>
+                  <option value="poli_jantung">Poli Jantung</option>
+                </select>
+              </div>
 
-                        <div class="form-group">
-                            <label for="poli" class="mr-2"> Poli </label>
-                            <select class="form-control" id="poli" name="poli">
-                                <option value="" selected disabled>Pilih Poli</option>
-                                <option value="poli_umum">Poli Umum</option>
-                                <option value="poli_gigi">Poli Gigi</option>
-                                <option value="poli_mata">Poli Mata</option>
-                                <option value="poli_anak">Poli Anak</option>
-                                <option value="poli_gizi">Poli Gizi</option>
-                                <option value="poli_jantung">Poli Jantung</option>
-                            </select>
-                        </div>
+              <div class="form-group">
+                <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="tanggal"
+                  name="tanggal"
+                />
+              </div>
 
-                        <div class="form-group">
-                            <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" />
-                        </div>
+              <div class="form-group">
+                <label for="keluhan" class="mr-2"> Keluhan </label>
+                <textarea
+                  class="form-control"
+                  id="keluhan"
+                  name="keluhan"
+                  rows="3"
+                ></textarea>
+              </div>
 
-                        <div class="form-group">
-                            <label for="keluhan" class="mr-2"> Keluhan </label>
-                            <textarea class="form-control" id="keluhan" name="keluhan" rows="3"></textarea>
-                        </div>
-
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary btn-submit-form">
-                                Kirim
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-submit-form">
+                  Kirim
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- Antrian Pendaftaran -->
-    <div class="container mt-5" id="antrian-container" {% if not has_pending_or_approved %}style="display: none;" {%
-        endif %}>
-        <h3 class="text-center">Antrian Pendaftaran</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th scope="col">No Urut</th>
-                    <th scope="col">Nama</th>
-                    <th scope="col">NIK</th>
-                    <th scope="col">Tanggal</th>
-                    <th scope="col">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for data in antrian_data %}
-                <tr>
-                    <td>{{ data.no_urut }}</td>
-                    <td>{{ data.name }}</td>
-                    <td>{{ data.nik }}</td>
-                    <td>{{ data.tanggal }}</td>
-                    <td>
-                        {% if data.status == 'pending' %}
-                        <span class="badge badge-warning">Pending</span>
-                        {% elif data.status == 'approved' %}
-                        <span class="badge badge-success">Approved</span>
-                        {% elif data.status == 'rejected' %}
-                        <span class="badge badge-danger">Rejected</span>
-                        {% elif data.status == 'done' %}
-                        <span class="badge badge-info">Done</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div
+      class="container mt-5"
+      id="antrian-container"
+      {%
+      if
+      not
+      has_pending_or_approved
+      %}style="display: none;"
+      {%
+      endif
+      %}
+    >
+      <h3 class="text-center">Antrian Pendaftaran</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">No Urut</th>
+            <th scope="col">Nama</th>
+            <th scope="col">NIK</th>
+            <th scope="col">Tanggal</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in antrian_data %}
+          <tr>
+            <td>{{ data.no_urut }}</td>
+            <td>{{ data.name }}</td>
+            <td>{{ data.nik }}</td>
+            <td>{{ data.tanggal }}</td>
+            <td>
+              {% if data.status == 'pending' %}
+              <span class="badge badge-warning">Pending</span>
+              {% elif data.status == 'approved' %}
+              <span class="badge badge-success">Approved</span>
+              {% elif data.status == 'rejected' %}
+              <span class="badge badge-danger">Rejected</span>
+              {% elif data.status == 'done' %}
+              <span class="badge badge-info">Done</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <!-- Formulir Pendaftaran jika reject/done -->
     {% if formStatus in ['rejected', 'done'] %}
-    <div class="container mt-5 form-container" id="formulir-container-done-rejected">
-        <div class="container mt-5 d-flex justify-content-center">
-            <div class="card" style="width: 500px">
-                <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
-                <div class="card-body">
-                    <form action="/pendaftaran_formulir" method="POST">
-                        <div class="form-group">
-                            <label for="poli" class="mr-2"> Poli </label>
-                            <select class="form-control" id="poli" name="poli">
-                                <option value="" selected disabled>Pilih Poli</option>
-                                <option value="poli_umum">Poli Umum</option>
-                                <option value="poli_gigi">Poli Gigi</option>
-                                <option value="poli_mata">Poli Mata</option>
-                                <option value="poli_anak">Poli Anak</option>
-                                <option value="poli_gizi">Poli Gizi</option>
-                                <option value="poli_jantung">Poli Jantung</option>
-                            </select>
-                        </div>
+    <div
+      class="container mt-5 form-container"
+      id="formulir-container-done-rejected"
+    >
+      <div class="container mt-5 d-flex justify-content-center">
+        <div class="card" style="width: 500px">
+          <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
+          <div class="card-body">
+            <form action="/pendaftaran_formulir" method="POST">
+              <div class="form-group">
+                <label for="poli" class="mr-2"> Poli </label>
+                <select class="form-control" id="poli" name="poli">
+                  <option value="" selected disabled>Pilih Poli</option>
+                  <option value="poli_umum">Poli Umum</option>
+                  <option value="poli_gigi">Poli Gigi</option>
+                  <option value="poli_mata">Poli Mata</option>
+                  <option value="poli_anak">Poli Anak</option>
+                  <option value="poli_gizi">Poli Gizi</option>
+                  <option value="poli_jantung">Poli Jantung</option>
+                </select>
+              </div>
 
-                        <div class="form-group">
-                            <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" />
-                        </div>
+              <div class="form-group">
+                <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="tanggal"
+                  name="tanggal"
+                />
+              </div>
 
-                        <div class="form-group">
-                            <label for="keluhan" class="mr-2"> Keluhan </label>
-                            <textarea class="form-control" id="keluhan" name="keluhan" rows="3"></textarea>
-                        </div>
+              <div class="form-group">
+                <label for="keluhan" class="mr-2"> Keluhan </label>
+                <textarea
+                  class="form-control"
+                  id="keluhan"
+                  name="keluhan"
+                  rows="3"
+                ></textarea>
+              </div>
 
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary btn-submit-form">
-                                Kirim
-                            </button>
-                        </div>
-
-                    </form>
-                </div>
-            </div>
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-submit-form">
+                  Kirim
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
     {% endif %}
-
-</body>
-
+  </body>
 </html>
