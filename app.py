@@ -351,26 +351,48 @@ def pendaftaran():
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
-    
+from flask import render_template, jsonify, request, redirect, url_for
+
 @app.route('/get_antrian_data', methods=['GET'])
 def get_antrian_data():
-    antrian_data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approved", "done"]}},
-        {"no_urut": True,
-         "name": True,
-         "nik": True,
-         "tanggal": True,
-         "status": True,
-         "_id": False}
-    ))
+    token_receive = request.cookies.get(TOKEN_KEY)
 
-    # Tambahkan nomor urut pada setiap data antrian
-    for index, data in enumerate(antrian_data, start=1):
-        data['no_urut'] = index
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
 
-    app.logger.info(f"Data Antrian: {antrian_data}") 
-    
-    return jsonify({'antrian_data': antrian_data})
+        if username:
+          
+            antrian_data = list(db.registrations.find(
+                {
+                    "username": username,
+                    "status": {"$in": ["pending", "approved", "done"]}
+                },
+                {
+                    "no_urut": True,
+                    "name": True,
+                    "nik": True,
+                    "tanggal": True,
+                    "status": True,
+                    "_id": False
+                }
+            ))
+
+            for index, data in enumerate(antrian_data, start=1):
+                data['no_urut'] = index
+
+            app.logger.info(f"Data Antrian: {antrian_data}")
+
+            if any(data['status'] in ['rejected', 'done'] for data in antrian_data):
+                return render_template('pendaftaran.html', has_pending_or_approved=False)
+
+            return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': True})
+
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        pass
+
+    return render_template('pendaftaran.html', has_pending_or_approved=False)
+
 
 @app.route("/kelola_pendaftaran")
 def kelola_pendaftaran():
