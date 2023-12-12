@@ -36,14 +36,17 @@
             // Isi tabel riwayat pendaftaran
             myTable.clear().draw();
             data.data_list_checkup_user.forEach(function (row, index) {
+              let dokter = row.dokter || "Belum ada dokter";
+              let hasil_anamnesa =
+                row.hasil_anamnesa || "Belum ada hasil anamnesa";
               myTable.row
                 .add([
                   index + 1,
                   row.tgl_periksa,
                   row.poli,
-                  row.dokter,
+                  dokter,
                   row.keluhan,
-                  row.hasil_anamnesa,
+                  hasil_anamnesa,
                 ])
                 .draw(false);
             });

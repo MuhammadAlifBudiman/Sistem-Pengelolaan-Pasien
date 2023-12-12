@@ -1,4 +1,5 @@
 import secrets
+from tarfile import data_filter
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from pymongo import MongoClient
 import os
@@ -370,7 +371,7 @@ def get_antrian_data():
                     "status": {"$in": ["pending", "approved"]}
                 },
                 {
-                    "no_urut": True,
+                    "antrian": True,
                     "name": True,
                     "nik": True,
                     "tanggal": True,
@@ -379,8 +380,8 @@ def get_antrian_data():
                 }
             ))
 
-            for index, data in enumerate(antrian_data, start=1):
-                data['no_urut'] = index
+            # for index, data in enumerate(antrian_data, start=1):
+            #     data['no_urut'] = index
 
             # app.logger.info(f"Data Antrian: {antrian_data}")
             # print(antrian_data)
@@ -432,6 +433,7 @@ def update_status():
             user_data = db.users.find_one({'username': username, 'role': 'pegawai'})
             if user_data:
                 allowed_statuses = ["pending", "approved", "rejected", "done"]
+                data_pendaftaran = db.registrations.find_one({"_id": ObjectId(registration_id)})
 
                 if new_status in allowed_statuses:
                     if new_status == "rejected":
@@ -443,11 +445,24 @@ def update_status():
                         return jsonify({"message": "Pendaftaran berhasil ditolak"})
 
                     elif new_status == "approved":
+                        # Calculate the antrian based on the number of registrations for the same date and poli
+                        antrian = db.registrations.count_documents({
+                            "poli": data_pendaftaran["poli"],
+                            "tanggal": data_pendaftaran["tanggal"],
+                            'status': {'$in': ['approved', 'done']}
+                        })
+
                         # Logika untuk menyetujui pendaftaran (mengubah status menjadi approved)
                         db.registrations.update_one(
                             {'_id': ObjectId(registration_id)},
-                            {'$set': {'status': new_status}}
+                            {'$set': {'status': new_status, 'antrian': f"{antrian + 1:03d}"}}
                         )
+
+                        print(antrian)
+                        
+
+
+
                         # antrian_data = list(db.registrations.find(
                         #     {"status": {"$in": ["pending", "approved", "done"]}},
                         #     {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
@@ -460,6 +475,14 @@ def update_status():
                             {'_id': ObjectId(registration_id)},
                             {'$set': {'status': new_status}}
                         )
+
+                        db.list_checkup_user.insert_one({
+                            'nama': data_pendaftaran['name'],
+                            'nik': data_pendaftaran['nik'],
+                            'tgl_periksa': data_pendaftaran['tanggal'],
+                            'poli': data_pendaftaran['poli'],
+                            'keluhan': data_pendaftaran['keluhan']
+                        })
                         return jsonify({"message": "Pendaftaran selesai"})
 
                 else:

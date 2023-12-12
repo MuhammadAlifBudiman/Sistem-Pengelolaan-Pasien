@@ -24,8 +24,8 @@
 
           data.forEach(function (item, index) {
             let row = $("<tr>");
-
-            row.append(`<td>${index + 1}</td>`);
+              let antrian = item.antrian || "-";
+            row.append(`<td>${antrian}</td>`);
             row.append(`<td>${item.name}</td>`);
             row.append(`<td>${item.nik}</td>`);
             row.append(`<td>${item.tanggal}</td>`);
@@ -246,7 +246,7 @@
 
     <!-- Antrian Pendaftaran -->
     <div
-      class="container mt-5"
+      class="container mt-5 pt-5"
       id="antrian-container"
       {%
       if
@@ -257,7 +257,7 @@
       endif
       %}
     >
-      <h3 class="text-center">Antrian Pendaftaran</h3>
+      <h3 class="text-center mt-5">Antrian Pendaftaran</h3>
       <table class="table">
         <thead>
           <tr>
@@ -271,7 +271,7 @@
         <tbody>
           {% for data in antrian_data %}
           <tr>
-            <td>{{ data.no_urut }}</td>
+            <td>{{ data.antrian }}</td>
             <td>{{ data.name }}</td>
             <td>{{ data.nik }}</td>
             <td>{{ data.tanggal }}</td>
