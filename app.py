@@ -1,6 +1,6 @@
+import secrets
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from pymongo import MongoClient
-import hashlib
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -8,12 +8,14 @@ import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from bson import ObjectId
+from flask_bcrypt import Bcrypt
 
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -24,8 +26,12 @@ if not DB_NAME:
 client = MongoClient(MONGODB_CONNECTION_STRING)
 db = client[DB_NAME]
 
-TOKEN_KEY = 'mytoken'
-SECRET_KEY = 'SPARTA'
+TOKEN_KEY = os.environ.get("TOKEN_KEY")
+if not TOKEN_KEY:
+    raise ValueError("TOKEN_KEY environment variable is not set")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
 
 
 def get_authorization():
@@ -84,7 +90,57 @@ def home():
 def get_antrian():
     try:
         # Mengambil data antrian
-        antrian_data = list(db.antrian.find({}, {'_id': False}))
+        # antrian_data = list(db.antrian.find({}, {'_id': False}))
+        antrian_data = list(db.registrations.aggregate([
+            {
+                "$match": {
+                    "tanggal": datetime.now().strftime("%Y-%m-%d")
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$poli",
+                    "jumlah_pendaftar": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$status", "approved"]},
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    "dalam_antrian": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$status", "done"]},
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "poli": "$_id",
+                    "jumlah_pendaftar": 1,
+                    "dalam_antrian": 1
+                }
+            }
+        ]))
+
+        print(antrian_data)
+
+        # for data in antrian_data:
+        #     data['jumlah_pendaftar'] = db.registrations.count_documents(
+        #         {'poli': data['poli'], 
+        #          "tanggal": datetime.now().strftime("%Y-%m-%d"), 
+        #          "status": "approved"}
+        #         )
+        #     data['dalam_antrian'] = db.registrations.count_documents({'poli': data['poli'], 'status': 'done', "tanggal": datetime.now().strftime("%Y-%m-%d")})
+
+        
         return jsonify({"antrian": antrian_data})
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -169,8 +225,11 @@ def api_register():
     if password != confirm_password:
         return jsonify({'result': 'failed', 'message': 'Password tidak sesuai'})
 
-    # Hash password sebelum disimpan
-    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    # Generate a unique salt for each user
+    salt = secrets.token_hex(16)
+
+    # Use a cost factor of 12, you can adjust it based on your security needs
+    hashed_password = bcrypt.generate_password_hash(salt + password + salt, 10).decode('utf-8')
 
     # Simpan data pengguna ke MongoDB
     user_data = {
@@ -185,7 +244,8 @@ def api_register():
         'alamat': alamat,
         'no_telp': no_telp,
         'password': hashed_password,
-        'role': 'pasien'
+        'role': 'pasien',
+        'salt': salt,
     }
 
     db.users.insert_one(user_data)
@@ -202,31 +262,31 @@ def sign_in():
         return jsonify({"result": "fail", "message": "Username tidak boleh kosong"})
     if not password_receive:
         return jsonify({"result": "fail", "message": "Password tidak boleh kosong"})
+    
+    user = db.users.find_one({"username": username_receive})
 
-    # Use hashlib for password hashing
-    hashed_password = hashlib.sha256(
-        password_receive.encode('utf-8')).hexdigest()
+    if user and 'password' in user and 'salt' in user:
+        # Use bcrypt to verify the password with the stored salt
+        if bcrypt.check_password_hash(user["password"], user["salt"] + password_receive + user["salt"]):
+            payload = {
+                "id": username_receive,
+                # the token will be valid for 24 hours
+                "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
+            }
+            token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-    result = db.users.find_one(
-        {
-            "username": username_receive,
-            "password": hashed_password,
-        }
-    )
-
-    if result:
-        payload = {
-            "id": username_receive,
-            # the token will be valid for 24 hours
-            "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
-        }
-        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
-        return jsonify({
-            "result": "success",
-            "token": token,
-            "message": "Login Success"
-        })
+            return jsonify({
+                "result": "success",
+                "token": token,
+                "message": "Login Success"
+            })
+        else:
+            return jsonify(
+                {
+                    "result": "fail",
+                    "message": "We could not find a user with that id/password combination",
+                }
+            )
     else:
         return jsonify(
             {
@@ -309,7 +369,7 @@ def get_antrian_data():
         data['no_urut'] = index
 
     app.logger.info(f"Data Antrian: {antrian_data}") 
-
+    
     return jsonify({'antrian_data': antrian_data})
 
 @app.route("/kelola_pendaftaran")
@@ -376,6 +436,24 @@ def update_status():
         return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
     except jwt.exceptions.DecodeError:
         return jsonify({"message": "Token tidak valid. Silakan login kembali."})
+
+@app.route("/riwayat_pendaftaran")
+def riwayat_pendaftaran():
+    return render_template("riwayat_pendaftaran.html")
+
+@app.route('/api/riwayat_pendaftaran', methods=['GET'])
+def riwayat_pendaftaran_api():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        pendaftaran_data = list(db.registrations.find({'username': username}, {'_id': 0}))
+        return jsonify({'riwayat': pendaftaran_data})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
 
 @app.route("/profile")
 def profile():
@@ -642,6 +720,230 @@ def hapus_jadwal(id):
         db.jadwal.delete_one({"_id": ObjectId(id)})
 
         return jsonify({"result": "success", "message": "Jadwal berhasil dihapus"})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+    
+
+
+@app.route("/kelola_pendaftaran", methods=["GET"])
+def get_pending_and_approved_registrations():
+    data = db.registrations.find({'status': {'$in': ['pending', 'approve']}})
+    return jsonify(list(data)), 
+
+@app.route("/approve_registration/<id>", methods=["PUT"])
+def approve_registration(id):
+    db.registrations.update_one({'_id': id}, {'$set': {'status': 'approve'}})
+    return 'Success', 
+
+@app.route("/reject_registration/<id>", methods=["PUT"])
+def reject_registration(id):
+    db.registrations.update_one({'_id': id}, {'$set': {'status': 'reject'}})
+    return 'Success', 
+
+@app.route("/done_registration/<nik>", methods=["PUT"])
+def process_done_registration(nik):
+    db.registrations.update_one({'nik': nik}, {'$set': {'status': 'done'}})
+    exist = db.rekam_medis.find_one({'nik': nik})
+    if exist:
+        data_pendaftaran = db.registrations.find_one({'nik': nik, 'status': 'done'})
+        data_rm = db.rekam_medis.find_one({'nik': nik})
+        data_list = {
+            'nik': data_rm['nik'],
+            'tgl_periksa': data_rm['tgl_periksa'],
+            'poli': data_rm['poli'],
+            'keluhan': data_rm['keluhan']
+        }
+        db.list_checkup_user.insert_one(data_list)
+    else:
+        data_pendaftaran = db.registrations.find_one({'nik': nik, 'status': 'done'})
+
+        data_list = {
+            'nik': data_pendaftaran['nik'],
+            'tgl_periksa': data_pendaftaran('tgl'),
+            'poli': data_pendaftaran['poli'],
+            'keluhan': data_pendaftaran['keluhan']
+        }
+        db.list_checkup_user.insert_one(data_list)
+
+    return 'Success', 
+
+
+
+@app.route("/rekam_medis", methods=["GET"])
+def get_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        data_rekam_medis = []
+        for d in db.users.find():
+            exist = db.registrations.find_one({'username': d['username']})
+            if exist:
+                data_rekam_medis.append({
+                    'username': d['username'],
+                    'nik': d['nik'],
+                    'name': d['name'],
+                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
+                })
+        return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+
+
+@app.route("/buat_rekam_medis/<nik>", methods=["POST"])
+def buat_rekam_medis(nik):
+    no_kartu = request.form.get('no')
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    user_info = db.users.find_one({'nik': nik})
+    data_reg = db.registrations.find_one({'nik': nik})
+    nama = user_info['name']
+    data_rekam_medis = {
+        'no_kartu': no_kartu,
+        'nama': nama,
+        'nik': nik,
+        'umur': user_info['tgl_lahir'],
+        'alamat': user_info['alamat'],
+        'no_telp': user_info['no_telp']
+    }
+    db.rekam_medis.insert_one(data_rekam_medis)
+    data_list_checkup_user = {
+        'nama': nama,
+        'poli': data_reg['poli'],
+        'keluhan': data_reg['keluhan'],
+        'tgl_periksa': data_reg['tanggal'],
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+
+    db.list_checkup_user.update_one({'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
+
+    return 'Success' 
+
+@app.route("/lihat_rekam_medis/<nik>", methods=["GET"])
+def lihat_rekam_medis(nik):
+    data_rekam_medis = list(db.rekam_medis.find({'nik': nik, "_id": False})) 
+    list_checkup_user = list(db.list_checkup_user.find({'nik': nik}))
+    for user in list_checkup_user:
+        user['_id'] = str(user['_id'])
+    return jsonify({'data_rekam_medis': data_rekam_medis, 'list_checkup_user': list_checkup_user})
+
+
+@app.route("/api/get-edit_rekam_medis/<nik>", methods=["GET"])
+def get_edit_rekam_medis(nik):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    print(data_list_checkup_user)
+    return jsonify({'data_list_checkup_user': data_list_checkup_user}) 
+
+@app.route("/api/edit-rekam_medis/<id>", methods=["POST"])
+def edit_rekam_medis(id):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    db.list_checkup_user.update_one({'_id': ObjectId(id)}, {'$set': data_list_checkup_user}, upsert=True)
+    data_list_checkup_user = db.list_checkup_user.find_one({'_id': ObjectId(id)})
+    data_list_checkup_user['_id'] = str(data_list_checkup_user['_id'])
+    print(data_list_checkup_user)
+
+    return jsonify({'data_list_checkup_user': data_list_checkup_user})
+
+
+@app.route("/riwayat_checkup")
+def riwayat_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("riwayat_checkup.html", user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return render_template('index.html', msg="Your login token has expired")
+    except jwt.exceptions.DecodeError:
+        return render_template('index.html', msg="There was an error logging you in")
+
+
+@app.route("/api/riwayat_checkup")
+def api_riwayat_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup_user = list(db.list_checkup_user.find({'nik': user_info['nik']}, {'_id': False}))
+        return jsonify({'data_list_checkup_user': data_list_checkup_user})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/dashboard")
+def dashboard():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("dasbord.html", user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return render_template('index.html', msg="Your login token has expired")
+    except jwt.exceptions.DecodeError:
+        return render_template('index.html', msg="There was an error logging you in")
+
+@app.route("/api/dashboard_pendaftaran")
+def dashboard_pendaftaran():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_pendaftaran = list(db.registrations.find({}, {'_id': False}))
+        return jsonify({'data_list_pendaftaran': data_list_pendaftaran})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/api/dashboard_checkup")
+def dashboard_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup = list(db.list_checkup_user.find({}, {'_id': False}))
+        return jsonify({'data_list_checkup': data_list_checkup})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/api/dashboard_rekam_medis")
+def dashboard_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_rekam_medis = list(db.rekam_medis.find({}, {'_id': False}))
+        return jsonify({'data_list_rekam_medis': data_list_rekam_medis})
     except jwt.ExpiredSignatureError:
         return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
     except jwt.exceptions.DecodeError:

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kelola Praktik</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.js"
+      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    <!-- DataTables CSS -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css"
+    />
+    <!-- DataTables JS -->
+    <script
+      type="text/javascript"
+      charset="utf8"
+      src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"
+    ></script>
+  </head>
+  <script>
+    // Jadwal Table
+    $(document).ready(function () {
+      // Inisialisasi DataTables
+      let myTable = $("#pendaftaranTable").DataTable();
+      let checkupTable = $("#checkupTable").DataTable();
+      let rekamMedisTable = $("#rekamMedisTable").DataTable();
+      let list_checkup_user = $("#list_checkup_user").DataTable();
+
+      // Ambil data riwayat pendaftaran
+      $.ajax({
+        url: "/api/dashboard_pendaftaran",
+        type: "GET",
+        success: function (data) {
+          // Isi tabel riwayat pendaftaran
+          myTable.clear().draw();
+          data.data_list_pendaftaran.forEach(function (row, index) {
+            let antrian = row.antrian || "-";
+            myTable.row
+              .add([antrian, row.name, row.poli, row.tanggal, row.status])
+              .draw(false);
+          });
+        },
+      });
+
+      // Ambil data riwayat pendaftaran
+      $.ajax({
+        url: "/api/dashboard_checkup",
+        type: "GET",
+        success: function (data) {
+          console.log(data);
+          // Isi tabel riwayat pendaftaran
+          checkupTable.clear().draw();
+          data.data_list_checkup.forEach(function (row, index) {
+            checkupTable.row
+              .add([
+                index + 1,
+                row.tgl_periksa,
+                row.nama,
+                row.dokter,
+                row.poli,
+                row.keluhan,
+                row.hasil_anamnesa,
+              ])
+              .draw(false);
+          });
+        },
+      });
+
+      // Ambil data riwayat pendaftaran
+      $.ajax({
+        url: "/api/dashboard_rekam_medis",
+        type: "GET",
+        success: function (data) {
+          console.log(data);
+          // Isi tabel riwayat pendaftaran
+          rekamMedisTable.clear().draw();
+          data.data_list_rekam_medis.forEach(function (row, index) {
+            rekamMedisTable.row
+              .add([
+                index + 1,
+                row.nik,
+                row.nama,
+                "<button class='btn btn-primary btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal'>Lihat</button>",
+              ])
+              .draw(false);
+          });
+        },
+      });
+
+      $("#rekamMedisTable").on("click", ".btn-lihat", function (e) {
+        e.preventDefault();
+        console.log("lihat");
+        let row = rekamMedisTable.row($(this).parents("tr"));
+        let rowData = row.data();
+        console.log(rowData);
+        let nik = rowData[1];
+
+        $.ajax({
+          url: `/lihat_rekam_medis/${nik}`,
+          type: "GET",
+          success: function (response) {
+            // Update tabel
+            console.log(response.list_checkup_user);
+            list_checkup_user.clear().draw();
+            for (let i = 0; i < response.list_checkup_user.length; i++) {
+              let newRow = [
+                i + 1,
+                response.list_checkup_user[i].tgl_periksa,
+                response.list_checkup_user[i].dokter,
+                response.list_checkup_user[i].poli,
+                response.list_checkup_user[i].keluhan,
+                response.list_checkup_user[i].hasil_anamnesa,
+              ];
+              let rowNode = list_checkup_user.row.add(newRow).draw().node();
+              $(rowNode).attr("id", response.list_checkup_user[i]._id);
+            }
+          },
+          error: function (error) {
+            console.log("Error:", error);
+          },
+        });
+      });
+    });
+
+    $(".navbar-toggler").on("click", function () {
+      $(".navbar-collapse").toggleClass("show");
+    });
+  </script>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+      <a class="navbar-brand">Klinik Google</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="#">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pendaftaran</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary active" href="#">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Rekam Medis</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="">Kelola Praktik</a>
+          </li>
+          <li class="nav-item">
+            <a class="" href="">pegawai</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary" href="">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <h2 id="jadwal" class="text-center">Dasbord</h2>
+      <h2 id="jadwal" class="text-center">Pendaftaran</h2>
+      <table class="table" id="pendaftaranTable">
+        <thead>
+          <tr>
+            <th>No Urut</th>
+            <th>Nama</th>
+            <th>Poli</th>
+            <th>Tanggal Periksa</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+      <h2 id="checkup" class="text-center">Check Up</h2>
+      <table class="table" id="checkupTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Tanggal Periksa</th>
+            <th>Nama Pasien</th>
+            <th>Nama Dokter</th>
+            <th>Poli</th>
+            <th>Keluhan</th>
+            <th>Hasil Pemeriksaan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+      <h2 id="rekam_medis" class="text-center">Rekam Medis</h2>
+      <table class="table" id="rekamMedisTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>NIK</th>
+            <th>Nama Pasien</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- lihat Modal -->
+    <div
+      class="modal fade"
+      id="lihatModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="lihatModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="lihatModalLabel">Hasil Periksa</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <table class="table" id="list_checkup_user">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tgl Periksa</th>
+                  <th>Dokter</th>
+                  <th>Poli</th>
+                  <th>Keluhan</th>
+                  <th>Anamnesa Hasil Pemeriksaan</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer text-center mt-5 py-3">
+      <p>&copy; 2023 Klinik Google. All rights reserved.</p>
+    </div>
+  </body>
+</html>
