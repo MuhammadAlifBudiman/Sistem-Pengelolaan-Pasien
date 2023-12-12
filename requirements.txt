@@ -1,0 +1,17 @@
+bcrypt
+blinker
+click
+dnspython
+Faker
+Flask
+Flask-Bcrypt
+Flask-PyMongo
+itsdangerous
+Jinja2
+MarkupSafe
+PyJWT
+pymongo
+python-dateutil
+python-dotenv
+six
+Werkzeug
