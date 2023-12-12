@@ -235,73 +235,67 @@ def sign_in():
             }
         )
 
-@app.route('/pendaftaran_formulir', methods=['GET', 'POST'])
-def pendaftaran_formulir():
+@app.route('/pendaftaran', methods=['GET', 'POST'])
+def pendaftaran():
     token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
 
-        if request.method == 'POST' and request.form.get('submit'):
-            if 'submit' in request.form:
-                poli = request.form['poli']
-                tanggal = request.form['tanggal']
-                keluhan = request.form['keluhan']
+        if request.method == 'POST' and request.form.get('submit') and username:
+            poli = request.form['poli']
+            tanggal = request.form['tanggal']
+            keluhan = request.form['keluhan']
 
-                # Ambil data pengguna dari koleksi users
-                user_data = db.users.find_one({'username': username})
+            # Ambil data pengguna dari koleksi users
+            user_data = db.users.find_one({'username': username})
 
-                if user_data:
-                    # Masukkan data pendaftaran ke MongoDB
-                    data_pendaftaran = {
-                        'username': user_data['username'],
-                        'name': user_data['name'],
-                        'nik': user_data['nik'],
-                        'tgl_lahir': user_data['tgl_lahir'],
-                        'gender': user_data['gender'],
-                        'agama': user_data['agama'],
-                        'status_pernikahan': user_data['status'],
-                        'alamat': user_data['alamat'],
-                        'no_telp': user_data['no_telp'],
-                        'poli': poli,
-                        'tanggal': tanggal,
-                        'keluhan': keluhan,
-                        'status': 'pending'
-                    }
+            if user_data:
+                # Masukkan data pendaftaran ke MongoDB
+                data_pendaftaran = {
+                    'username': user_data['username'],
+                    'name': user_data['name'],
+                    'nik': user_data['nik'],
+                    'tgl_lahir': user_data['tgl_lahir'],
+                    'gender': user_data['gender'],
+                    'agama': user_data['agama'],
+                    'status_pernikahan': user_data['status'],
+                    'alamat': user_data['alamat'],
+                    'no_telp': user_data['no_telp'],
+                    'poli': poli,
+                    'tanggal': tanggal,
+                    'keluhan': keluhan,
+                    'status': 'pending'
+                }
 
-                    db.registrations.insert_one(data_pendaftaran)
+                db.registrations.insert_one(data_pendaftaran)
 
-                    antrian_data = list(db.registrations.find(
-                        {"status": {"$in": ["pending", "approve", "done"]}},
-                        {"no_urut": True,
-                         "name": True,
-                         "nik": True,
-                         "tanggal": True,
-                         "status": True,
-                         "_id": False}
-                    ))
+                # Pindahkan pengecekan status ke sini
+                has_pending_or_approved = db.registrations.count_documents({
+                    "status": {"$in": ["pending", "approved"]}
+                }) > 0
 
-                    # Tambahkan nomor urut pada setiap data antrian
-                    for index, data in enumerate(antrian_data, start=1):
-                        data['no_urut'] = index
+                antrian_data = list(db.registrations.find(
+                    {"status": {"$in": ["pending", "approved", "done"]}},
+                    {"no_urut": True, "name": True, "nik": True, "tanggal": True, "status": True, "_id": False}
+                ))
 
-                    return jsonify({'antrian_data': antrian_data})
+                # Tambahkan nomor urut pada setiap data antrian
+                for index, data in enumerate(antrian_data, start=1):
+                    data['no_urut'] = index
 
-            has_pending_or_approved = db.registrations.count_documents({
-                "status": {"$in": ["pending", "approve"]}
-            }) > 0
-            
-            return render_template('pendaftaran_formulir.html', has_pending_or_approved=has_pending_or_approved)
+                return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
 
-        return render_template('pendaftaran_formulir.html')
+        return render_template('pendaftaran.html')
 
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
+
     
 @app.route('/get_antrian_data', methods=['GET'])
 def get_antrian_data():
     antrian_data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approve", "done"]}},
+        {"status": {"$in": ["pending", "approved", "done"]}},
         {"no_urut": True,
          "name": True,
          "nik": True,
@@ -318,11 +312,11 @@ def get_antrian_data():
 
     return jsonify({'antrian_data': antrian_data})
 
-@app.route("/pendaftaran_pegawai")
-def pendaftaran_pegawai():
+@app.route("/kelola_pendaftaran")
+def kelola_pendaftaran():
     # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
     data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approved"]}},
+        {"status": {"$in": ["pending", "approved", "done"]}},
         {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
     ))
 
@@ -330,7 +324,7 @@ def pendaftaran_pegawai():
     for index, row in enumerate(data, start=1):
         row['no_urut'] = index
 
-    return render_template('pendaftaran_pegawai.html', data=data)
+    return render_template('kelola_pendaftaran.html', data=data)
 
 @app.route('/update_status', methods=['POST'])
 def update_status():
@@ -350,8 +344,11 @@ def update_status():
 
                 if new_status in allowed_statuses:
                     if new_status == "rejected":
-                        # Logika untuk menolak pendaftaran (menghapus data dari koleksi)
-                        db.registrations.delete_one({'_id': ObjectId(registration_id)})
+                        # Logika untuk menolak pendaftaran (mengubah status menjadi rejected)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status}}
+                        )
                         return jsonify({"message": "Pendaftaran berhasil ditolak"})
 
                     elif new_status == "approved":
@@ -379,17 +376,6 @@ def update_status():
         return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
     except jwt.exceptions.DecodeError:
         return jsonify({"message": "Token tidak valid. Silakan login kembali."})
-
-
-@app.route("/riwayat_pendaftaran")
-def riwayat_pendaftaran():
-    return render_template("riwayat_pendaftaran.html")
-
-@app.route('/api/riwayat_pendaftaran', methods=['GET'])
-def riwayat_pendaftaran_api():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-    return jsonify(pendaftaran_data)
-
 
 @app.route("/profile")
 def profile():
