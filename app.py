@@ -1,6 +1,6 @@
+import secrets
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from pymongo import MongoClient
-import hashlib
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -8,12 +8,14 @@ import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from bson import ObjectId
+from flask_bcrypt import Bcrypt
 
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -24,8 +26,12 @@ if not DB_NAME:
 client = MongoClient(MONGODB_CONNECTION_STRING)
 db = client[DB_NAME]
 
-TOKEN_KEY = 'mytoken'
-SECRET_KEY = 'SPARTA'
+TOKEN_KEY = os.environ.get("TOKEN_KEY")
+if not TOKEN_KEY:
+    raise ValueError("TOKEN_KEY environment variable is not set")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
 
 
 def get_authorization():
@@ -169,8 +175,11 @@ def api_register():
     if password != confirm_password:
         return jsonify({'result': 'failed', 'message': 'Password tidak sesuai'})
 
-    # Hash password sebelum disimpan
-    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    # Generate a unique salt for each user
+    salt = secrets.token_hex(16)
+
+    # Use a cost factor of 12, you can adjust it based on your security needs
+    hashed_password = bcrypt.generate_password_hash(salt + password + salt, 10).decode('utf-8')
 
     # Simpan data pengguna ke MongoDB
     user_data = {
@@ -185,7 +194,8 @@ def api_register():
         'alamat': alamat,
         'no_telp': no_telp,
         'password': hashed_password,
-        'role': 'pasien'
+        'role': 'pasien',
+        'salt': salt,
     }
 
     db.users.insert_one(user_data)
@@ -202,31 +212,31 @@ def sign_in():
         return jsonify({"result": "fail", "message": "Username tidak boleh kosong"})
     if not password_receive:
         return jsonify({"result": "fail", "message": "Password tidak boleh kosong"})
+    
+    user = db.users.find_one({"username": username_receive})
 
-    # Use hashlib for password hashing
-    hashed_password = hashlib.sha256(
-        password_receive.encode('utf-8')).hexdigest()
+    if user and 'password' in user and 'salt' in user:
+        # Use bcrypt to verify the password with the stored salt
+        if bcrypt.check_password_hash(user["password"], user["salt"] + password_receive + user["salt"]):
+            payload = {
+                "id": username_receive,
+                # the token will be valid for 24 hours
+                "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
+            }
+            token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-    result = db.users.find_one(
-        {
-            "username": username_receive,
-            "password": hashed_password,
-        }
-    )
-
-    if result:
-        payload = {
-            "id": username_receive,
-            # the token will be valid for 24 hours
-            "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
-        }
-        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
-        return jsonify({
-            "result": "success",
-            "token": token,
-            "message": "Login Success"
-        })
+            return jsonify({
+                "result": "success",
+                "token": token,
+                "message": "Login Success"
+            })
+        else:
+            return jsonify(
+                {
+                    "result": "fail",
+                    "message": "We could not find a user with that id/password combination",
+                }
+            )
     else:
         return jsonify(
             {
