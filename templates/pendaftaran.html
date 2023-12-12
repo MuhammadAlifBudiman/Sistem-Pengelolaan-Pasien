@@ -9,6 +9,7 @@
       rel="stylesheet"
     />
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
@@ -61,7 +62,6 @@
         ) {
           toggleFormAndAntrian(false);
         } else {
-          // Jika status tidak sesuai, sembunyikan formulir
           toggleFormAndAntrian(true);
 
           // Jika formulir sudah dikirim, ambil dan tampilkan data antrian
@@ -120,14 +120,14 @@
           // Permintaan Ajax untuk mengirim formulir
           $.ajax({
             type: "POST",
-            url: "/pendaftaran_formulir",
+            url: "/pendaftaran",
             data: formData,
             success: function (data) {
               console.log(
                 "Response from the server after submitting the form:",
                 data
               );
-              let newStatus = data.antrian_data[0].status;
+              let newStatus = "pending";
               alert("Formulir telah diproses. Silakan tunggu.");
 
               sessionStorage.setItem("formStatus", newStatus);
@@ -142,6 +142,11 @@
           });
         });
       });
+      function sign_out() {
+        $.removeCookie("mytoken", { path: "/" });
+        alert("Logged out!");
+        window.location.href = "/";
+      }
     </script>
   </head>
 
@@ -163,10 +168,10 @@
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" href="/index">Home</a>
+            <a class="nav-link" href="/">Home</a>
           </li>
-          <li class="nav-item active">
-            <a class="nav-link" href="/pendaftaran">Pendaftaran</a>
+          <li class="nav-item">
+            <a class="nav-link active" href="/pendaftaran">Pendaftaran</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/riwayat_pendaftaran"
@@ -174,7 +179,7 @@
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/riwayat_check_up">Riwayat Check Up</a>
+            <a class="nav-link" href="/riwayat_checkup">Riwayat Check Up</a>
           </li>
           {% if user_info %}
           <li class="nav-item">

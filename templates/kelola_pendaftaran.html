@@ -1,202 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pendaftaran</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css"
+    />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script type="text/javascript" charset="utf8"
-        src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script
+      type="text/javascript"
+      charset="utf8"
+      src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"
+    ></script>
     <script>
-        function renderTable(data) {
-            console.log(data)
-            let table = $('#myTable').DataTable();
-            table.clear().draw();
+      function renderTable(data) {
+        console.log(data);
+        let table = $("#myTable").DataTable();
+        table.clear().draw();
 
-            for (let i = 0; i < data.length; i++) {
-                let row = data[i];
-                let statusButtons = '';
+        for (let i = 0; i < data.length; i++) {
+          let row = data[i];
+          let statusButtons = "";
 
-                if (row.status === 'pending') {
-                    statusButtons = `
+          if (row.status === "pending") {
+            statusButtons = `
                             <button class="btn btn-primary btn-action" data-registration-id="${row._id}" data-status="approved">Approve</button>
                             <button class="btn btn-danger btn-action" data-registration-id="${row._id}" data-status="rejected">Reject</button>
                         `;
-                } else if (row.status === 'approved') {
-                    statusButtons = `
+          } else if (row.status === "approved") {
+            statusButtons = `
                             <button class="btn btn-success btn-action-done" data-registration-id="${row._id}" data-status="done">Done</button>
                         `;
-                }
+          }
 
-                table.row.add([
-                    row.no_urut,
-                    row.name,
-                    row.poli,
-                    row.tanggal,
-                    row.keluhan,
-                    `
+          table.row
+            .add([
+              row.no_urut,
+              row.name,
+              row.poli,
+              row.tanggal,
+              row.keluhan,
+              `
                             <div class="btn-group" role="group">
                                 ${statusButtons}
                             </div>
-                        `
-                ]).draw(false);
-            }
+                        `,
+            ])
+            .draw(false);
         }
+      }
 
-        $(document).ready(function () {
-            let myDataTable = $('#myTable').DataTable();
+      $(document).ready(function () {
+        let myDataTable = $("#myTable").DataTable();
 
-            // Menangani klik tombol action (Approve, Reject, Done)
-            $(document).on('click', '.btn-action', function () {
-                let registrationId = $(this).data('registration-id');
-                let status = $(this).data('status');
-                let btnClicked = $(this);
+        // Menangani klik tombol action (Approve, Reject, Done)
+        $(document).on("click", ".btn-action", function () {
+          let registrationId = $(this).data("registration-id");
+          let status = $(this).data("status");
+          let btnClicked = $(this);
 
-                // Kirim permintaan ke server untuk mengubah status
-                $.ajax({
-                    url: '/update_status',
-                    method: 'POST',
-                    data: { registrationId: registrationId, status: status },
-                    success: function (response) {
-                        console.log('Response from the server:', response);
+          // Kirim permintaan ke server untuk mengubah status
+          $.ajax({
+            url: "/update_status",
+            method: "POST",
+            data: { registrationId: registrationId, status: status },
+            success: function (response) {
+              console.log("Response from the server:", response);
 
-                        if (status === 'approved') {
-                            console.log('Approved button clicked');
-                            btnClicked.closest('tr').find('.btn-action').hide();
-                            btnClicked.closest('tr').find('.btn-action-done').show();
-                            window.location.reload();
-                        } else if (status === 'done') {
-                            console.log('Done button clicked');
-                            myDataTable.row(btnClicked.closest('tr')).remove().draw(false);
-                        } else if (status === 'rejected') {
-                            console.log('Rejected button clicked');
-                            myDataTable.row(btnClicked.closest('tr')).remove().draw(false);
-                        }
+              if (status === "approved") {
+                console.log("Approved button clicked");
+                btnClicked.closest("tr").find(".btn-action").hide();
+                btnClicked.closest("tr").find(".btn-action-done").show();
+                window.location.reload();
+              } else if (status === "done") {
+                console.log("Done button clicked");
+                myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
+              } else if (status === "rejected") {
+                console.log("Rejected button clicked");
+                myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
+              }
 
-                        // Perbarui data antrian jika diterima dari server
-                        // renderTable(response.antrian_data);
-                        
-                    },
+              // Perbarui data antrian jika diterima dari server
+              // renderTable(response.antrian_data);
+            },
 
-                    error: function (error) {
-                        console.error('Gagal mengubah status:', error);
-                    }
-                });
-            });
-
-            // Menangani klik tombol 'done'
-            $(document).on('click', '.btn-action-done', function () {
-                let registrationId = $(this).data('registration-id');
-                let status = $(this).data('status');
-                let btnClicked = $(this);
-
-                // Kirim permintaan ke server untuk mengubah status
-                $.ajax({
-                    url: '/update_status',
-                    method: 'POST',
-                    data: { registrationId: registrationId, status: status },
-                    success: function (response) {
-                        console.log('Done button clicked');
-                        myDataTable.row(btnClicked.closest('tr')).remove().draw(false);
-
-                        // Perbarui data antrian jika diterima dari server
-                        // renderTable(response.antrian_data);
-                    },
-                    error: function (error) {
-                        console.error('Gagal mengubah status:', error);
-                    }
-                });
-            });
+            error: function (error) {
+              console.error("Gagal mengubah status:", error);
+            },
+          });
         });
+
+        // Menangani klik tombol 'done'
+        $(document).on("click", ".btn-action-done", function () {
+          let registrationId = $(this).data("registration-id");
+          let status = $(this).data("status");
+          let btnClicked = $(this);
+
+          // Kirim permintaan ke server untuk mengubah status
+          $.ajax({
+            url: "/update_status",
+            method: "POST",
+            data: { registrationId: registrationId, status: status },
+            success: function (response) {
+              console.log("Done button clicked");
+              myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
+
+              // Perbarui data antrian jika diterima dari server
+              // renderTable(response.antrian_data);
+            },
+            error: function (error) {
+              console.error("Gagal mengubah status:", error);
+            },
+          });
+        });
+      });
+
+      function sign_out() {
+        $.removeCookie("mytoken", { path: "/" });
+        alert("Logged out!");
+        window.location.href = "/";
+      }
     </script>
+  </head>
 
-
-<body class="container mt-5">
+  <body class="container mt-5">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <a class="navbar-brand" href="#">Klinik Google</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Home</a>
-                </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Pendaftaran</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Rekam Medis</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Kelola Praktek</a>
-                </li>
-                <li class="nav-item">
-                    <a class="" href="">pegawai</a>
-                </li>
-                <li class="nav-item">
-                    <a class="btn btn-primary" href="">Logout</a>
-                </li>
-            </ul>
-        </div>
+      <a class="navbar-brand" href="#">Klinik Google</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/kelola_pendaftaran">Pendaftaran</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/rekam_medis">Rekam Medis</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="kelola_praktik">Kelola Praktek</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/profile">{{ user_info.username }}</a>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+          </li>
+        </ul>
+      </div>
     </nav>
 
     <div class="card">
-        <div class="card-header">
-            <h3 class="text-center">Pendaftaran</h3>
-        </div>
-        <div class="card-body">
-            <table class="table" id="myTable">
-                <thead>
-                    <tr>
-                        <th scope="col">No Urut</th>
-                        <th scope="col">Nama</th>
-                        <th scope="col">Poli</th>
-                        <th scope="col">Tanggal Periksa</th>
-                        <th scope="col">Keluhan</th>
-                        <th scope="col">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in data %}
-                    {% if row.status not in ['rejected', 'done'] %}
-                    <tr>
-                        <td>{{ row.no_urut }}</td>
-                        <td>{{ row.name }}</td>
-                        <td>{{ row.poli }}</td>
-                        <td>{{ row.tanggal }}</td>
-                        <td>{{ row.keluhan }}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                {% if row.status == 'pending' %}
-                                <button class="btn btn-primary btn-action" data-registration-id="{{ row._id }}"
-                                    data-status="approved">Approve</button>
-                                <button class="btn btn-danger btn-action" data-registration-id="{{ row._id }}"
-                                    data-status="rejected">Reject</button>
-                                {% elif row.status == 'approved' %}
-                                <button class="btn btn-success btn-action-done" data-registration-id="{{ row._id }}"
-                                    data-status="done">Done</button>
-                                {% elif row.status == 'done' %}
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+      <div class="card-header">
+        <h3 class="text-center">Pendaftaran</h3>
+      </div>
+      <div class="card-body">
+        <table class="table" id="myTable">
+          <thead>
+            <tr>
+              <th scope="col">No Urut</th>
+              <th scope="col">Nama</th>
+              <th scope="col">Poli</th>
+              <th scope="col">Tanggal Periksa</th>
+              <th scope="col">Keluhan</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data %} {% if row.status not in ['rejected', 'done']
+            %}
+            <tr>
+              <td>{{ row.no_urut }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.poli }}</td>
+              <td>{{ row.tanggal }}</td>
+              <td>{{ row.keluhan }}</td>
+              <td>
+                <div class="btn-group" role="group">
+                  {% if row.status == 'pending' %}
+                  <button
+                    class="btn btn-primary btn-action"
+                    data-registration-id="{{ row._id }}"
+                    data-status="approved"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    class="btn btn-danger btn-action"
+                    data-registration-id="{{ row._id }}"
+                    data-status="rejected"
+                  >
+                    Reject
+                  </button>
+                  {% elif row.status == 'approved' %}
+                  <button
+                    class="btn btn-success btn-action-done"
+                    data-registration-id="{{ row._id }}"
+                    data-status="done"
+                  >
+                    Done
+                  </button>
+                  {% elif row.status == 'done' %} {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endif %} {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-</body>
-
+  </body>
 </html>

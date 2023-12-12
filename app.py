@@ -301,6 +301,7 @@ def pendaftaran():
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
 
         if request.method == 'POST' and request.form.get('submit') and username:
             poli = request.form['poli']
@@ -336,7 +337,7 @@ def pendaftaran():
                 }) > 0
 
                 antrian_data = list(db.registrations.find(
-                    {"status": {"$in": ["pending", "approved", "done"]}},
+                    {"status": {"$in": ["pending", "approved"]}, "username": user_data['username']},
                     {"no_urut": True, "name": True, "nik": True, "tanggal": True, "status": True, "_id": False}
                 ))
 
@@ -346,45 +347,75 @@ def pendaftaran():
 
                 return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
 
-        return render_template('pendaftaran.html')
+        return render_template('pendaftaran.html', user_info=user_info)
 
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
-    
+from flask import render_template, jsonify, request, redirect, url_for
+
 @app.route('/get_antrian_data', methods=['GET'])
 def get_antrian_data():
-    antrian_data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approved", "done"]}},
-        {"no_urut": True,
-         "name": True,
-         "nik": True,
-         "tanggal": True,
-         "status": True,
-         "_id": False}
-    ))
+    token_receive = request.cookies.get(TOKEN_KEY)
 
-    # Tambahkan nomor urut pada setiap data antrian
-    for index, data in enumerate(antrian_data, start=1):
-        data['no_urut'] = index
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
 
-    app.logger.info(f"Data Antrian: {antrian_data}") 
-    
-    return jsonify({'antrian_data': antrian_data})
+        if username:
+          
+            antrian_data = list(db.registrations.find(
+                {
+                    "username": username,
+                    "status": {"$in": ["pending", "approved"]}
+                },
+                {
+                    "no_urut": True,
+                    "name": True,
+                    "nik": True,
+                    "tanggal": True,
+                    "status": True,
+                    "_id": False
+                }
+            ))
+
+            for index, data in enumerate(antrian_data, start=1):
+                data['no_urut'] = index
+
+            # app.logger.info(f"Data Antrian: {antrian_data}")
+            # print(antrian_data)
+            if any(data['status'] in ['rejected', 'done'] for data in antrian_data):
+                print("jalan")
+                return render_template('pendaftaran.html', has_pending_or_approved=False)
+
+            return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': True})
+
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        pass
+
+    return render_template('pendaftaran.html', has_pending_or_approved=False)
+
 
 @app.route("/kelola_pendaftaran")
 def kelola_pendaftaran():
-    # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
-    data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approved", "done"]}},
-        {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
-    ))
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
+        # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
+        data = list(db.registrations.find(
+            {"status": {"$in": ["pending", "approved", "done"]}},
+            {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
+        ))
 
-    # Tambahkan nomor urut pada setiap data
-    for index, row in enumerate(data, start=1):
-        row['no_urut'] = index
+        # Tambahkan nomor urut pada setiap data
+        for index, row in enumerate(data, start=1):
+            row['no_urut'] = index
 
-    return render_template('kelola_pendaftaran.html', data=data)
+        return render_template('kelola_pendaftaran.html', data=data, user_info=user_info)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
 
 @app.route('/update_status', methods=['POST'])
 def update_status():
@@ -443,7 +474,14 @@ def update_status():
 
 @app.route("/riwayat_pendaftaran")
 def riwayat_pendaftaran():
-    return render_template("riwayat_pendaftaran.html")
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
+        return render_template("riwayat_pendaftaran.html", user_info=user_info)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
 
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
@@ -571,7 +609,7 @@ def kelola_praktik():
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
             return redirect(url_for("login", msg="You must login as pegawai"))
-        return render_template('praktik.html')
+        return render_template('praktik.html', user_info=user_info)
     except jwt.ExpiredSignatureError:
         return redirect(url_for("login", msg="Your token has expired"))
     except jwt.exceptions.DecodeError:
