@@ -37,218 +37,105 @@
   <script>
     // Jadwal Table
     $(document).ready(function () {
-      // Inisialisasi datatables
-      let pendaftaranTable = $("#pendaftaranTable").DataTable();
+      // Inisialisasi DataTables
+      let myTable = $("#pendaftaranTable").DataTable();
+      let checkupTable = $("#checkupTable").DataTable();
+      let rekamMedisTable = $("#rekamMedisTable").DataTable();
+      let list_checkup_user = $("#list_checkup_user").DataTable();
 
-      // Ambil data jadwal praktek
+      // Ambil data riwayat pendaftaran
       $.ajax({
-        url: "/api/get_jadwal",
+        url: "/api/dashboard_pendaftaran",
         type: "GET",
         success: function (data) {
-          // Isi tabel jadwal praktek
-          jadwalTable.clear().draw();
-          data.jadwal.forEach(function (row) {
-            // Update tabel
-            let newRow = [
-              row.nama,
-              row.poli,
-              row.hari,
-              row.jam_buka + " - " + row.jam_tutup,
-              "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-            ];
-            let rowNode = jadwalTable.row.add(newRow).draw().node();
-            $(rowNode).attr("id", row._id);
+          // Isi tabel riwayat pendaftaran
+          myTable.clear().draw();
+          data.data_list_pendaftaran.forEach(function (row, index) {
+            let antrian = row.antrian || "-";
+            myTable.row
+              .add([antrian, row.name, row.poli, row.tanggal, row.status])
+              .draw(false);
           });
         },
-        error: function (error) {
-          alert(error.responseJSON.message);
+      });
+
+      // Ambil data riwayat pendaftaran
+      $.ajax({
+        url: "/api/dashboard_checkup",
+        type: "GET",
+        success: function (data) {
+          console.log(data);
+          // Isi tabel riwayat pendaftaran
+          checkupTable.clear().draw();
+          data.data_list_checkup.forEach(function (row, index) {
+            checkupTable.row
+              .add([
+                index + 1,
+                row.tgl_periksa,
+                row.nama,
+                row.dokter,
+                row.poli,
+                row.keluhan,
+                row.hasil_anamnesa,
+              ])
+              .draw(false);
+          });
         },
       });
 
-      // Event listener for Add button
-      $("#tambahJadwal").submit(function (e) {
-        e.preventDefault();
-
-        // Ambil nilai input
-        let nama = $("#nama").val();
-        let poli = $("#listPoli").val();
-        let hari = $("input[name='hari']:checked").val();
-        let jamBuka = $("#jamBuka").val();
-        let jamTutup = $("#jamTutup").val();
-
-        // Lakukan validasi
-        if (!nama || !poli || !hari || !jamBuka || !jamTutup) {
-          alert("Semua field harus diisi!");
-          return;
-        }
-
-        if (jamBuka >= jamTutup) {
-          alert("Jam buka harus lebih kecil dari jam tutup!");
-          return;
-        }
-
-        let formData = $(this).serializeArray();
-
-        $.ajax({
-          url: "/api/tambah_jadwal",
-          type: "POST",
-          data: formData,
-          success: function (response) {
-            if (response.result == "success") {
-              let jadwal = response.jadwal;
-              // Update tabel
-              let newRow = [
-                jadwal.nama,
-                jadwal.poli,
-                jadwal.hari,
-                jadwal.jam_buka + " - " + jadwal.jam_tutup,
-                "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-              ];
-              let rowNode = jadwalTable.row.add(newRow).draw().node();
-              $(rowNode).attr("id", jadwal._id); // Set ID for the new row
-
-              alert(response.message);
-              // Reset the form
-              $("#tambahJadwal")[0].reset();
-
-              // Close the modal
-              $("#exampleModal").modal("hide");
-
-            } else {
-              alert(response.message);
-            }
-          },
-          error: function (error) {
-            alert(error.responseJSON.message);
-          },
-        });
+      // Ambil data riwayat pendaftaran
+      $.ajax({
+        url: "/api/dashboard_rekam_medis",
+        type: "GET",
+        success: function (data) {
+          console.log(data);
+          // Isi tabel riwayat pendaftaran
+          rekamMedisTable.clear().draw();
+          data.data_list_rekam_medis.forEach(function (row, index) {
+            rekamMedisTable.row
+              .add([
+                index + 1,
+                row.nik,
+                row.nama,
+                "<button class='btn btn-primary btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal'>Lihat</button>",
+              ])
+              .draw(false);
+          });
+        },
       });
 
-      // Event listener for Edit buttons
-      $("#jadwalTable").on("click", ".btn-edit", function () {
-        let action = $(this).text();
-        let row = jadwalTable.row($(this).parents("tr"));
+      $("#rekamMedisTable").on("click", ".btn-lihat", function (e) {
+        e.preventDefault();
+        console.log("lihat");
+        let row = rekamMedisTable.row($(this).parents("tr"));
         let rowData = row.data();
-        let rowId = $(this).parents("tr").attr("id");
-        let editModal = $("#editModal");
+        console.log(rowData);
+        let nik = rowData[1];
+
         $.ajax({
-          url: "/api/get_jadwal/" + rowId,
+          url: `/lihat_rekam_medis/${nik}`,
           type: "GET",
           success: function (response) {
-            let jadwal = response.jadwal;
-            // populate the edit modal
-            editModal.find("#nama").val(jadwal.nama);
-            editModal.find("#listPoli").val(jadwal.poli);
-            editModal.find("#jamBuka").val(jadwal.jam_buka);
-            editModal.find("#jamTutup").val(jadwal.jam_tutup);
-            // Clear all checkboxes first
-            editModal.find("input[name='hari']").prop("checked", false);
-            // Check the checkboxes based on the received values
-            for (let i = 0; i < jadwal.hari.length; i++) {
-              editModal
-                .find("input[name='hari'][value='" + jadwal.hari[i] + "']")
-                .prop("checked", true);
+            // Update tabel
+            console.log(response.list_checkup_user);
+            list_checkup_user.clear().draw();
+            for (let i = 0; i < response.list_checkup_user.length; i++) {
+              let newRow = [
+                i + 1,
+                response.list_checkup_user[i].tgl_periksa,
+                response.list_checkup_user[i].dokter,
+                response.list_checkup_user[i].poli,
+                response.list_checkup_user[i].keluhan,
+                response.list_checkup_user[i].hasil_anamnesa,
+              ];
+              let rowNode = list_checkup_user.row.add(newRow).draw().node();
+              $(rowNode).attr("id", response.list_checkup_user[i]._id);
             }
           },
           error: function (error) {
-            alert(error.responseJSON.message);
+            console.log("Error:", error);
           },
         });
-
-        // Event listener for Edit form submission
-        editModal
-          .find("#editJadwal")
-          .off("submit")
-          .submit(function (e) {
-            e.preventDefault();
-
-            // Ambil nilai input
-            let nama = editModal.find("#nama").val();
-            let poli = editModal.find("#listPoli").val();
-            let hari = editModal.find("input[name='hari']:checked").val();
-            let jamBuka = editModal.find("#jamBuka").val();
-            let jamTutup = editModal.find("#jamTutup").val();
-
-            // Lakukan validasi
-            if (!nama || !poli || !hari || !jamBuka || !jamTutup) {
-              alert("Semua field harus diisi!");
-              return;
-            }
-
-            if (jamBuka >= jamTutup) {
-              alert("Jam buka harus lebih kecil dari jam tutup!");
-              return;
-            }
-
-            let formData = $(this).serializeArray();
-
-            $.ajax({
-              url: "/api/edit_jadwal/" + rowId,
-              type: "POST",
-              data: formData,
-              success: function (response) {
-                if (response.result == "success") {
-                  let jadwal = response.jadwal;
-                  // Update the row
-                  row
-                    .data([
-                      jadwal.nama,
-                      jadwal.poli,
-                      jadwal.hari,
-                      jadwal.jam_buka + " - " + jadwal.jam_tutup,
-                      "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-                    ])
-                    .draw();
-
-                  alert(response.message);
-
-                  // Reset the form
-                  editModal.find("#editJadwal")[0].reset();
-
-                  // Close the modal
-                  editModal.modal("hide");
-                } else {
-                  alert(response.message);
-                }
-              },
-              error: function (error) {
-                alert(error.responseJSON.message);
-              },
-            });
-          });
-      });
-
-      // Event listener for Delete buttons
-      $("#jadwalTable").on("click", ".btn-delete", function () {
-        let rowId = $(this).parents("tr").attr("id");
-        $("#hapusJadwal")
-          .off("submit")
-          .submit(function (e) {
-            e.preventDefault();
-
-            $.ajax({
-              url: "/api/hapus_jadwal/" + rowId,
-              type: "POST",
-              success: function (response) {
-                if (response.result == "success") {
-                  // Delete the row
-                  jadwalTable
-                    .row("#" + rowId)
-                    .remove()
-                    .draw();
-
-                  alert(response.message);
-                  // Close the modal
-                  $("#deleteModal").modal("hide");
-                } else {
-                  alert(response.message);
-                }
-              },
-              error: function (error) {
-                alert(error.responseJSON.message);
-              },
-            });
-          });
       });
     });
 
@@ -313,15 +200,87 @@
         </thead>
         <tbody>
           <!-- Data will be populated here -->
-          <tr id="{{ item._id }}">
-            <td>{{ item.no_urut }}</td>
-            <td>{{ item.nama }}</td>
-            <td>{{ item.poli }}</td>
-            <td>{{ item.hari|join('/') }}</td>
-            <td>{{ item.status }}</td>
-          </tr>
         </tbody>
       </table>
+      <h2 id="checkup" class="text-center">Check Up</h2>
+      <table class="table" id="checkupTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Tanggal Periksa</th>
+            <th>Nama Pasien</th>
+            <th>Nama Dokter</th>
+            <th>Poli</th>
+            <th>Keluhan</th>
+            <th>Hasil Pemeriksaan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+      <h2 id="rekam_medis" class="text-center">Rekam Medis</h2>
+      <table class="table" id="rekamMedisTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>NIK</th>
+            <th>Nama Pasien</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- lihat Modal -->
+    <div
+      class="modal fade"
+      id="lihatModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="lihatModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="lihatModalLabel">Hasil Periksa</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <table class="table" id="list_checkup_user">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Tgl Periksa</th>
+                  <th>Dokter</th>
+                  <th>Poli</th>
+                  <th>Keluhan</th>
+                  <th>Anamnesa Hasil Pemeriksaan</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Footer -->

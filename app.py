@@ -90,7 +90,57 @@ def home():
 def get_antrian():
     try:
         # Mengambil data antrian
-        antrian_data = list(db.antrian.find({}, {'_id': False}))
+        # antrian_data = list(db.antrian.find({}, {'_id': False}))
+        antrian_data = list(db.registrations.aggregate([
+            {
+                "$match": {
+                    "tanggal": datetime.now().strftime("%Y-%m-%d")
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$poli",
+                    "jumlah_pendaftar": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$status", "approved"]},
+                                1,
+                                0
+                            ]
+                        }
+                    },
+                    "dalam_antrian": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$status", "done"]},
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "poli": "$_id",
+                    "jumlah_pendaftar": 1,
+                    "dalam_antrian": 1
+                }
+            }
+        ]))
+
+        print(antrian_data)
+
+        # for data in antrian_data:
+        #     data['jumlah_pendaftar'] = db.registrations.count_documents(
+        #         {'poli': data['poli'], 
+        #          "tanggal": datetime.now().strftime("%Y-%m-%d"), 
+        #          "status": "approved"}
+        #         )
+        #     data['dalam_antrian'] = db.registrations.count_documents({'poli': data['poli'], 'status': 'done', "tanggal": datetime.now().strftime("%Y-%m-%d")})
+
+        
         return jsonify({"antrian": antrian_data})
     except Exception as e:
         return jsonify({"error": str(e)})
@@ -325,7 +375,7 @@ def get_antrian_data():
         data['no_urut'] = index
 
     app.logger.info(f"Data Antrian: {antrian_data}") 
-
+    
     return jsonify({'antrian_data': antrian_data})
 
 @app.route("/pendaftaran_pegawai")
@@ -397,8 +447,16 @@ def riwayat_pendaftaran():
 
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
-    pendaftaran_data = list(db.registrations.find({}, {'_id': 0}))
-    return jsonify(pendaftaran_data)
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        pendaftaran_data = list(db.registrations.find({'username': username}, {'_id': 0}))
+        return jsonify({'riwayat': pendaftaran_data})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 @app.route("/profile")
@@ -757,6 +815,7 @@ def buat_rekam_medis(nik):
     }
     db.rekam_medis.insert_one(data_rekam_medis)
     data_list_checkup_user = {
+        'nama': nama,
         'poli': data_reg['poli'],
         'keluhan': data_reg['keluhan'],
         'tgl_periksa': data_reg['tanggal'],
@@ -803,6 +862,96 @@ def edit_rekam_medis(id):
 
     return jsonify({'data_list_checkup_user': data_list_checkup_user})
 
+
+@app.route("/riwayat_checkup")
+def riwayat_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("riwayat_checkup.html", user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return render_template('index.html', msg="Your login token has expired")
+    except jwt.exceptions.DecodeError:
+        return render_template('index.html', msg="There was an error logging you in")
+
+
+@app.route("/api/riwayat_checkup")
+def api_riwayat_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup_user = list(db.list_checkup_user.find({'nik': user_info['nik']}, {'_id': False}))
+        return jsonify({'data_list_checkup_user': data_list_checkup_user})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/dashboard")
+def dashboard():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("dasbord.html", user_info=user_info)
+    except jwt.ExpiredSignatureError:
+        return render_template('index.html', msg="Your login token has expired")
+    except jwt.exceptions.DecodeError:
+        return render_template('index.html', msg="There was an error logging you in")
+
+@app.route("/api/dashboard_pendaftaran")
+def dashboard_pendaftaran():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_pendaftaran = list(db.registrations.find({}, {'_id': False}))
+        return jsonify({'data_list_pendaftaran': data_list_pendaftaran})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/api/dashboard_checkup")
+def dashboard_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup = list(db.list_checkup_user.find({}, {'_id': False}))
+        return jsonify({'data_list_checkup': data_list_checkup})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+@app.route("/api/dashboard_rekam_medis")
+def dashboard_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_rekam_medis = list(db.rekam_medis.find({}, {'_id': False}))
+        return jsonify({'data_list_rekam_medis': data_list_rekam_medis})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 if __name__ == '__main__':
