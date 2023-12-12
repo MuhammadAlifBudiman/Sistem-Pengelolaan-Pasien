@@ -12,80 +12,72 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script type="text/javascript" charset="utf8"
         src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
-
     <script>
         $(document).ready(function () {
-            $('#myTable').DataTable();
+            // Menangani klik tombol action (Approve, Reject, Done)
+            $('.btn-action').on('click', function () {
+                let registrationId = $(this).data('registration-id');
+                let status = $(this).data('status');
+                let btnClicked = $(this);
 
-            $(".btn-action").click(function () {
-                var registrationId = $(this).data("registration-id");
-                var status = $(this).data("status");
-                var btnDone = $(this).closest("tr").find(".btn-action-done");
-
+                // Kirim permintaan ke server untuk mengubah status
                 $.ajax({
-                    type: "POST",
-                    url: "/update_status",
-                    data: {
-                        registration_id: registrationId,
-                        new_status: status,
-                    },
+                    url: '/update_status',
+                    method: 'POST',
+                    data: { registrationId: registrationId, status: status },
                     success: function (response) {
-                        location.reload();
-
-                        if (response.show_done_button) {
-                            btnDone.show();
+                        // Perbarui tampilan setelah berhasil
+                        if (status === 'approved') {
+                            // Implementasi tindakan setelah approved
+                        } else if (status === 'done') {
+                            // Implementasi tindakan setelah done
+                            btnClicked.closest('tr').remove();
                         }
                     },
-                    error: function () {
-                        console.error("Gagal memperbarui status formulir");
-                    },
+                    error: function (error) {
+                        console.error('Gagal mengubah status:', error);
+                    }
                 });
             });
 
-            $(".btn-action-approve").click(function () {
-                var row = $(this).closest("tr");
-                var btnDone = row.find(".btn-action-done");
+            // Menangani klik tombol Reject
+            $('.btn-reject').on('click', function () {
+                let registrationId = $(this).data('registration-id');
+                let btnClicked = $(this);
 
-                // Logika untuk tombol Approve di sini
-
-                // Menampilkan tombol Done
-                btnDone.show();
-            });
-
-            $(".btn-action-reject").click(function () {
-                var registrationId = $(this).data("registration-id");
-                var row = $(this).closest("tr");
-
-                // Menghapus dari tampilan tabel
-                row.remove();
-
-                // Menghapus dari MongoDB
+                // Kirim permintaan ke server untuk menolak pendaftaran
                 $.ajax({
-                    type: "POST",
-                    url: "/delete_registration",
-                    data: {
-                        registration_id: registrationId,
-                    },
+                    url: '/update_status',
+                    method: 'POST',
+                    data: { registrationId: registrationId, status: 'rejected' },
                     success: function (response) {
-                        console.log("Formulir berhasil dihapus dari MongoDB");
+                        // Perbarui tampilan setelah berhasil
+                        btnClicked.closest('tr').remove();
                     },
-                    error: function () {
-                        console.error("Gagal menghapus formulir dari MongoDB");
-                    },
+                    error: function (error) {
+                        console.error('Gagal menolak pendaftaran:', error);
+                    }
                 });
             });
 
-            $(".btn-action-done").click(function () {
-                var registrationId = $(this).data("registration-id");
-                var row = $(this).closest("tr");
+            // Menangani klik tombol Done
+            $('.btn-action-done').on('click', function () {
+                let registrationId = $(this).data('registration-id');
+                let btnClicked = $(this);
 
-                // Menghapus dari tampilan tabel
-                row.remove();
-
-                // Logika untuk tombol Done di sini
-                // (Anda dapat menambahkan lebih banyak logika jika diperlukan)
-
-                // Catatan: Data tetap ada di MongoDB
+                // Kirim permintaan ke server untuk menandai sebagai done
+                $.ajax({
+                    url: '/update_status',
+                    method: 'POST',
+                    data: { registrationId: registrationId, status: 'done' },
+                    success: function (response) {
+                        // Perbarui tampilan setelah berhasil
+                        btnClicked.closest('tr').remove();
+                    },
+                    error: function (error) {
+                        console.error('Gagal menandai sebagai done:', error);
+                    }
+                });
             });
         });
     </script>
@@ -152,16 +144,15 @@
                             <td>{{ row.keluhan }}</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    {% if data.status == 'pending' %}
+                                    {% if row.status == 'pending' %}
                                     <button class="btn btn-primary btn-action" data-action="approve"
-                                        data-registration-id="{{ data._id }}" data-status="approved">Approve</button>
+                                        data-registration-id="{{ row._id }}" data-status="approved">Approve</button>
                                     <button class="btn btn-danger btn-action" data-action="reject"
-                                        data-registration-id="{{ data._id }}" data-status="rejected">Reject</button>
-                                    {% elif data.status == 'approved' %}
+                                        data-registration-id="{{ row._id }}" data-status="rejected">Reject</button>
+                                    {% elif row.status == 'approved' %}
                                     <span class="badge badge-success">Approved</span>
-                                    <!-- Tampilkan tombol Done di sini -->
                                     <button class="btn btn-success btn-action btn-action-done" data-action="done"
-                                        data-registration-id="{{ data._id }}" data-status="done"
+                                        data-registration-id="{{ row._id }}" data-status="done"
                                         style="display: none;">Done</button>
                                     {% endif %}
                                 </div>
