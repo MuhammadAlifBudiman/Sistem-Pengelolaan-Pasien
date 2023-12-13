@@ -17,6 +17,14 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css')}}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css"
+    />
     <script
       src="https://code.jquery.com/jquery-3.7.1.js"
       integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
@@ -82,6 +90,11 @@
           },
         });
 
+        // $(".navbar-toggler").on("click", function () {
+        //   $(".navbar-collapse").toggleClass("show");
+        // });
+      });
+
       function sign_out() {
         $.removeCookie("mytoken", { path: "/" });
         alert("Logged out!");
@@ -140,7 +153,9 @@
     </nav>
     {% else %}
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -173,14 +188,22 @@
             <a class="nav-link" href="/profile">{{ user_info.username }}</a>
           </li>
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
         </ul>
       </div>
     </nav>
     {% endif %} {% else %}
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"

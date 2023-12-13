@@ -8,7 +8,6 @@ body {
 }
 
 .container {
-  max-width: 400px;
   margin: 0 auto;
   padding: 20px;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
@@ -53,7 +52,7 @@ button:hover {
 .body-login {
   background: linear-gradient(rgba(6, 163, 218, 0.5), rgba(6, 163, 218, 0.5)), url('login.jpg') center center no-repeat;
   background-size: cover;
-  opacity: 0.8;
+
 }
 
 .register {
@@ -64,4 +63,8 @@ button:hover {
 
 .buat-akun {
   background-color: #fff;
+}
+
+.dataTables_filter {
+  margin-bottom: 10px;
 }
