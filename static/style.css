@@ -1,3 +1,8 @@
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:active {
+  color: #06a3da !important;
+}
+
 body {
   font-family: Arial, sans-serif;
 }
@@ -45,13 +50,13 @@ button:hover {
   background-color: #fff;
 }
 
-.body-login{
-  background: url('login.jpg');
+.body-login {
+  background: linear-gradient(rgba(6, 163, 218, 0.5), rgba(6, 163, 218, 0.5)), url('login.jpg') center center no-repeat;
   background-size: cover;
-  background-opacity: 0.8;
+  opacity: 0.8;
 }
 
-.register{
+.register {
   background: url('register.jpg');
   background-size: cover;
   background-opacity: 0.6;
