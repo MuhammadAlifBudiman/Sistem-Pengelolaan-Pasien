@@ -1,83 +1,69 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Klinik Google Login</title>
 
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='style.css')}}"
-    />
-    <script
-      src="https://code.jquery.com/jquery-3.7.1.js"
-      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+<head>
+  <title>Klinik Google Login</title>
 
-    <script>
-      $(document).ready(function () {
-        $("#loginForm").on("submit", function (e) {
-          e.preventDefault();
-          sign_in();
-        });
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css')}}" />
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      $("#loginForm").on("submit", function (e) {
+        e.preventDefault();
+        sign_in();
       });
+    });
 
-      function sign_in() {
-        const username = $("#username").val();
-        const password = $("#password").val();
+    function sign_in() {
+      const username = $("#username").val();
+      const password = $("#password").val();
 
-        if (!username) {
-          alert("Please input your username.");
-        }
-
-        if (!password) {
-          alert("Please input your password.");
-        }
-
-        $.ajax({
-          type: "POST",
-          url: "/api/login",
-          data: {
-            username,
-            password,
-          },
-          success: function (response) {
-            if (response["result"] === "success") {
-              alert(response["message"]);
-              $.cookie("accessToken", response["token"]);
-              window.location.replace("/");
-            } else {
-              alert(response["message"]);
-            }
-          },
-        });
+      if (!username) {
+        alert("Please input your username.");
       }
-    </script>
-  </head>
-  <body class="body-login">
-    <div class="d-flex login-container">
-      <div class="container align-items-center justify-content-center">
-        <h2>Login</h2>
-        <form id="loginForm">
-          <input
-            type="text"
-            id="username"
-            name="username"
-            placeholder="Username"
-            required
-          />
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Password"
-            required
-          />
-          <button type="submit">Login</button>
-        </form>
-        <p>Belum Punya akun? <a href="/register">Klik Disini</a></p>
-      </div>
 
+      if (!password) {
+        alert("Please input your password.");
+      }
+
+      $.ajax({
+        type: "POST",
+        url: "/api/login",
+        data: {
+          username,
+          password,
+        },
+        success: function (response) {
+          if (response["result"] === "success") {
+            alert(response["message"]);
+            $.cookie("accessToken", response["token"]);
+            window.location.replace("/");
+          } else {
+            alert(response["message"]);
+          }
+        },
+      });
+    }
+  </script>
+</head>
+
+<body class="body-login">
+  
+  <div class="d-flex login-container">
+    <div class="container align-items-center justify-content-center">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input type="text" id="username" name="username" placeholder="Username" required />
+        <input type="password" id="password" name="password" placeholder="Password" required />
+        <button type="submit" style="background-color: #091e3e; color: #fff;">Login</button>
+      </form>
+      <p>Belum Punya akun? <a href="/register" style="color: #091e3e;">Klik Disini</a></p>
     </div>
-  </body>
+  </div>
+
+</body>
+
 </html>

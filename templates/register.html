@@ -1,371 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Register</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='style.css')}}"
-    />
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://code.jquery.com/jquery-3.7.1.js"
-      integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
-      crossorigin="anonymous"
-    ></script>
 
-    <script>
-      $(document).ready(function () {
-        // Get today's date in the format YYYY-MM-DD
-        var today = new Date().toISOString().split("T")[0];
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css')}}" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+    crossorigin="anonymous"></script>
 
-        // Set the max attribute of the date input to today
-        $("#tgl-lahir").attr("max", today);
+  <script>
+    $(document).ready(function () {
+      // Get today's date in the format YYYY-MM-DD
+      var today = new Date().toISOString().split("T")[0];
 
-        // Event listener for form submission
-        $("#registrationForm").submit(function (event) {
-          event.preventDefault();
-          signUp();
-        });
+      // Set the max attribute of the date input to today
+      $("#tgl-lahir").attr("max", today);
+
+      // Event listener for form submission
+      $("#registrationForm").submit(function (event) {
+        event.preventDefault();
+        signUp();
+      });
+    });
+
+    async function signUp() {
+      // Retrieve form data
+      const formData = {
+        username: $("#username").val(),
+        name: $("#name").val(),
+        nik: $("#nik").val(),
+        tglLahir: $("#tgl-lahir").val(),
+        gender: $("input[name='gender']:checked").val(),
+        agama: $("#agama").val(),
+        status: $("#status").val(),
+        alamat: $("#alamat").val(),
+        noTelp: $("#no-telp").val(),
+        password: $("#password").val(),
+        confirmPassword: $("#confirm").val(),
+      };
+
+      // Validate form data
+      const validationMessage = validateForm(formData);
+      if (validationMessage) {
+        alert(validationMessage);
+        return;
+      }
+
+      // Update the tglLahir property in the formData
+      formData.tglLahir = formatDateString(formData.tglLahir);
+
+      try {
+        // Perform registration
+        const registrationResponse = await registerUser(formData);
+
+        if (registrationResponse.result === "success") {
+          alert(registrationResponse.message);
+          window.location.replace("/login");
+        } else {
+          alert(registrationResponse.message);
+        }
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    function validateForm(formData) {
+      // Define validation rules
+      const validationRules = {
+        username: "Username tidak boleh kosong",
+        name: "Nama tidak boleh kosong",
+        nik: [
+          "NIK tidak boleh kosong",
+          "NIK harus terdiri dari 16 digit angka",
+        ],
+        tglLahir: "Tanggal lahir tidak boleh kosong",
+        gender: "Jenis kelamin harus dipilih",
+        agama: "Agama tidak boleh kosong",
+        status: "Status tidak boleh kosong",
+        alamat: "Alamat tidak boleh kosong",
+        noTelp: "Nomor telepon tidak boleh kosong",
+        password: "Password tidak boleh kosong",
+        confirmPassword: "Konfirmasi password tidak boleh kosong",
+      };
+
+      // Perform validation
+      for (const field in validationRules) {
+        const value = formData[field];
+
+        if (!value) {
+          if (field === "nik") {
+            return validationRules[field][0];
+          }
+          return validationRules[field];
+        }
+
+        if (Array.isArray(validationRules[field])) {
+          const regex = /^\d+$/;
+
+          if (
+            field === "nik" &&
+            (value.length !== 16 || !regex.test(value))
+          ) {
+            return validationRules[field][1];
+          }
+        }
+      }
+
+      // Password regex validation
+      const passwordRegex =
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        return "Password harus memenuhi persyaratan: minimal 8 karakter, setidaknya 1 huruf kapital, 1 angka, dan 1 simbol";
+      }
+
+      // Confirm password match validation
+      if (formData.password !== formData.confirmPassword) {
+        return "Password dan konfirmasi password tidak cocok";
+      }
+
+      return null; // No validation issues
+    }
+
+    async function registerUser(data) {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       });
 
-      async function signUp() {
-        // Retrieve form data
-        const formData = {
-          username: $("#username").val(),
-          name: $("#name").val(),
-          nik: $("#nik").val(),
-          tglLahir: $("#tgl-lahir").val(),
-          gender: $("input[name='gender']:checked").val(),
-          agama: $("#agama").val(),
-          status: $("#status").val(),
-          alamat: $("#alamat").val(),
-          noTelp: $("#no-telp").val(),
-          password: $("#password").val(),
-          confirmPassword: $("#confirm").val(),
-        };
-
-        // Validate form data
-        const validationMessage = validateForm(formData);
-        if (validationMessage) {
-          alert(validationMessage);
-          return;
-        }
-
-        // Update the tglLahir property in the formData
-        formData.tglLahir = formatDateString(formData.tglLahir);
-
-        try {
-          // Perform registration
-          const registrationResponse = await registerUser(formData);
-
-          if (registrationResponse.result === "success") {
-            alert(registrationResponse.message);
-            window.location.replace("/login");
-          } else {
-            alert(registrationResponse.message);
-          }
-        } catch (error) {
-          alert(error.message);
-        }
+      if (!response.ok) {
+        throw new Error("Failed to register user");
       }
 
-      function validateForm(formData) {
-        // Define validation rules
-        const validationRules = {
-          username: "Username tidak boleh kosong",
-          name: "Nama tidak boleh kosong",
-          nik: [
-            "NIK tidak boleh kosong",
-            "NIK harus terdiri dari 16 digit angka",
-          ],
-          tglLahir: "Tanggal lahir tidak boleh kosong",
-          gender: "Jenis kelamin harus dipilih",
-          agama: "Agama tidak boleh kosong",
-          status: "Status tidak boleh kosong",
-          alamat: "Alamat tidak boleh kosong",
-          noTelp: "Nomor telepon tidak boleh kosong",
-          password: "Password tidak boleh kosong",
-          confirmPassword: "Konfirmasi password tidak boleh kosong",
-        };
+      return response.json();
+    }
 
-        // Perform validation
-        for (const field in validationRules) {
-          const value = formData[field];
+    // Function to format date from yyyy-mm-dd to dd-mm-yyyy
+    function formatDateString(dateString) {
+      const [year, month, day] = dateString.split("-");
+      return `${day}-${month}-${year}`;
+    }
+  </script>
+  <style></style>
+</head>
 
-          if (!value) {
-            if (field === "nik") {
-              return validationRules[field][0];
-            }
-            return validationRules[field];
-          }
-
-          if (Array.isArray(validationRules[field])) {
-            const regex = /^\d+$/;
-
-            if (
-              field === "nik" &&
-              (value.length !== 16 || !regex.test(value))
-            ) {
-              return validationRules[field][1];
-            }
-          }
-        }
-
-        // Password regex validation
-        const passwordRegex =
-          /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(formData.password)) {
-          return "Password harus memenuhi persyaratan: minimal 8 karakter, setidaknya 1 huruf kapital, 1 angka, dan 1 simbol";
-        }
-
-        // Confirm password match validation
-        if (formData.password !== formData.confirmPassword) {
-          return "Password dan konfirmasi password tidak cocok";
-        }
-
-        return null; // No validation issues
-      }
-
-      async function registerUser(data) {
-        const response = await fetch("/api/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to register user");
-        }
-
-        return response.json();
-      }
-
-      // Function to format date from yyyy-mm-dd to dd-mm-yyyy
-      function formatDateString(dateString) {
-        const [year, month, day] = dateString.split("-");
-        return `${day}-${month}-${year}`;
-      }
-    </script>
-  </head>
-  <body class="body-register">
-    <div class="container-fluid">
-      <div class="row">
-        <div
-          class="col-sm text-center d-flex flex-column justify-content-center register"
-        >
-          <h1 class="text-light fw-bold">Selamat Datang Kembali</h1>
-          <p class="text-light fw-bold">
-            Untuk tetap terhubung dengan kami, silahkan masuk dengan akun anda
-          </p>
-          <div class="d-flex justify-content-center">
-            <a class="btn btn-primary" href="/login">Sign In</a>
-          </div>
-        </div>
-        <div class="col buat-akun">
-          <h1 class="text-center mt-5">Buat Akun</h1>
-          <form id="registrationForm">
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="username"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Username
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="username"
-                  name="username"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="name"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Nama
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="name"
-                  name="name"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label for="nik" class="col-sm-2 col-form-label col-form-label-sm"
-                >NIK
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="nik"
-                  name="nik"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="tgl-lahir"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Tgl Lahir
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="date"
-                  class="form-control form-control-sm"
-                  id="tgl-lahir"
-                  name="tgl-lahir"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="gender"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Jenis Kelamin</label
-              >
-              <div class="col-sm-10">
-                <div class="form-check form-check-inline">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    id="gender-laki"
-                    name="gender"
-                    value="laki-laki"
-                  />
-                  <label class="form-check-label" for="gender-laki"
-                    >Laki-Laki</label
-                  >
-                </div>
-                <div class="form-check form-check-inline">
-                  <input
-                    type="radio"
-                    class="form-check-input"
-                    id="gender-perempuan"
-                    name="gender"
-                    value="perempuan"
-                  />
-                  <label class="form-check-label" for="gender-perempuan"
-                    >Perempuan</label
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="agama"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Agama
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="agama"
-                  name="agama"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="status"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Status
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="status"
-                  name="status"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="alamat"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Alamat
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="alamat"
-                  name="alamat"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="no-telp"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >No Telp
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="tel"
-                  class="form-control form-control-sm"
-                  id="no-telp"
-                  name="no-telp"
-                  pattern="\d{10,13}"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="password"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Password
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="password"
-                  class="form-control form-control-sm"
-                  id="password"
-                  name="password"
-                />
-              </div>
-            </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="confirm"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Confirm Password
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="password"
-                  class="form-control form-control-sm"
-                  id="confirm"
-                  name="confirm"
-                />
-              </div>
-            </div>
-            <div class="d-flex justify-content-center mb-5">
-              <a class="btn btn-primary" href="/register">Sign Up</a>
-            </div>
-          </form>
+<body class="body-register">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm text-center d-flex flex-column justify-content-center register">
+        <h1 class="text-light fw-bold">Selamat Datang Kembali</h1>
+        <p class="text-light fw-bold">
+          Untuk tetap terhubung dengan kami, silahkan masuk dengan akun anda
+        </p>
+        <div class="d-flex justify-content-center">
+          <a href="/login" style="
+          color: white; 
+          padding: 10px 20px; 
+          border-radius: 10px; 
+          text-decoration: none;
+          background-color: #091e3e;">
+            Sign In
+          </a>
         </div>
       </div>
+      <div class="col buat-akun">
+        <h1 class="text-center mt-5">Buat Akun</h1>
+        <form id="registrationForm">
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="username" class="col-sm-2 col-form-label col-form-label-sm">Username
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="username" name="username" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="name" class="col-sm-2 col-form-label col-form-label-sm">Nama
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="name" name="name" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="nik" class="col-sm-2 col-form-label col-form-label-sm">NIK
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="nik" name="nik" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="tgl-lahir" class="col-sm-2 col-form-label col-form-label-sm">Tgl Lahir
+            </label>
+            <div class="col-sm-10">
+              <input type="date" class="form-control form-control-sm" id="tgl-lahir" name="tgl-lahir" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="gender" class="col-sm-2 col-form-label col-form-label-sm">Jenis Kelamin</label>
+            <div class="col-sm-10">
+              <div class="form-check form-check-inline">
+                <input type="radio" class="form-check-input" id="gender-laki" name="gender" value="laki-laki" />
+                <label class="form-check-label" for="gender-laki">Laki-Laki</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input type="radio" class="form-check-input" id="gender-perempuan" name="gender" value="perempuan" />
+                <label class="form-check-label" for="gender-perempuan">Perempuan</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="agama" class="col-sm-2 col-form-label col-form-label-sm">Agama
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="agama" name="agama" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="status" class="col-sm-2 col-form-label col-form-label-sm">Status
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="status" name="status" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="alamat" class="col-sm-2 col-form-label col-form-label-sm">Alamat
+            </label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control form-control-sm" id="alamat" name="alamat" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="no-telp" class="col-sm-2 col-form-label col-form-label-sm">No Telp
+            </label>
+            <div class="col-sm-10">
+              <input type="tel" class="form-control form-control-sm" id="no-telp" name="no-telp" pattern="\d{10,13}" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="password" class="col-sm-2 col-form-label col-form-label-sm">Password
+            </label>
+            <div class="col-sm-10">
+              <input type="password" class="form-control form-control-sm" id="password" name="password" />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="confirm" class="col-sm-2 col-form-label col-form-label-sm">Confirm Password
+            </label>
+            <div class="col-sm-10">
+              <input type="password" class="form-control form-control-sm" id="confirm" name="confirm" />
+            </div>
+          </div>
+          <div class="d-flex justify-content-center mb-5">
+            <a href="/register" style="background-color: #091e3e; 
+            border-color: #091e3e; 
+            color: #fff; 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            display: inline-block; 
+            border-radius: 8px;">Sign Up</a>
+          </div>
+        </form>
+      </div>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>
