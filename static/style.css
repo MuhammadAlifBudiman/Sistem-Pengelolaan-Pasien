@@ -39,3 +39,24 @@ button:hover {
   background-color: #ffcccc;
   color: #f00;
 }
+
+.login-container .container {
+  margin-top: 200px;
+  background-color: #fff;
+}
+
+.body-login{
+  background: url('login.jpg');
+  background-size: cover;
+  background-opacity: 0.8;
+}
+
+.register{
+  background: url('register.jpg');
+  background-size: cover;
+  background-opacity: 0.6;
+}
+
+.buat-akun {
+  background-color: #fff;
+}

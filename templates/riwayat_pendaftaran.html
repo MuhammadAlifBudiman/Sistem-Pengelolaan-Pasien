@@ -61,7 +61,9 @@
   <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -93,19 +95,26 @@
             <a class="nav-link" href="/profile">{{ user_info.name }}</a>
           </li>
           <li class="nav-item">
-            <a class="btn btn-danger" onclick="sign_out()">Loqout</a>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
         </ul>
       </div>
     </nav>
 
-    <div class="container mt-5">
+    <div class="container mt-5 pt-5">
       <div class="card">
         <div class="card-header">
-          <h3 class="text-center">Riwayat Pendaftaran</h3>
+          <h3 class="text-center text-primary">Riwayat Pendaftaran</h3>
         </div>
         <div class="card-body">
-          <table class="table" id="myTable">
+          <table class="table table-hover table-bordered border-primary" style="
+          border-collapse: collapse;" id="myTable">
             <thead>
               <tr>
                 <th scope="col">No</th>

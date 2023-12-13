@@ -8,6 +8,10 @@
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css')}}"
+    />
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
@@ -24,7 +28,7 @@
 
           data.forEach(function (item, index) {
             let row = $("<tr>");
-              let antrian = item.antrian || "-";
+            let antrian = item.antrian || "-";
             row.append(`<td>${antrian}</td>`);
             row.append(`<td>${item.name}</td>`);
             row.append(`<td>${item.nik}</td>`);
@@ -150,10 +154,12 @@
     </script>
   </head>
 
-  <body>
+  <body class="body-pendaftaran">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -186,7 +192,13 @@
             <a class="nav-link" href="/profile">{{ user_info.name }}</a>
           </li>
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
           {% endif %}
         </ul>
@@ -195,50 +207,54 @@
 
     <!-- Formulir Pendaftaran -->
     <div id="formulir-container">
-      <div class="container mt-5 d-flex justify-content-center">
-        <div class="card" style="width: 500px">
-          <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
-          <div class="card-body">
-            <form action="/pendaftaran" method="POST">
-              <div class="form-group">
-                <label for="poli" class="mr-2"> Poli </label>
-                <select class="form-control" id="poli" name="poli">
-                  <option value="" selected disabled>Pilih Poli</option>
-                  <option value="poli_umum">Poli Umum</option>
-                  <option value="poli_gigi">Poli Gigi</option>
-                  <option value="poli_mata">Poli Mata</option>
-                  <option value="poli_anak">Poli Anak</option>
-                  <option value="poli_gizi">Poli Gizi</option>
-                  <option value="poli_jantung">Poli Jantung</option>
-                </select>
-              </div>
+      <div
+        class="container mt-5 pt-5 d-flex justify-content-center flex-column align-items-center"
+      >
+        <div class="bg-primary">
+          <div class="card" style="width: 500px">
+            <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
+            <div class="card-body">
+              <form action="/pendaftaran" method="POST">
+                <div class="form-group">
+                  <label for="poli" class="mr-2"> Poli </label>
+                  <select class="form-control" id="poli" name="poli">
+                    <option value="" selected disabled>Pilih Poli</option>
+                    <option value="poli_umum">Poli Umum</option>
+                    <option value="poli_gigi">Poli Gigi</option>
+                    <option value="poli_mata">Poli Mata</option>
+                    <option value="poli_anak">Poli Anak</option>
+                    <option value="poli_gizi">Poli Gizi</option>
+                    <option value="poli_jantung">Poli Jantung</option>
+                  </select>
+                </div>
 
-              <div class="form-group">
-                <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="tanggal"
-                  name="tanggal"
-                />
-              </div>
+                <div class="form-group">
+                  <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="tanggal"
+                    name="tanggal"
+                  />
+                </div>
 
-              <div class="form-group">
-                <label for="keluhan" class="mr-2"> Keluhan </label>
-                <textarea
-                  class="form-control"
-                  id="keluhan"
-                  name="keluhan"
-                  rows="3"
-                ></textarea>
-              </div>
+                <div class="form-group">
+                  <label for="keluhan" class="mr-2"> Keluhan </label>
+                  <textarea
+                    class="form-control"
+                    id="keluhan"
+                    name="keluhan"
+                    rows="3"
+                  ></textarea>
+                </div>
 
-              <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary btn-submit-form">
-                  Kirim
-                </button>
-              </div>
-            </form>
+                <div class="d-flex justify-content-center">
+                  <button type="submit" class="btn btn-primary btn-submit-form">
+                    Kirim
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>

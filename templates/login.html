@@ -23,8 +23,8 @@
       });
 
       function sign_in() {
-        const username = $("#username").val(); 
-        const password = $("#password").val(); 
+        const username = $("#username").val();
+        const password = $("#password").val();
 
         if (!username) {
           alert("Please input your username.");
@@ -44,7 +44,7 @@
           success: function (response) {
             if (response["result"] === "success") {
               alert(response["message"]);
-              $.cookie("mytoken", response["token"]);
+              $.cookie("accessToken", response["token"]);
               window.location.replace("/");
             } else {
               alert(response["message"]);
@@ -54,27 +54,30 @@
       }
     </script>
   </head>
-  <body>
-    <div class="container">
-      <h2>Login</h2>
-      <form id="loginForm">
-        <input
-          type="text"
-          id="username"
-          name="username"
-          placeholder="Username"
-          required
-        />
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="Password"
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
-      <p>Belum Punya akun? <a href="/register">Klik Disini</a></p>
+  <body class="body-login">
+    <div class="d-flex login-container">
+      <div class="container align-items-center justify-content-center">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Username"
+            required
+          />
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Password"
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+        <p>Belum Punya akun? <a href="/register">Klik Disini</a></p>
+      </div>
+
     </div>
   </body>
 </html>
