@@ -264,7 +264,9 @@
 
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -297,23 +299,31 @@
             <a class="nav-link" href="/profile">{{ user_info.username }}</a>
           </li>
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
         </ul>
       </div>
     </nav>
 
     <div class="container mt-5">
-      <h2 id="jadwal" class="text-center">Jadwal Praktik</h2>
+      <h2 id="jadwal" class="text-center text-primary">Jadwal Praktik</h2>
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn text-light"
         data-bs-toggle="modal"
         data-bs-target="#exampleModal"
+        style="background-color: #06a3da"
       >
         Tambah
       </button>
-      <table class="table" id="jadwalTable">
+      <table class="table table-hover table-bordered border-primary"
+      style="border-collapse: collapse" id="jadwalTable">
         <thead>
           <tr>
             <th>Nama</th>

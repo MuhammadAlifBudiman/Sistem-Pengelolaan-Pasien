@@ -153,7 +153,9 @@
 
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -186,16 +188,23 @@
             <a class="nav-link" href="/profile">{{ user_info.username }}</a>
           </li>
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
         </ul>
       </div>
     </nav>
 
     <div class="container mt-5">
-      <h2 id="jadwal" class="text-center">Dasbord</h2>
-      <h2 id="jadwal" class="text-center">Pendaftaran</h2>
-      <table class="table" id="pendaftaranTable">
+      <h2 id="jadwal" class="text-center text-primary">Dasbord</h2>
+      <h2 id="jadwal" class="text-center text-primary">Pendaftaran</h2>
+      <table class="table table-hover table-bordered border-primary"
+      style="border-collapse: collapse" id="pendaftaranTable">
         <thead>
           <tr>
             <th>No Urut</th>
@@ -209,8 +218,9 @@
           <!-- Data will be populated here -->
         </tbody>
       </table>
-      <h2 id="checkup" class="text-center">Check Up</h2>
-      <table class="table" id="checkupTable">
+      <h2 id="checkup" class="text-center text-primary mt-5">Check Up</h2>
+      <table class="table table-hover table-bordered border-primary"
+      style="border-collapse: collapse" id="checkupTable">
         <thead>
           <tr>
             <th>No</th>
@@ -226,8 +236,9 @@
           <!-- Data will be populated here -->
         </tbody>
       </table>
-      <h2 id="rekam_medis" class="text-center">Rekam Medis</h2>
-      <table class="table" id="rekamMedisTable">
+      <h2 id="rekam_medis" class="text-center text-primary mt-5">Rekam Medis</h2>
+      <table class="table table-hover table-bordered border-primary"
+      style="border-collapse: collapse" id="rekamMedisTable">
         <thead>
           <tr>
             <th>No</th>

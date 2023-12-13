@@ -115,7 +115,8 @@ python<!DOCTYPE html>
             console.log(response.list_checkup_user.length);
             list_checkup_user.clear().draw();
             for (let i = 0; i < response.list_checkup_user.length; i++) {
-              let dokter = response.list_checkup_user[i].dokter || "Belum ada dokter";
+              let dokter =
+                response.list_checkup_user[i].dokter || "Belum ada dokter";
               let hasil_anamnesa =
                 response.list_checkup_user[i].hasil_anamnesa ||
                 "Belum ada hasil anamnesa";
@@ -218,7 +219,9 @@ python<!DOCTYPE html>
 
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-      <a class="navbar-brand">Klinik Google</a>
+      <a class="navbar-brand ms-4" style="color: #06a3da"
+        ><span style="color: #091e3e">Klinik</span> Google</a
+      >
       <button
         class="navbar-toggler"
         type="button"
@@ -251,16 +254,23 @@ python<!DOCTYPE html>
             <a class="nav-link" href="/profile">{{ user_info.username }}</a>
           </li>
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="sign_out()">Logout</button>
+            <button
+              class="btn text-light"
+              onclick="sign_out()"
+              style="background-color: #f57e57"
+            >
+              Logout
+            </button>
           </li>
         </ul>
       </div>
     </nav>
 
     <div class="container mt-5">
-      <h2 id="jadwal" class="text-center">Data Rekam Medis</h2>
-      <h2 id="jadwal" class="text-center">Pasien Klinik Google</h2>
-      <table class="table" id="rekam_medisTable">
+      <h2 id="jadwal" class="text-center text-primary">Data Rekam Medis</h2>
+      <h2 id="jadwal" class="text-center text-primary">Pasien Klinik Google</h2>
+      <table class="table table-hover table-bordered border-primary"
+      style="border-collapse: collapse" id="rekam_medisTable">
         <thead>
           <tr>
             <th>Nama Pasien</th>
