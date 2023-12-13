@@ -44,7 +44,7 @@
           success: function (response) {
             if (response["result"] === "success") {
               alert(response["message"]);
-              $.cookie("accessToken", response["token"]);
+              $.cookie("mytoken", response["token"]);
               window.location.replace("/");
             } else {
               alert(response["message"]);
