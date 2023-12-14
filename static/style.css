@@ -44,7 +44,7 @@ button:hover {
 }
 
 .body-login {
-  background: linear-gradient(rgba(6, 163, 218, 0.5), rgba(6, 163, 218, 0.5)), url('login.jpg') center center no-repeat;
+  background: linear-gradient(rgba(0, 62, 85, 0.5), rgba(0, 62, 85, 0.5)), url('login.jpg') center center no-repeat;
   background-size: cover;
 
 }
@@ -61,4 +61,44 @@ button:hover {
 
 .dataTables_filter {
   margin-bottom: 10px;
+}
+
+.custom-col .card {
+  border: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.custom-col .card:hover {
+  box-shadow: 0 12px 24px rgba(9, 30, 62, 0.3);
+  transform: scale(1.05);
+}
+
+.btn-logout {
+  background-color: #f57e57;
+  color: #fff;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-logout:hover {
+  background-color: #06a3da;
+  color: #fff;
+}
+
+.btn-logout:active {
+  background-color: #06a3da;
+  color: #fff;
+}
+
+.nav-item a.btn {
+  background-color: #091e3e;
+  color: #fff;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav-item a.btn:hover {
+  background-color: #06a3da;
+}
+
+.nav-item a.btn:active {
+  background-color: #06a3da;
 }
