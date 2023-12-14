@@ -35,7 +35,7 @@
       href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css"
     />
 
-    <!-- MY CSS -->
+    <!-- Default CSS -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css')}}"
@@ -72,7 +72,11 @@
       charset="utf8"
       src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"
     ></script>
-    <!-- Scripts -->
+
+    <!-- Default Script -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <!-- Page Scripts -->
     {% block scripts %} {% for script in scripts %}
     <script src="{{ url_for('static', filename=script) }}"></script>
     {% endfor %} {% endblock %}

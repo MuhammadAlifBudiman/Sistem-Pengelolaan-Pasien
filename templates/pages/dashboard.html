@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Dashboard - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container-fluid mt-5 pt-5">
     <h2 id="jadwal" class="text-center" style="color: #091e3e">Dashboard</h2>
@@ -11,21 +11,21 @@
       {% set table_title='Pendaftaran' %}
       {% set table_headers=['No Urut', 'Nama', 'Poli', 'Tanggal Periksa', 'Status'] %}
       {% set table_id='pendaftaranTable' %}
-      {% include 'datatable.html' %}
+      {% include 'partials/datatable.html' %}
     </div>
 
     <div class="container mt-5 mb-5">
       {% set table_title='Check Up' %}
       {% set table_headers=['No', 'Tanggal Periksa', 'Nama Pasien', 'Nama Dokter', 'Poli', 'Keluhan', 'Hasil Pemeriksaan'] %}
       {% set table_id='checkupTable' %}
-      {% include 'datatable.html' %}
+      {% include 'partials/datatable.html' %}
     </div>
 
     <div class="container mt-5 mb-5">
       {% set table_title='Rekam Medis' %}
       {% set table_headers=['No', 'NIK', 'Nama Pasien', 'Action'] %}
       {% set table_id='rekamMedisTable' %}
-      {% include 'datatable.html' %}
+      {% include 'partials/datatable.html' %}
     </div>
   </div>
 
@@ -53,12 +53,12 @@
           {% set table_title='' %}
           {% set table_headers=['No', 'Tgl Periksa', 'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan'] %}
           {% set table_id='list_checkup_user' %}
-          {% include 'datatable.html' %}
+          {% include 'partials/datatable.html' %}
         </div>
       </div>
     </div>
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

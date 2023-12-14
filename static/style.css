@@ -38,39 +38,8 @@ button:hover {
   color: #f00;
 }
 
-.login-container .container {
-  margin-top: 200px;
-  background-color: #fff;
-}
-
-.body-login {
-  background: linear-gradient(rgba(0, 62, 85, 0.5), rgba(0, 62, 85, 0.5)), url('login.jpg') center center no-repeat;
-  background-size: cover;
-
-}
-
-.register {
-  background: url('register.jpg');
-  background-size: cover;
-  background-opacity: 0.6;
-}
-
-.buat-akun {
-  background-color: #fff;
-}
-
 .dataTables_filter {
   margin-bottom: 10px;
-}
-
-.custom-col .card {
-  border: none;
-  transition: box-shadow 0.3s ease;
-}
-
-.custom-col .card:hover {
-  box-shadow: 0 12px 24px rgba(9, 30, 62, 0.3);
-  transform: scale(1.05);
 }
 
 .btn-logout {

@@ -50,9 +50,3 @@ function formatDateString(dateString) {
   const [year, month, day] = dateString.split("-");
   return `${day}-${month}-${year}`;
 }
-
-function sign_out() {
-  $.removeCookie("mytoken", { path: "/" });
-  alert("Logged out!");
-  window.location.href = "/";
-}

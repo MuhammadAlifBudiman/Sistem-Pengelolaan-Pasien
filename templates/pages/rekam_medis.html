@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Rekam Medis - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container mt-5 pt-5 mb-5">
     <h2 id="jadwal" class="text-center" style="color: #091e3e">
@@ -12,7 +12,7 @@
     {% set table_title='Pasien Klinik Google' %}
     {% set table_headers=['Nama Pasien', 'NIK', 'Action'] %}
     {% set table_id='rekam_medisTable' %}
-    {% include 'datatable.html' %}
+    {% include 'partials/datatable.html' %}
   </div>
 
   <!-- Buat Modal -->
@@ -124,7 +124,7 @@
           {% set table_title='' %}
           {% set table_headers=['No', 'Tgl Periksa', 'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan', 'Action'] %}
           {% set table_id='list_checkup_user' %}
-          {% include 'datatable.html' %}
+          {% include 'partials/datatable.html' %}
         </div>
       </div>
     </div>
@@ -199,6 +199,6 @@
     </div>
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

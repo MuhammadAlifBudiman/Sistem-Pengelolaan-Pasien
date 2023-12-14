@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Home - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container-fluid px-5">
     <div id="carouselExampleIndicators" class="carousel slide mt-5 pt-5">
@@ -255,7 +255,7 @@
         {% set table_title='Jadwal Praktik' %}
         {% set table_headers=['Nama', 'Poli', 'Hari', 'Jam Praktek'] %}
         {% set table_id='jadwalTable' %}
-        {% include 'datatable.html' %}
+        {% include 'partials/datatable.html' %}
       </div>
 
 
@@ -263,11 +263,11 @@
         {% set table_title='Antrian Hari Ini' %}
         {% set table_headers=['Poli', 'Jumlah Pendaftar', 'Dalam Antrian'] %}
         {% set table_id='antrianTable' %}
-        {% include 'datatable.html' %}
+        {% include 'partials/datatable.html' %}
       </div>
     </div>
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

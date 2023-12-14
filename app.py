@@ -85,27 +85,32 @@ def is_valid_phone_number(phone_number):
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
     scripts = ['js/index.js']
+    css=['css/index.css']
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         user_info = db.users.find_one({"username": payload['id']})
-        return render_template('index.html', user_info=user_info, active_page='home', scripts=scripts)
+        return render_template('pages/index.html', user_info=user_info, active_page='home', scripts=scripts, css=css)
     except jwt.ExpiredSignatureError:
-        return render_template('index.html', msg="Your login token has expired", active_page='home', scripts=scripts)
+        return render_template('pages/index.html', msg="Your login token has expired", active_page='home', scripts=scripts, css=css)
     except jwt.exceptions.DecodeError:
-        return render_template('index.html', msg="There was an error logging you in", active_page='home', scripts=scripts)
+        return render_template('pages/index.html', msg="There was an error logging you in", active_page='home', scripts=scripts, css=css)
 
 
 # Return Login Page
 @app.route('/login', methods=['GET'])
 def login():
     msg = request.args.get('msg')
-    return render_template('login.html', msg=msg)
+    scripts=['js/login.js']
+    css=['css/login.css']
+    return render_template('pages/login.html', msg=msg, scripts=scripts, css=css)
 
 
 # Return Register Page
 @app.route("/register")
 def register():
-    return render_template("register.html")
+    scripts=['js/register.js']
+    css=['css/register.css']
+    return render_template("pages/register.html", scripts=scripts, css=css)
 
 
 # Return Pendaftaran Pasien Page
@@ -164,7 +169,7 @@ def pendaftaran():
 
                 return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
 
-        return render_template('pendaftaran.html', user_info=user_info, active_page='pendaftaran', scripts=scripts)
+        return render_template('pages/pendaftaran.html', user_info=user_info, active_page='pendaftaran', scripts=scripts)
 
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
@@ -179,7 +184,7 @@ def riwayat_pendaftaran():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username})
-        return render_template("riwayat_pendaftaran.html", user_info=user_info, active_page='riwayat_pendaftaran', scripts=scripts)
+        return render_template("pages/riwayat_pendaftaran.html", user_info=user_info, active_page='riwayat_pendaftaran', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -193,7 +198,7 @@ def riwayat_checkup():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
-        return render_template("riwayat_checkup.html", user_info=user_info, active_page='riwayat_checkup', scripts=scripts)
+        return render_template("pages/riwayat_checkup.html", user_info=user_info, active_page='riwayat_checkup', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -211,7 +216,7 @@ def profile():
         # format tgl_lahir to yyyy-mm-dd
         user_info["tgl_lahir"] = datetime.strptime(
             user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
-        return render_template('profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
+        return render_template('pages/profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -236,7 +241,7 @@ def kelola_pendaftaran():
         # for index, row in enumerate(data, start=1):
         #     row['no_urut'] = index
 
-        return render_template('kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
+        return render_template('pages/kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -250,7 +255,7 @@ def dashboard():
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
-        return render_template("dasbord.html", user_info=user_info, active_page='dashboard', scripts=scripts)
+        return render_template("pages/dashboard.html", user_info=user_info, active_page='dashboard', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -274,7 +279,7 @@ def get_rekam_medis():
                     'name': d['name'],
                     'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
                 })
-        return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info, active_page='rekam_medis', scripts=scripts)
+        return render_template("pages/rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info, active_page='rekam_medis', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
@@ -290,7 +295,7 @@ def kelola_praktik():
         user_info = db.users.find_one({'username': username}, {'_id': False})
         if user_info['role'] != 'pegawai':
             return redirect(url_for("login", msg="You must login as pegawai"))
-        return render_template('praktik.html', user_info=user_info, active_page='kelola_praktik', scripts=scripts)
+        return render_template('pages/praktik.html', user_info=user_info, active_page='kelola_praktik', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 

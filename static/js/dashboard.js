@@ -85,13 +85,15 @@ $(document).ready(function () {
         console.log(response.list_checkup_user);
         list_checkup_user.clear().draw();
         for (let i = 0; i < response.list_checkup_user.length; i++) {
+          let dokter = response.list_checkup_user[i].dokter || "Belum ada dokter";
+          let hasil_anamnesa = response.list_checkup_user[i].hasil_anamnesa || "Belum ada hasil anamnesa";
           let newRow = [
             i + 1,
             response.list_checkup_user[i].tgl_periksa,
-            response.list_checkup_user[i].dokter,
+            dokter,
             response.list_checkup_user[i].poli,
             response.list_checkup_user[i].keluhan,
-            response.list_checkup_user[i].hasil_anamnesa,
+            hasil_anamnesa,
           ];
           let rowNode = list_checkup_user.row.add(newRow).draw().node();
           $(rowNode).attr("id", response.list_checkup_user[i]._id);
@@ -104,8 +106,4 @@ $(document).ready(function () {
   });
 });
 
-function sign_out() {
-  $.removeCookie("mytoken", { path: "/" });
-  alert("Logged out!");
-  window.location.href = "/";
-}
+

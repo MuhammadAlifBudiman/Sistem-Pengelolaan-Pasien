@@ -11,20 +11,14 @@ $(document).ready(function () {
     success: function (data) {
       // Isi tabel riwayat pendaftaran
       rekam_medisTable.clear().draw();
-      data.data_rekam_medis.forEach((row)=> {
-        let action = ``
-        if (row.action == 'lihat') {
-          action = `<button class='btn btn-danger btn-sm btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal'>Lihat</button>`
+      data.data_rekam_medis.forEach((row) => {
+        let action = ``;
+        if (row.action == "lihat") {
+          action = `<button class='btn btn-danger btn-sm btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal'>Lihat</button>`;
         } else {
-          action = `<button class='btn btn-warning btn-sm btn-buat' data-bs-toggle='modal' data-bs-target='#buatModal'>Buat</button>`
+          action = `<button class='btn btn-warning btn-sm btn-buat' data-bs-toggle='modal' data-bs-target='#buatModal'>Buat</button>`;
         }
-        rekam_medisTable.row
-          .add([
-            row.name,
-            row.nik,
-            action
-          ])
-          .draw(false);
+        rekam_medisTable.row.add([row.name, row.nik, action]).draw(false);
       });
     },
   });
@@ -193,9 +187,4 @@ $(document).ready(function () {
         });
       });
   });
-}),
-  function sign_out() {
-    $.removeCookie("mytoken", { path: "/" });
-    alert("Logged out!");
-    window.location.href = "/";
-  };
+});

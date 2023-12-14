@@ -1,18 +1,18 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Kelola Pendaftaran - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container mt-5 pt-5 mb-5">
     {% set table_title='Pendaftaran' %}
     {% set table_headers=['No Urut', 'Nama', 'Poli', 'Tanggal Periksa', 'Keluhan', 'Action'] %}
     {% set table_id='myTable' %}
-    {% include 'datatable.html' %}
+    {% include 'partials/datatable.html' %}
 
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

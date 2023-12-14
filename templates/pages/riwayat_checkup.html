@@ -1,17 +1,17 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Riwayat Checkup - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container mt-5 pt-5 mb-5">
     {% set table_title='Riwayat Checkup' %}
     {% set table_headers=['No', 'Tanggal', 'Poli', 'Dokter', 'Keluhan', 'Hasil Pemeriksaan'] %}
     {% set table_id='myTable' %}
-    {% include 'datatable.html' %}
+    {% include 'partials/datatable.html' %}
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

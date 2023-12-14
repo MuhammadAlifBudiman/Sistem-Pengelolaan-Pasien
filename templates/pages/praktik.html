@@ -1,16 +1,16 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Kelola Praktik - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <div class="container mt-5 pt-5 mb-5">
     {% set table_title='Jadwal Praktik' %}
     {% set table_title_id='jadwal' %}
     {% set table_headers=['Nama', 'Poli', 'Hari', 'Jam Praktek', 'Action'] %}
     {% set table_id='jadwalTable' %}
-    {% include 'datatable.html' %}
+    {% include 'partials/datatable.html' %}
   </div>
 
   <!-- Add Modal -->
@@ -425,6 +425,6 @@
     </div>
   </div>
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}

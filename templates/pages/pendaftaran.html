@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 
 {% block title %}Pendaftaran - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'navbar.html' %}
+  {% include 'base/navbar.html' %}
 
   <!-- Formulir Pendaftaran -->
   <div id="formulir-container">
@@ -76,7 +76,7 @@
     {% set table_title='Antrian Pendaftaran' %}
     {% set table_headers=['No Urut', 'Nama', 'NIK', 'Tanggal', 'Status'] %}
     {% set table_id='myTable' %}
-    {% include 'datatable.html' %}
+    {% include 'partials/datatable.html' %}
   </div>
 
   <!-- Formulir Pendaftaran jika reject/done -->
@@ -135,6 +135,6 @@
   </div>
   {% endif %}
 
-  {% include 'footer.html' %}
+  {% include 'base/footer.html' %}
 
 {% endblock %}
