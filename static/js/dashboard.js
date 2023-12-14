@@ -31,15 +31,17 @@ $(document).ready(function () {
       // Isi tabel riwayat pendaftaran
       checkupTable.clear().draw();
       data.data_list_checkup.forEach(function (row, index) {
+        let dokter = row.dokter || "-";
+        let hasil_anamnesa = row.hasil_anamnesa || "-";
         checkupTable.row
           .add([
             index + 1,
             row.tgl_periksa,
             row.nama,
-            row.dokter,
+            dokter,
             row.poli,
             row.keluhan,
-            row.hasil_anamnesa,
+            hasil_anamnesa,
           ])
           .draw(false);
       });

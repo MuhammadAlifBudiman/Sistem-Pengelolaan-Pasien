@@ -346,12 +346,12 @@ def pendaftaran():
                     {"status": {"$in": ["pending", "approved"]},
                         "username": user_data['username']},
                     {"no_urut": True, "name": True, "nik": True,
-                        "tanggal": True, "status": True, "_id": False}
+                        "tanggal": True, "status": True, "_id": False, "antrian": True}
                 ))
 
                 # Tambahkan nomor urut pada setiap data antrian
-                for index, data in enumerate(antrian_data, start=1):
-                    data['no_urut'] = index
+                # for index, data in enumerate(antrian_data, start=1):
+                #     data['no_urut'] = index
 
                 return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
 
@@ -415,12 +415,12 @@ def kelola_pendaftaran():
         data = list(db.registrations.find(
             {"status": {"$in": ["pending", "approved", "done"]}},
             {"name": True, "poli": True, "tanggal": True,
-                "keluhan": True, "status": True, "_id": True}
+                "keluhan": True, "status": True, "_id": True, "antrian": True}
         ))
 
         # Tambahkan nomor urut pada setiap data
-        for index, row in enumerate(data, start=1):
-            row['no_urut'] = index
+        # for index, row in enumerate(data, start=1):
+        #     row['no_urut'] = index
 
         return render_template('kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
