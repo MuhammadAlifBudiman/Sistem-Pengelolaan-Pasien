@@ -43,7 +43,7 @@
 
     <!-- Page CSS -->
     {% block css %} {% for c in css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename=c) }}"></link>
+    <link rel="stylesheet" href="{{ url_for('static', filename=c) }}" />
     {% endfor %} {% endblock %}
 
     <!-- Bootstrap -->
@@ -77,7 +77,7 @@
     <script src="{{ url_for('static', filename=script) }}"></script>
     {% endfor %} {% endblock %}
   </head>
-  <body>
+  <body class="d-flex flex-column min-vh-100">
     <!-- Content Container -->
     {% block content %}{% endblock %}
   </body>
