@@ -3,14 +3,21 @@ $(document).ready(function () {
   // Inisialisasi datatables
   let jadwalTable = $("#jadwalTable").DataTable();
 
+  // insert button tambah below h2 with id jadwal
+  $("#jadwal").append(
+    '<div class="d-grid gap-2 d-md-block col-2"> <button type="button" class="btn btn-primary text-light" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #06a3da">Tambah</button></div>'
+  );
+
   // Ambil data jadwal praktek
   $.ajax({
     url: "/api/get_jadwal",
     type: "GET",
     success: function (data) {
+      console.log()
       // Isi tabel jadwal praktek
       jadwalTable.clear().draw();
       data.jadwal.forEach(function (row) {
+        console.log(row._id)
         // Update tabel
         let newRow = [
           row.nama,
@@ -98,6 +105,7 @@ $(document).ready(function () {
       type: "GET",
       success: function (response) {
         let jadwal = response.jadwal;
+
         // populate the edit modal
         editModal.find("#nama").val(jadwal.nama);
         editModal.find("#listPoli").val(jadwal.poli);
@@ -108,7 +116,7 @@ $(document).ready(function () {
         // Check the checkboxes based on the received values
         for (let i = 0; i < jadwal.hari.length; i++) {
           editModal
-            .find("input[name='hari'][value='" + jadwal.hari[i] + "']")
+            .find("input[name='hari'][value='" + jadwal.hari[i].toLowerCase() + "']")
             .prop("checked", true);
         }
       },

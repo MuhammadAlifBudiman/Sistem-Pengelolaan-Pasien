@@ -801,6 +801,29 @@ def hapus_jadwal(id):
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
+@app.route("/api/kelola_pendaftaran")
+def get_kelola_pendaftaran():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+
+        if username:
+            data = list(db.registrations.find(
+                {"status": {"$in": ["pending", "approved", "done"]}},
+                {"name": True, "poli": True, "tanggal": True,
+                    "keluhan": True, "status": True, "_id": True, "antrian": True}
+            ))
+
+            for d in data:
+                d['_id'] = str(d['_id'])
+
+            return jsonify({'data': data, 'result': 'success', 'message': 'Data fetched successfully'})
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 @app.route("/kelola_pendaftaran", methods=["GET"])
 def get_pending_and_approved_registrations():
@@ -904,6 +927,28 @@ def buat_rekam_medis(nik):
 
     return 'Success'
 
+@app.route("/api/rekam_medis")
+def api_get_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        data_rekam_medis = []
+        for d in db.users.find():
+            exist = db.registrations.find_one({'username': d['username']})
+            if exist:
+                data_rekam_medis.append({
+                    'username': d['username'],
+                    'nik': d['nik'],
+                    'name': d['name'],
+                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
+                })
+        return jsonify({'data_rekam_medis': data_rekam_medis, 'result': 'success', 'message': 'Data fetched successfully'})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 @app.route("/lihat_rekam_medis/<nik>", methods=["GET"])
 def lihat_rekam_medis(nik):

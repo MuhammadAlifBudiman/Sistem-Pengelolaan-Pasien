@@ -6,62 +6,11 @@
   {% include 'navbar.html' %}
 
   <div class="container mt-5 pt-5 mb-5">
-    <h2 id="jadwal" class="text-center" style="color: #091e3e">
-      Jadwal Praktik
-    </h2>
-    <div class="d-grid gap-2 d-md-block col-2">
-      <button
-        type="button"
-        class="btn btn-primary text-light"
-        data-bs-toggle="modal"
-        data-bs-target="#exampleModal"
-        style="background-color: #06a3da"
-      >
-        Tambah
-      </button>
-    </div>
-    <table
-      class="table table-hover table-bordered"
-      style="border-collapse: collapse; border-color: #091e3e"
-      id="jadwalTable"
-    >
-      <thead>
-        <tr>
-          <th>Nama</th>
-          <th>Poli</th>
-          <th>Hari</th>
-          <th>Jam Praktek</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-        {% for item in jadwal %}
-        <tr id="{{ item._id }}">
-          <td>{{ item.nama }}</td>
-          <td>{{ item.poli }}</td>
-          <td>{{ item.hari|join('/') }}</td>
-          <td>{{ item.jam_buka }} - {{ item.jam_tutup }}</td>
-          <td>
-            <button
-              class="btn btn-warning btn-sm btn-edit"
-              data-bs-toggle="modal"
-              data-bs-target="#editModal"
-            >
-              Edit
-            </button>
-            <button
-              class="btn btn-danger btn-sm btn-delete"
-              data-bs-toggle="modal"
-              data-bs-target="#deleteModal"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% set table_title='Jadwal Praktik' %}
+    {% set table_title_id='jadwal' %}
+    {% set table_headers=['Nama', 'Poli', 'Hari', 'Jam Praktek', 'Action'] %}
+    {% set table_id='jadwalTable' %}
+    {% include 'datatable.html' %}
   </div>
 
   <!-- Add Modal -->

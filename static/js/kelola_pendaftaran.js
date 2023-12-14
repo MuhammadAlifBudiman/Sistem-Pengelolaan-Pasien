@@ -1,42 +1,52 @@
 function renderTable(data) {
-  console.log(data);
   let table = $("#myTable").DataTable();
   table.clear().draw();
 
-  for (let i = 0; i < data.length; i++) {
-    let row = data[i];
-    let statusButtons = "";
-
+  data.forEach((row) => {
+    let statusButton = ``;
+    let antrian = row.antrian || "-";
     if (row.status === "pending") {
-      statusButtons = `
+      statusButton = `
                         <button class="btn btn-primary btn-action" data-registration-id="${row._id}" data-status="approved">Approve</button>
                         <button class="btn btn-danger btn-action" data-registration-id="${row._id}" data-status="rejected">Reject</button>
                     `;
     } else if (row.status === "approved") {
-      statusButtons = `
+      statusButton = `
                         <button class="btn btn-success btn-action-done" data-registration-id="${row._id}" data-status="done">Done</button>
                     `;
     }
 
-    table.row
-      .add([
-        row.no_urut,
-        row.name,
-        row.poli,
-        row.tanggal,
-        row.keluhan,
-        `
-                        <div class="btn-group" role="group">
-                            ${statusButtons}
-                        </div>
-                    `,
-      ])
-      .draw(false);
-  }
+    if (row.status === "pending" || row.status === "approved") {
+      table.row
+        .add([
+          antrian,
+          row.name,
+          row.poli,
+          row.tanggal,
+          row.keluhan,
+          `
+            <div class="btn-group" role="group">
+                ${statusButton}
+            </div>
+          `,
+        ])
+        .draw(false);
+    }
+  });
 }
 
 $(document).ready(function () {
   let myDataTable = $("#myTable").DataTable();
+
+  // Ambil data kelola pendaftaran
+  $.ajax({
+    url: "/api/kelola_pendaftaran",
+    type: "GET",
+    success: function (data) {
+      // Isi tabel kelola pendaftaran
+      renderTable(data.data);
+    },
+  });
 
   // Menangani klik tombol action (Approve, Reject, Done)
   $(document).on("click", ".btn-action", function () {

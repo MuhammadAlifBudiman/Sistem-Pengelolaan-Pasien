@@ -9,50 +9,10 @@
     <h2 id="jadwal" class="text-center" style="color: #091e3e">
       Data Rekam Medis
     </h2>
-    <h2 id="jadwal" class="text-center" style="color: #091e3e">
-      Pasien Klinik Google
-    </h2>
-    <table
-      class="table table-hover table-bordered"
-      style="border-collapse: collapse; border-color: #091e3e"
-      id="rekam_medisTable"
-    >
-      <thead>
-        <tr>
-          <th>Nama Pasien</th>
-          <th>NIK</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-        {% for item in data_rekam_medis %}
-        <tr id="{{ item._id }}">
-          <td>{{ item.name }}</td>
-          <td>{{ item.nik }}</td>
-          <td>
-            {% if item.action == 'buat' %}
-            <button
-              class="btn btn-warning btn-sm btn-buat"
-              data-bs-toggle="modal"
-              data-bs-target="#buatModal"
-            >
-              Buat
-            </button>
-            {% else %}
-            <button
-              class="btn btn-danger btn-sm btn-lihat"
-              data-bs-toggle="modal"
-              data-bs-target="#lihatModal"
-            >
-              Lihat
-            </button>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% set table_title='Pasien Klinik Google' %}
+    {% set table_headers=['Nama Pasien', 'NIK', 'Action'] %}
+    {% set table_id='rekam_medisTable' %}
+    {% include 'datatable.html' %}
   </div>
 
   <!-- Buat Modal -->
@@ -161,23 +121,10 @@
           ></button>
         </div>
         <div class="modal-body">
-          <table
-            class="table table-hover table-bordered"
-            style="border-collapse: collapse; border-color: #091e3e"
-            id="list_checkup_user"
-          >
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Tgl Periksa</th>
-                <th>Dokter</th>
-                <th>Poli</th>
-                <th>Keluhan</th>
-                <th>Anamnesa Hasil Pemeriksaan</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-          </table>
+          {% set table_title='' %}
+          {% set table_headers=['No', 'Tgl Periksa', 'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan', 'Action'] %}
+          {% set table_id='list_checkup_user' %}
+          {% include 'datatable.html' %}
         </div>
       </div>
     </div>
