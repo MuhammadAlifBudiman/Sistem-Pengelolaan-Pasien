@@ -76,6 +76,11 @@ def is_valid_phone_number(phone_number):
     return phone_number.isdigit() and 10 <= len(phone_number) <= 13
 
 
+
+
+#################### TEMPLATE ROUTES ####################
+
+# Return Home Page
 @app.route('/', methods=['GET', 'POST'])
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -90,6 +95,212 @@ def home():
         return render_template('index.html', msg="There was an error logging you in", active_page='home', scripts=scripts)
 
 
+# Return Login Page
+@app.route('/login', methods=['GET'])
+def login():
+    msg = request.args.get('msg')
+    return render_template('login.html', msg=msg)
+
+
+# Return Register Page
+@app.route("/register")
+def register():
+    return render_template("register.html")
+
+
+# Return Pendaftaran Pasien Page
+@app.route('/pendaftaran', methods=['GET', 'POST'])
+def pendaftaran():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    scripts=['js/pendaftaran.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
+
+        if request.method == 'POST' and request.form.get('submit') and username:
+            poli = request.form['poli']
+            tanggal = request.form['tanggal']
+            keluhan = request.form['keluhan']
+
+            # Ambil data pengguna dari koleksi users
+            user_data = db.users.find_one({'username': username})
+
+            if user_data:
+                # Masukkan data pendaftaran ke MongoDB
+                data_pendaftaran = {
+                    'username': user_data['username'],
+                    'name': user_data['name'],
+                    'nik': user_data['nik'],
+                    'tgl_lahir': user_data['tgl_lahir'],
+                    'gender': user_data['gender'],
+                    'agama': user_data['agama'],
+                    'status_pernikahan': user_data['status'],
+                    'alamat': user_data['alamat'],
+                    'no_telp': user_data['no_telp'],
+                    'poli': poli,
+                    'tanggal': tanggal,
+                    'keluhan': keluhan,
+                    'status': 'pending'
+                }
+
+                db.registrations.insert_one(data_pendaftaran)
+
+                # Pindahkan pengecekan status ke sini
+                has_pending_or_approved = db.registrations.count_documents({
+                    "status": {"$in": ["pending", "approved"]}
+                }) > 0
+
+                antrian_data = list(db.registrations.find(
+                    {"status": {"$in": ["pending", "approved"]},
+                        "username": user_data['username']},
+                    {"no_urut": True, "name": True, "nik": True,
+                        "tanggal": True, "status": True, "_id": False, "antrian": True}
+                ))
+
+                # Tambahkan nomor urut pada setiap data antrian
+                # for index, data in enumerate(antrian_data, start=1):
+                #     data['no_urut'] = index
+
+                return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
+
+        return render_template('pendaftaran.html', user_info=user_info, active_page='pendaftaran', scripts=scripts)
+
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Riwayat Pendaftaran Page
+@app.route("/riwayat_pendaftaran")
+def riwayat_pendaftaran():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    scripts=['js/riwayat_pendaftaran.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
+        return render_template("riwayat_pendaftaran.html", user_info=user_info, active_page='riwayat_pendaftaran', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Riwayat Checkup Page
+@app.route("/riwayat_checkup")
+def riwayat_checkup():
+    token_receive = get_authorization()
+    scripts=['js/riwayat_checkup.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("riwayat_checkup.html", user_info=user_info, active_page='riwayat_checkup', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Profile Page
+@app.route("/profile")
+def profile():
+    token_receive = get_authorization()
+    scripts=['js/profile.js']
+    css=['css/profile.css']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        user_info = db.users.find_one({"username": payload['id']}, {
+                                      '_id': False, 'password': False})
+        # format tgl_lahir to yyyy-mm-dd
+        user_info["tgl_lahir"] = datetime.strptime(
+            user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
+        return render_template('profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Kelola Pendaftaran Page
+@app.route("/kelola_pendaftaran")
+def kelola_pendaftaran():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    scripts = ['js/kelola_pendaftaran.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username})
+        # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
+        data = list(db.registrations.find(
+            {"status": {"$in": ["pending", "approved", "done"]}},
+            {"name": True, "poli": True, "tanggal": True,
+                "keluhan": True, "status": True, "_id": True, "antrian": True}
+        ))
+
+        # Tambahkan nomor urut pada setiap data
+        # for index, row in enumerate(data, start=1):
+        #     row['no_urut'] = index
+
+        return render_template('kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Dashboard Page
+@app.route("/dashboard")
+def dashboard():
+    token_receive = get_authorization()
+    scripts = ['js/dashboard.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        return render_template("dasbord.html", user_info=user_info, active_page='dashboard', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Rekam Medis Page
+@app.route("/rekam_medis", methods=["GET"])
+def get_rekam_medis():
+    token_receive = get_authorization()
+    scripts=['js/rekam_medis.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        data_rekam_medis = []
+        for d in db.users.find():
+            exist = db.registrations.find_one({'username': d['username']})
+            if exist:
+                data_rekam_medis.append({
+                    'username': d['username'],
+                    'nik': d['nik'],
+                    'name': d['name'],
+                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
+                })
+        return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info, active_page='rekam_medis', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+# Return Kelola Jadwal Page
+@app.route('/kelola_praktik')
+def kelola_praktik():
+    token_receive = get_authorization()
+    scripts=['js/praktik.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        if user_info['role'] != 'pegawai':
+            return redirect(url_for("login", msg="You must login as pegawai"))
+        return render_template('praktik.html', user_info=user_info, active_page='kelola_praktik', scripts=scripts)
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for('home'))
+
+
+
+
+
+#################### API ROUTES ####################
+
+# Return Atrian Hari Ini
 @app.route('/api/get_antrian', methods=['GET'])
 def get_antrian():
     try:
@@ -134,7 +345,6 @@ def get_antrian():
             }
         ]))
 
-        print(antrian_data)
 
         # for data in antrian_data:
         #     data['jumlah_pendaftar'] = db.registrations.count_documents(
@@ -149,17 +359,7 @@ def get_antrian():
         return jsonify({"error": str(e)})
 
 
-@app.route('/login', methods=['GET'])
-def login():
-    msg = request.args.get('msg')
-    return render_template('login.html', msg=msg)
-
-
-@app.route("/register")
-def register():
-    return render_template("register.html")
-
-
+# Handle Register
 @app.route("/api/register", methods=["POST"])
 def api_register():
     data = request.get_json()
@@ -256,6 +456,7 @@ def api_register():
     return jsonify({'result': 'success', 'message': 'Pendaftaran berhasil'})
 
 
+# Handle Login
 @app.route("/api/login", methods=["POST"])
 def sign_in():
     # Sign in
@@ -300,67 +501,7 @@ def sign_in():
         )
 
 
-@app.route('/pendaftaran', methods=['GET', 'POST'])
-def pendaftaran():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    scripts=['js/pendaftaran.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username})
-
-        if request.method == 'POST' and request.form.get('submit') and username:
-            poli = request.form['poli']
-            tanggal = request.form['tanggal']
-            keluhan = request.form['keluhan']
-
-            # Ambil data pengguna dari koleksi users
-            user_data = db.users.find_one({'username': username})
-
-            if user_data:
-                # Masukkan data pendaftaran ke MongoDB
-                data_pendaftaran = {
-                    'username': user_data['username'],
-                    'name': user_data['name'],
-                    'nik': user_data['nik'],
-                    'tgl_lahir': user_data['tgl_lahir'],
-                    'gender': user_data['gender'],
-                    'agama': user_data['agama'],
-                    'status_pernikahan': user_data['status'],
-                    'alamat': user_data['alamat'],
-                    'no_telp': user_data['no_telp'],
-                    'poli': poli,
-                    'tanggal': tanggal,
-                    'keluhan': keluhan,
-                    'status': 'pending'
-                }
-
-                db.registrations.insert_one(data_pendaftaran)
-
-                # Pindahkan pengecekan status ke sini
-                has_pending_or_approved = db.registrations.count_documents({
-                    "status": {"$in": ["pending", "approved"]}
-                }) > 0
-
-                antrian_data = list(db.registrations.find(
-                    {"status": {"$in": ["pending", "approved"]},
-                        "username": user_data['username']},
-                    {"no_urut": True, "name": True, "nik": True,
-                        "tanggal": True, "status": True, "_id": False, "antrian": True}
-                ))
-
-                # Tambahkan nomor urut pada setiap data antrian
-                # for index, data in enumerate(antrian_data, start=1):
-                #     data['no_urut'] = index
-
-                return jsonify({'antrian_data': antrian_data, 'has_pending_or_approved': has_pending_or_approved})
-
-        return render_template('pendaftaran.html', user_info=user_info, active_page='pendaftaran', scripts=scripts)
-
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
+# Return Antrian Pasien
 @app.route('/get_antrian_data', methods=['GET'])
 def get_antrian_data():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -403,121 +544,7 @@ def get_antrian_data():
     return render_template('pendaftaran.html', has_pending_or_approved=False)
 
 
-@app.route("/kelola_pendaftaran")
-def kelola_pendaftaran():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    scripts = ['js/kelola_pendaftaran.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username})
-        # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
-        data = list(db.registrations.find(
-            {"status": {"$in": ["pending", "approved", "done"]}},
-            {"name": True, "poli": True, "tanggal": True,
-                "keluhan": True, "status": True, "_id": True, "antrian": True}
-        ))
-
-        # Tambahkan nomor urut pada setiap data
-        # for index, row in enumerate(data, start=1):
-        #     row['no_urut'] = index
-
-        return render_template('kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route('/update_status', methods=['POST'])
-def update_status():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-
-        if username:
-            registration_id = request.form.get('registrationId')
-            new_status = request.form.get('status')
-
-            # Pastikan pengguna yang memperbarui status adalah pegawai yang sesuai
-            user_data = db.users.find_one(
-                {'username': username, 'role': 'pegawai'})
-            if user_data:
-                allowed_statuses = ["pending", "approved", "rejected", "done"]
-                data_pendaftaran = db.registrations.find_one(
-                    {"_id": ObjectId(registration_id)})
-
-                if new_status in allowed_statuses:
-                    if new_status == "rejected":
-                        # Logika untuk menolak pendaftaran (mengubah status menjadi rejected)
-                        db.registrations.update_one(
-                            {'_id': ObjectId(registration_id)},
-                            {'$set': {'status': new_status}}
-                        )
-                        return jsonify({"message": "Pendaftaran berhasil ditolak"})
-
-                    elif new_status == "approved":
-                        # Calculate the antrian based on the number of registrations for the same date and poli
-                        antrian = db.registrations.count_documents({
-                            "poli": data_pendaftaran["poli"],
-                            "tanggal": data_pendaftaran["tanggal"],
-                            'status': {'$in': ['approved', 'done']}
-                        })
-
-                        # Logika untuk menyetujui pendaftaran (mengubah status menjadi approved)
-                        db.registrations.update_one(
-                            {'_id': ObjectId(registration_id)},
-                            {'$set': {'status': new_status,
-                                      'antrian': f"{antrian + 1:03d}"}}
-                        )
-
-                        print(antrian)
-
-                        # antrian_data = list(db.registrations.find(
-                        #     {"status": {"$in": ["pending", "approved", "done"]}},
-                        #     {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
-                        # ))
-                        return jsonify({"message": "Pendaftaran berhasil disetujui"})
-
-                    elif new_status == "done":
-                        # Logika untuk menyelesaikan pendaftaran (mengubah status menjadi done)
-                        db.registrations.update_one(
-                            {'_id': ObjectId(registration_id)},
-                            {'$set': {'status': new_status}}
-                        )
-
-                        db.list_checkup_user.insert_one({
-                            'nama': data_pendaftaran['name'],
-                            'nik': data_pendaftaran['nik'],
-                            'tgl_periksa': data_pendaftaran['tanggal'],
-                            'poli': data_pendaftaran['poli'],
-                            'keluhan': data_pendaftaran['keluhan']
-                        })
-                        return jsonify({"message": "Pendaftaran selesai"})
-
-                else:
-                    return jsonify({"message": "Status tidak valid"})
-
-        return jsonify({"message": "Gagal memperbarui status formulir"})
-
-    except jwt.ExpiredSignatureError:
-        return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
-    except jwt.exceptions.DecodeError:
-        return jsonify({"message": "Token tidak valid. Silakan login kembali."})
-
-
-@app.route("/riwayat_pendaftaran")
-def riwayat_pendaftaran():
-    token_receive = request.cookies.get(TOKEN_KEY)
-    scripts=['js/riwayat_pendaftaran.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username})
-        return render_template("riwayat_pendaftaran.html", user_info=user_info, active_page='riwayat_pendaftaran', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
+# Return Riwayat Pendaftaran Pasien
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
     token_receive = get_authorization()
@@ -533,23 +560,25 @@ def riwayat_pendaftaran_api():
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
-@app.route("/profile")
-def profile():
+# Return Riwayat Checkup Pasien
+@app.route("/api/riwayat_checkup")
+def api_riwayat_checkup():
     token_receive = get_authorization()
-    scripts=['js/profile.js']
-    css=['css/profile.css']
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        user_info = db.users.find_one({"username": payload['id']}, {
-                                      '_id': False, 'password': False})
-        # format tgl_lahir to yyyy-mm-dd
-        user_info["tgl_lahir"] = datetime.strptime(
-            user_info["tgl_lahir"], "%d-%m-%Y").strftime("%Y-%m-%d")
-        return render_template('profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup_user = list(db.list_checkup_user.find(
+            {'nik': user_info['nik']}, {'_id': False}))
+        return jsonify({'data_list_checkup_user': data_list_checkup_user})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
+# Return Profile User
 @app.route("/api/profile")
 def api_profile():
     token_receive = get_authorization()
@@ -564,6 +593,7 @@ def api_profile():
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
+# Handle Edit Profile
 @app.route('/api/profile/edit', methods=['POST'])
 def edit_profile():
     token_receive = get_authorization()
@@ -636,21 +666,261 @@ def edit_profile():
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
-@app.route('/kelola_praktik')
-def kelola_praktik():
+# Return Data Pendaftaran Pasien
+@app.route("/api/kelola_pendaftaran")
+def get_kelola_pendaftaran():
     token_receive = get_authorization()
-    scripts=['js/praktik.js']
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+
+        if username:
+            data = list(db.registrations.find(
+                {"status": {"$in": ["pending", "approved", "done"]}},
+                {"name": True, "poli": True, "tanggal": True,
+                    "keluhan": True, "status": True, "_id": True, "antrian": True}
+            ))
+
+            for d in data:
+                d['_id'] = str(d['_id'])
+
+            return jsonify({'data': data, 'result': 'success', 'message': 'Data fetched successfully'})
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+# Handle Kelola Pendaftaran
+@app.route('/update_status', methods=['POST'])
+def update_status():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+
+        if username:
+            registration_id = request.form.get('registrationId')
+            new_status = request.form.get('status')
+
+            # Pastikan pengguna yang memperbarui status adalah pegawai yang sesuai
+            user_data = db.users.find_one(
+                {'username': username, 'role': 'pegawai'})
+            if user_data:
+                allowed_statuses = ["pending", "approved", "rejected", "done"]
+                data_pendaftaran = db.registrations.find_one(
+                    {"_id": ObjectId(registration_id)})
+
+                if new_status in allowed_statuses:
+                    if new_status == "rejected":
+                        # Logika untuk menolak pendaftaran (mengubah status menjadi rejected)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status}}
+                        )
+                        return jsonify({"message": "Pendaftaran berhasil ditolak"})
+
+                    elif new_status == "approved":
+                        # Calculate the antrian based on the number of registrations for the same date and poli
+                        antrian = db.registrations.count_documents({
+                            "poli": data_pendaftaran["poli"],
+                            "tanggal": data_pendaftaran["tanggal"],
+                            'status': {'$in': ['approved', 'done']}
+                        })
+
+                        # Logika untuk menyetujui pendaftaran (mengubah status menjadi approved)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status,
+                                      'antrian': f"{antrian + 1:03d}"}}
+                        )
+
+
+                        # antrian_data = list(db.registrations.find(
+                        #     {"status": {"$in": ["pending", "approved", "done"]}},
+                        #     {"name": True, "poli": True, "tanggal": True, "keluhan": True, "status": True, "_id": True}
+                        # ))
+                        return jsonify({"message": "Pendaftaran berhasil disetujui"})
+
+                    elif new_status == "done":
+                        # Logika untuk menyelesaikan pendaftaran (mengubah status menjadi done)
+                        db.registrations.update_one(
+                            {'_id': ObjectId(registration_id)},
+                            {'$set': {'status': new_status}}
+                        )
+
+                        db.list_checkup_user.insert_one({
+                            'nama': data_pendaftaran['name'],
+                            'nik': data_pendaftaran['nik'],
+                            'tgl_periksa': data_pendaftaran['tanggal'],
+                            'poli': data_pendaftaran['poli'],
+                            'keluhan': data_pendaftaran['keluhan']
+                        })
+                        return jsonify({"message": "Pendaftaran selesai"})
+
+                else:
+                    return jsonify({"message": "Status tidak valid"})
+
+        return jsonify({"message": "Gagal memperbarui status formulir"})
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token kedaluwarsa. Silakan login kembali."})
+    except jwt.exceptions.DecodeError:
+        return jsonify({"message": "Token tidak valid. Silakan login kembali."})
+
+
+# Return Data Pendaftaran Semua Pasien
+@app.route("/api/dashboard_pendaftaran")
+def dashboard_pendaftaran():
+    token_receive = get_authorization()
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         username = payload.get('id')
         user_info = db.users.find_one({'username': username}, {'_id': False})
-        if user_info['role'] != 'pegawai':
-            return redirect(url_for("login", msg="You must login as pegawai"))
-        return render_template('praktik.html', user_info=user_info, active_page='kelola_praktik', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
+
+        data_list_pendaftaran = list(db.registrations.find({}, {'_id': False}))
+        return jsonify({'data_list_pendaftaran': data_list_pendaftaran})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
+# Return Data Checkup Semua Pasien
+@app.route("/api/dashboard_checkup")
+def dashboard_checkup():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_checkup = list(db.list_checkup_user.find({}, {'_id': False}))
+        return jsonify({'data_list_checkup': data_list_checkup})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+# Return Data Rekam Medis Semua Pasien
+@app.route("/api/dashboard_rekam_medis")
+def dashboard_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+
+        data_list_rekam_medis = list(db.rekam_medis.find({}, {'_id': False}))
+        return jsonify({'data_list_rekam_medis': data_list_rekam_medis})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+# Return Data Rekam Medis Semua Pasien
+@app.route("/api/rekam_medis")
+def api_get_rekam_medis():
+    token_receive = get_authorization()
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+        user_info = db.users.find_one({'username': username}, {'_id': False})
+        data_rekam_medis = []
+        for d in db.users.find():
+            exist = db.registrations.find_one({'username': d['username']})
+            if exist:
+                data_rekam_medis.append({
+                    'username': d['username'],
+                    'nik': d['nik'],
+                    'name': d['name'],
+                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
+                })
+        return jsonify({'data_rekam_medis': data_rekam_medis, 'result': 'success', 'message': 'Data fetched successfully'})
+    except jwt.ExpiredSignatureError:
+        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
+    except jwt.exceptions.DecodeError:
+        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
+# Handle Buat Rekam Medis
+@app.route("/buat_rekam_medis/<nik>", methods=["POST"])
+def buat_rekam_medis(nik):
+    no_kartu = request.form.get('no')
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    user_info = db.users.find_one({'nik': nik})
+    data_reg = db.registrations.find_one({'nik': nik})
+    nama = user_info['name']
+    data_rekam_medis = {
+        'no_kartu': no_kartu,
+        'nama': nama,
+        'nik': nik,
+        'umur': user_info['tgl_lahir'],
+        'alamat': user_info['alamat'],
+        'no_telp': user_info['no_telp']
+    }
+    db.rekam_medis.insert_one(data_rekam_medis)
+    data_list_checkup_user = {
+        'nama': nama,
+        'poli': data_reg['poli'],
+        'keluhan': data_reg['keluhan'],
+        'tgl_periksa': data_reg['tanggal'],
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+
+    db.list_checkup_user.update_one(
+        {'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
+
+    return 'Success'
+
+
+# Return Data Rekam Medis Berdasarkan NIK
+@app.route("/lihat_rekam_medis/<nik>", methods=["GET"])
+def lihat_rekam_medis(nik):
+    data_rekam_medis = list(db.rekam_medis.find({'nik': nik, "_id": False}))
+    list_checkup_user = list(db.list_checkup_user.find({'nik': nik}))
+    for user in list_checkup_user:
+        user['_id'] = str(user['_id'])
+    return jsonify({'data_rekam_medis': data_rekam_medis, 'list_checkup_user': list_checkup_user})
+
+
+# Handle Edit Rekam Medis
+@app.route("/api/get-edit_rekam_medis/<nik>", methods=["GET"])
+def get_edit_rekam_medis(nik):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    return jsonify({'data_list_checkup_user': data_list_checkup_user})
+
+
+# Handle Edit Rekam Medis
+@app.route("/api/edit-rekam_medis/<id>", methods=["POST"])
+def edit_rekam_medis(id):
+    dokter = request.form.get('dokter')
+    hasil_anamnesa = request.form.get('hasil_anamnesa')
+    data_list_checkup_user = {
+        'dokter': dokter,
+        'hasil_anamnesa': hasil_anamnesa
+    }
+    db.list_checkup_user.update_one(
+        {'_id': ObjectId(id)}, {'$set': data_list_checkup_user}, upsert=True)
+    data_list_checkup_user = db.list_checkup_user.find_one(
+        {'_id': ObjectId(id)})
+    data_list_checkup_user['_id'] = str(data_list_checkup_user['_id'])
+    print(data_list_checkup_user)
+
+    return jsonify({'data_list_checkup_user': data_list_checkup_user})
+
+
+# Return Semua Jadwal Praktik
 @app.route('/api/get_jadwal', methods=['GET'])
 def get_jadwal():
     try:
@@ -663,6 +933,7 @@ def get_jadwal():
         return jsonify({"result": "fail", "error": str(e)})
 
 
+# Return Jadwal Praktik Berdasarkan ID
 @app.route("/api/get_jadwal/<id>", methods=["GET"])
 def get_jadwal_by_id(id):
     jadwal = db.jadwal.find_one({"_id": ObjectId(id)})
@@ -673,6 +944,7 @@ def get_jadwal_by_id(id):
     return jsonify({"result": "success", "jadwal": jadwal, "message": "Jadwal fetched successfully"})
 
 
+# Handle Tambah Jadwal
 @app.route("/api/tambah_jadwal", methods=["POST"])
 def api_tambah_jadwal():
     token_receive = get_authorization()
@@ -734,6 +1006,7 @@ def api_tambah_jadwal():
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
+# Handle Edit Jadwal
 @app.route("/api/edit_jadwal/<id>", methods=["POST"])
 def edit_jadwal(id):
     token_receive = get_authorization()
@@ -783,6 +1056,7 @@ def edit_jadwal(id):
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
+# Handle Hapus Jadwal
 @app.route("/api/hapus_jadwal/<id>", methods=["POST"])
 def hapus_jadwal(id):
     token_receive = get_authorization()
@@ -801,29 +1075,12 @@ def hapus_jadwal(id):
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
-@app.route("/api/kelola_pendaftaran")
-def get_kelola_pendaftaran():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
 
-        if username:
-            data = list(db.registrations.find(
-                {"status": {"$in": ["pending", "approved", "done"]}},
-                {"name": True, "poli": True, "tanggal": True,
-                    "keluhan": True, "status": True, "_id": True, "antrian": True}
-            ))
 
-            for d in data:
-                d['_id'] = str(d['_id'])
 
-            return jsonify({'data': data, 'result': 'success', 'message': 'Data fetched successfully'})
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
+
+
 
 @app.route("/kelola_pendaftaran", methods=["GET"])
 def get_pending_and_approved_registrations():
@@ -871,213 +1128,6 @@ def process_done_registration(nik):
         db.list_checkup_user.insert_one(data_list)
 
     return 'Success',
-
-
-@app.route("/rekam_medis", methods=["GET"])
-def get_rekam_medis():
-    token_receive = get_authorization()
-    scripts=['js/rekam_medis.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        data_rekam_medis = []
-        for d in db.users.find():
-            exist = db.registrations.find_one({'username': d['username']})
-            if exist:
-                data_rekam_medis.append({
-                    'username': d['username'],
-                    'nik': d['nik'],
-                    'name': d['name'],
-                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
-                })
-        return render_template("rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info, active_page='rekam_medis', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route("/buat_rekam_medis/<nik>", methods=["POST"])
-def buat_rekam_medis(nik):
-    no_kartu = request.form.get('no')
-    dokter = request.form.get('dokter')
-    hasil_anamnesa = request.form.get('hasil_anamnesa')
-    user_info = db.users.find_one({'nik': nik})
-    data_reg = db.registrations.find_one({'nik': nik})
-    nama = user_info['name']
-    data_rekam_medis = {
-        'no_kartu': no_kartu,
-        'nama': nama,
-        'nik': nik,
-        'umur': user_info['tgl_lahir'],
-        'alamat': user_info['alamat'],
-        'no_telp': user_info['no_telp']
-    }
-    db.rekam_medis.insert_one(data_rekam_medis)
-    data_list_checkup_user = {
-        'nama': nama,
-        'poli': data_reg['poli'],
-        'keluhan': data_reg['keluhan'],
-        'tgl_periksa': data_reg['tanggal'],
-        'dokter': dokter,
-        'hasil_anamnesa': hasil_anamnesa
-    }
-
-    db.list_checkup_user.update_one(
-        {'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
-
-    return 'Success'
-
-@app.route("/api/rekam_medis")
-def api_get_rekam_medis():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        data_rekam_medis = []
-        for d in db.users.find():
-            exist = db.registrations.find_one({'username': d['username']})
-            if exist:
-                data_rekam_medis.append({
-                    'username': d['username'],
-                    'nik': d['nik'],
-                    'name': d['name'],
-                    'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
-                })
-        return jsonify({'data_rekam_medis': data_rekam_medis, 'result': 'success', 'message': 'Data fetched successfully'})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
-
-@app.route("/lihat_rekam_medis/<nik>", methods=["GET"])
-def lihat_rekam_medis(nik):
-    data_rekam_medis = list(db.rekam_medis.find({'nik': nik, "_id": False}))
-    list_checkup_user = list(db.list_checkup_user.find({'nik': nik}))
-    for user in list_checkup_user:
-        user['_id'] = str(user['_id'])
-    return jsonify({'data_rekam_medis': data_rekam_medis, 'list_checkup_user': list_checkup_user})
-
-
-@app.route("/api/get-edit_rekam_medis/<nik>", methods=["GET"])
-def get_edit_rekam_medis(nik):
-    dokter = request.form.get('dokter')
-    hasil_anamnesa = request.form.get('hasil_anamnesa')
-    data_list_checkup_user = {
-        'dokter': dokter,
-        'hasil_anamnesa': hasil_anamnesa
-    }
-    print(data_list_checkup_user)
-    return jsonify({'data_list_checkup_user': data_list_checkup_user})
-
-
-@app.route("/api/edit-rekam_medis/<id>", methods=["POST"])
-def edit_rekam_medis(id):
-    dokter = request.form.get('dokter')
-    hasil_anamnesa = request.form.get('hasil_anamnesa')
-    data_list_checkup_user = {
-        'dokter': dokter,
-        'hasil_anamnesa': hasil_anamnesa
-    }
-    db.list_checkup_user.update_one(
-        {'_id': ObjectId(id)}, {'$set': data_list_checkup_user}, upsert=True)
-    data_list_checkup_user = db.list_checkup_user.find_one(
-        {'_id': ObjectId(id)})
-    data_list_checkup_user['_id'] = str(data_list_checkup_user['_id'])
-    print(data_list_checkup_user)
-
-    return jsonify({'data_list_checkup_user': data_list_checkup_user})
-
-
-@app.route("/riwayat_checkup")
-def riwayat_checkup():
-    token_receive = get_authorization()
-    scripts=['js/riwayat_checkup.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        return render_template("riwayat_checkup.html", user_info=user_info, active_page='riwayat_checkup', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route("/api/riwayat_checkup")
-def api_riwayat_checkup():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-
-        data_list_checkup_user = list(db.list_checkup_user.find(
-            {'nik': user_info['nik']}, {'_id': False}))
-        return jsonify({'data_list_checkup_user': data_list_checkup_user})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
-
-
-@app.route("/dashboard")
-def dashboard():
-    token_receive = get_authorization()
-    scripts = ['js/dashboard.js']
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        return render_template("dasbord.html", user_info=user_info, active_page='dashboard', scripts=scripts)
-    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
-        return redirect(url_for('home'))
-
-
-@app.route("/api/dashboard_pendaftaran")
-def dashboard_pendaftaran():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-
-        data_list_pendaftaran = list(db.registrations.find({}, {'_id': False}))
-        return jsonify({'data_list_pendaftaran': data_list_pendaftaran})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
-
-
-@app.route("/api/dashboard_checkup")
-def dashboard_checkup():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-
-        data_list_checkup = list(db.list_checkup_user.find({}, {'_id': False}))
-        return jsonify({'data_list_checkup': data_list_checkup})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
-
-
-@app.route("/api/dashboard_rekam_medis")
-def dashboard_rekam_medis():
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-
-        data_list_rekam_medis = list(db.rekam_medis.find({}, {'_id': False}))
-        return jsonify({'data_list_rekam_medis': data_list_rekam_medis})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 if __name__ == '__main__':
