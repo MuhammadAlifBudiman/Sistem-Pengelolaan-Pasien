@@ -62,7 +62,7 @@
 
   <!-- Antrian Pendaftaran -->
   <div
-    class="container-fluid mt-5 pt-5"
+    class="container mt-5 pt-5 mb-5"
     id="antrian-container"
     {%
     if
@@ -73,40 +73,10 @@
     endif
     %}
   >
-    <h3 class="text-center mt-5" style="color: #091e3e">Antrian Pendaftaran</h3>
-    <table class="table table-hover table-bordered"
-    style="border-collapse: collapse; border-color: #091e3e">
-      <thead>
-        <tr>
-          <th scope="col">No Urut</th>
-          <th scope="col">Nama</th>
-          <th scope="col">NIK</th>
-          <th scope="col">Tanggal</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for data in antrian_data %}
-        <tr>
-          <td>{{ data.antrian }}</td>
-          <td>{{ data.name }}</td>
-          <td>{{ data.nik }}</td>
-          <td>{{ data.tanggal }}</td>
-          <td>
-            {% if data.status == 'pending' %}
-            <span class="badge badge-warning">Pending</span>
-            {% elif data.status == 'approved' %}
-            <span class="badge badge-success">Approved</span>
-            {% elif data.status == 'rejected' %}
-            <span class="badge badge-danger">Rejected</span>
-            {% elif data.status == 'done' %}
-            <span class="badge badge-info">Done</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% set table_title='Antrian Pendaftaran' %}
+    {% set table_headers=['No Urut', 'Nama', 'NIK', 'Tanggal', 'Status'] %}
+    {% set table_id='myTable' %}
+    {% include 'datatable.html' %}
   </div>
 
   <!-- Formulir Pendaftaran jika reject/done -->

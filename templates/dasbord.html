@@ -5,72 +5,28 @@
 {% block content %}
   {% include 'navbar.html' %}
 
-  <div class="container mt-5">
-    <h2 id="jadwal" class="text-center" style="color: #091e3e">Dasbord</h2>
-    <h2 id="jadwal" class="text-center" style="color: #091e3e">
-      Pendaftaran
-    </h2>
-    <table
-      class="table table-hover table-bordered"
-      style="border-collapse: collapse; border-color: #091e3e"
-      id="pendaftaranTable"
-    >
-      <thead>
-        <tr>
-          <th>No Urut</th>
-          <th>Nama</th>
-          <th>Poli</th>
-          <th>Tanggal Periksa</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-      </tbody>
-    </table>
-    <h2 id="checkup" class="text-center mt-5" style="color: #091e3e">
-      Check Up
-    </h2>
-    <table
-      class="table table-hover table-bordered"
-      style="border-collapse: collapse; border-color: #091e3e"
-      id="checkupTable"
-    >
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Tanggal Periksa</th>
-          <th>Nama Pasien</th>
-          <th>Nama Dokter</th>
-          <th>Poli</th>
-          <th>Keluhan</th>
-          <th>Hasil Pemeriksaan</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-      </tbody>
-    </table>
-    <h2 id="rekam_medis" class="text-center mt-5" style="color: #091e3e">
-      Rekam Medis
-    </h2>
-    <table
-      class="table table-hover table-bordered"
-      style="border-collapse: collapse; border-color: #091e3e"
-      id="rekamMedisTable"
-    >
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>NIK</th>
-          <th>Nama Pasien</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data will be populated here -->
-      </tbody>
-    </table>
+  <div class="container-fluid mt-5 pt-5">
+    <h2 id="jadwal" class="text-center" style="color: #091e3e">Dashboard</h2>
+    <div class="container mt-5 mb-5">
+      {% set table_title='Pendaftaran' %}
+      {% set table_headers=['No Urut', 'Nama', 'Poli', 'Tanggal Periksa', 'Status'] %}
+      {% set table_id='pendaftaranTable' %}
+      {% include 'datatable.html' %}
+    </div>
+
+    <div class="container mt-5 mb-5">
+      {% set table_title='Check Up' %}
+      {% set table_headers=['No', 'Tanggal Periksa', 'Nama Pasien', 'Nama Dokter', 'Poli', 'Keluhan', 'Hasil Pemeriksaan'] %}
+      {% set table_id='checkupTable' %}
+      {% include 'datatable.html' %}
+    </div>
+
+    <div class="container mt-5 mb-5">
+      {% set table_title='Rekam Medis' %}
+      {% set table_headers=['No', 'NIK', 'Nama Pasien', 'Action'] %}
+      {% set table_id='rekamMedisTable' %}
+      {% include 'datatable.html' %}
+    </div>
   </div>
 
   <!-- lihat Modal -->
@@ -94,28 +50,10 @@
           ></button>
         </div>
         <div class="modal-body">
-          <table class="table" id="list_checkup_user">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Tgl Periksa</th>
-                <th>Dokter</th>
-                <th>Poli</th>
-                <th>Keluhan</th>
-                <th>Anamnesa Hasil Pemeriksaan</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal"
-          >
-            Close
-          </button>
-          <button type="button" class="btn btn-primary">Save changes</button>
+          {% set table_title='' %}
+          {% set table_headers=['No', 'Tgl Periksa', 'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan'] %}
+          {% set table_id='list_checkup_user' %}
+          {% include 'datatable.html' %}
         </div>
       </div>
     </div>

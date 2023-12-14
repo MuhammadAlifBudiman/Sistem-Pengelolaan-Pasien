@@ -5,31 +5,11 @@
 {% block content %}
   {% include 'navbar.html' %}
 
-  <div class="container mt-5 pt-5">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="text-center" style="color: #091e3e">Riwayat Checkup</h3>
-      </div>
-      <div class="card-body">
-        <table
-          class="table table-hover table-bordered"
-          style="border-collapse: collapse; border-color: #091e3e"
-          id="myTable"
-        >
-          <thead>
-            <tr>
-              <th scope="col">No</th>
-              <th scope="col">Tanggal</th>
-              <th scope="col">Poli</th>
-              <th scope="col">Dokter</th>
-              <th scope="col">Keluhan</th>
-              <th scope="col">Hasil Pemeriksaan</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <div class="container mt-5 pt-5 mb-5">
+    {% set table_title='Riwayat Checkup' %}
+    {% set table_headers=['No', 'Tanggal', 'Poli', 'Dokter', 'Keluhan', 'Hasil Pemeriksaan'] %}
+    {% set table_id='myTable' %}
+    {% include 'datatable.html' %}
   </div>
 
   {% include 'footer.html' %}
