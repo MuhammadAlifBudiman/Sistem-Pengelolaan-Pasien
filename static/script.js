@@ -1,3 +1,7 @@
+$(document).ready(function () {
+  AOS.init();
+});
+
 function sign_out() {
   $.removeCookie("mytoken", { path: "/" });
   // showToast("You have been logged out.", "success", 3000)
