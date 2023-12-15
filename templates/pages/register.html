@@ -4,22 +4,27 @@
 
 {% block content %}
 
+<div class="register">
   <div class="row">
-    <div class="col-sm text-center d-flex flex-column justify-content-center register">
+    <div class="col-sm text-center d-flex flex-column justify-content-center">
       <h1 class="text-light fw-bold">Selamat Datang Kembali</h1>
-      <p class="text-light fw-bold">
+      <p class="text-light">
         Untuk tetap terhubung dengan kami, silahkan masuk dengan akun anda
       </p>
       <div class="d-flex justify-content-center">
         <a href="/login" style="
-        color: white; 
-        padding: 10px 20px; 
-        border-radius: 10px; 
-        text-decoration: none;
-        background-color: #091e3e;">
+          color: white;
+          padding: 10px 20px;
+          border-radius: 10px;
+          text-decoration: none;
+          background-color: rgba(0, 0, 0, 0);
+          border: 2px solid white;
+          transition: background-color 0.3s ease, color 0.3s ease;
+        " onmouseover="this.style.backgroundColor='#091e3e'; this.style.color='white';"
+        onmouseout="this.style.backgroundColor='rgba(0, 0, 0, 0)'; this.style.color='white';">
           Sign In
         </a>
-      </div>
+      </div>      
     </div>
     <div class="col">
       <div class="buat-akun">
@@ -123,5 +128,6 @@
       
     </div>
   </div>
+</div>
 
 {% endblock %}

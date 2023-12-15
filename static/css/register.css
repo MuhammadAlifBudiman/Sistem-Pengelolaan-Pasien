@@ -2,7 +2,18 @@
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("../register.jpg");
   background-size: cover;
 }
+.row {
+  margin-right: 0; 
+  margin-left: 0; 
+}
 
 .buat-akun {
-  background-color: #fff;
+  background-color: #fff; 
+  border-radius: 50px; 
+  padding: 20px; 
+  margin: 50px; 
+}
+
+.form-control {
+  background-color: #e9f5ff;
 }
