@@ -1,4 +1,9 @@
 $(document).ready(function () {
+    // Get today's date in the format YYYY-MM-DD
+    let today = new Date().toISOString().split("T")[0];
+
+    // Set the max attribute of the date input to today
+    $("#tanggal").attr("min", today);
   // Fungsi untuk merender tabel berdasarkan data yang diberikan
   function renderTable(data) {
     console.log("Data for rendering table:", data);
@@ -115,7 +120,7 @@ $(document).ready(function () {
           data
         );
         let newStatus = "pending";
-        alert("Formulir telah diproses. Silakan tunggu.");
+        showToast("Formulir telah diproses. Silakan tunggu.", "success", 3000);
 
         sessionStorage.setItem("formStatus", newStatus);
         toggleFormAndAntrian(

@@ -26,11 +26,11 @@ function sign_in() {
     },
     success: function (response) {
       if (response.success) {
-        alert(response["message"]);
+        // showToast(response.message, "success", 3000);
         $.cookie("mytoken", response.data.token);
-        window.location.replace("/");
+        window.location.replace(`/?msg=${response.message}`);
       } else {
-        alert(response["message"]);
+        showToast(response.message, "error", 3000);
       }
     },
   });

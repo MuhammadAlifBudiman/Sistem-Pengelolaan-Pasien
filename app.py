@@ -89,17 +89,18 @@ def is_valid_phone_number(phone_number):
 # Return Home Page
 @app.route('/', methods=['GET'])
 def home():
+    msg = request.args.get('msg')
     token_receive = request.cookies.get(TOKEN_KEY)
     scripts = ['js/index.js']
     css = ['css/index.css']
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
         user_info = db.users.find_one({"username": payload['id']})
-        return render_template('pages/index.html', user_info=user_info, active_page='home', scripts=scripts, css=css)
+        return render_template('pages/index.html', user_info=user_info, active_page='home', scripts=scripts, css=css, msg=msg)
     except jwt.ExpiredSignatureError:
         return render_template('pages/index.html', msg="Your login token has expired", active_page='home', scripts=scripts, css=css)
     except jwt.exceptions.DecodeError:
-        return render_template('pages/index.html', msg="There was an error logging you in", active_page='home', scripts=scripts, css=css)
+        return render_template('pages/index.html', msg=msg if msg is not None else "There was a problem", active_page='home', scripts=scripts, css=css)
 
 
 # Return Login Page

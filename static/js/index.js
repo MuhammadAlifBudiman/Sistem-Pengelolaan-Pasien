@@ -1,4 +1,9 @@
+
 $(document).ready(function () {
+  showToast(globalMessage, "success", 3000)
+  // if ({{msg}}){
+  //   showToast({{msg}}, "success", 3000);
+  // }
   // Inisialisasi DataTables
   let jadwalTable = $("#jadwalTable").DataTable();
   let antrianTable = $("#antrianTable").DataTable();
