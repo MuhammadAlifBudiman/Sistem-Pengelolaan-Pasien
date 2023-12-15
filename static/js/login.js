@@ -25,9 +25,9 @@ function sign_in() {
       password,
     },
     success: function (response) {
-      if (response["result"] === "success") {
+      if (response.success) {
         alert(response["message"]);
-        $.cookie("mytoken", response["token"]);
+        $.cookie("mytoken", response.data.token);
         window.location.replace("/");
       } else {
         alert(response["message"]);

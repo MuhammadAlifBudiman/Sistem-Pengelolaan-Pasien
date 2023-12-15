@@ -83,7 +83,6 @@ $(document).ready(function () {
       poli: poli,
       tanggal: tanggal,
       keluhan: keluhan,
-      submit: "submit",
     };
 
     if (formData.poli === "") {
@@ -104,9 +103,13 @@ $(document).ready(function () {
     // Permintaan Ajax untuk mengirim formulir
     $.ajax({
       type: "POST",
-      url: "/pendaftaran",
+      url: "/api/pendaftaran",
       data: formData,
       success: function (data) {
+        if (data.result === "fail"){
+          alert("Gagal melakukan pendaftaran. Silakan coba lagi.");
+          return;
+        }
         console.log(
           "Response from the server after submitting the form:",
           data

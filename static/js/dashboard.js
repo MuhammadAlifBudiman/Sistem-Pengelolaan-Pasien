@@ -1,26 +1,42 @@
 // Jadwal Table
 $(document).ready(function () {
   // Inisialisasi DataTables
-  let myTable = $("#pendaftaranTable").DataTable();
+  let myTable = $("#pendaftaranTable").DataTable({
+    serverSide: true,
+    processing: true,
+    ajax: "/api/pendaftaran",
+    columns: [
+      { 
+        data: null ,
+        render: function (data, type, row) {
+          return row.antrian || "-";
+        }
+      },
+      { data: "name" },
+      { data: "poli" },
+      { data: "tanggal" },
+      { data: "status" },
+    ],
+  });
   let checkupTable = $("#checkupTable").DataTable();
   let rekamMedisTable = $("#rekamMedisTable").DataTable();
   let list_checkup_user = $("#list_checkup_user").DataTable();
 
   // Ambil data riwayat pendaftaran
-  $.ajax({
-    url: "/api/dashboard_pendaftaran",
-    type: "GET",
-    success: function (data) {
-      // Isi tabel riwayat pendaftaran
-      myTable.clear().draw();
-      data.data_list_pendaftaran.forEach(function (row, index) {
-        let antrian = row.antrian || "-";
-        myTable.row
-          .add([antrian, row.name, row.poli, row.tanggal, row.status])
-          .draw(false);
-      });
-    },
-  });
+  // $.ajax({
+  //   url: "/api/dashboard_pendaftaran",
+  //   type: "GET",
+  //   success: function (data) {
+  //     // Isi tabel riwayat pendaftaran
+  //     myTable.clear().draw();
+  //     data.data_list_pendaftaran.forEach(function (row, index) {
+  //       let antrian = row.antrian || "-";
+  //       myTable.row
+  //         .add([antrian, row.name, row.poli, row.tanggal, row.status])
+  //         .draw(false);
+  //     });
+  //   },
+  // });
 
   // Ambil data riwayat pendaftaran
   $.ajax({
@@ -85,8 +101,11 @@ $(document).ready(function () {
         console.log(response.list_checkup_user);
         list_checkup_user.clear().draw();
         for (let i = 0; i < response.list_checkup_user.length; i++) {
-          let dokter = response.list_checkup_user[i].dokter || "Belum ada dokter";
-          let hasil_anamnesa = response.list_checkup_user[i].hasil_anamnesa || "Belum ada hasil anamnesa";
+          let dokter =
+            response.list_checkup_user[i].dokter || "Belum ada dokter";
+          let hasil_anamnesa =
+            response.list_checkup_user[i].hasil_anamnesa ||
+            "Belum ada hasil anamnesa";
           let newRow = [
             i + 1,
             response.list_checkup_user[i].tgl_periksa,
@@ -105,5 +124,3 @@ $(document).ready(function () {
     });
   });
 });
-
-

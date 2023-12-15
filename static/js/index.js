@@ -25,12 +25,12 @@ $(document).ready(function () {
 
   // Ambil data antrian hari ini
   $.ajax({
-    url: "/api/get_antrian",
+    url: "/api/antrian/today",
     type: "GET",
     success: function (data) {
       // Isi tabel antrian hari ini
       antrianTable.clear().draw();
-      data.antrian.forEach(function (row) {
+      data.data.forEach(function (row) {
         antrianTable.row
           .add([row.poli, row.jumlah_pendaftar, row.dalam_antrian])
           .draw(false);
