@@ -1,4 +1,13 @@
 $(document).ready(function () {
+  $.ajax({
+    type: "GET",
+    url: "/api/antrian/check",
+    success: function (data) {
+      if(data.has_pending_or_approved){
+        sessionStorage.setItem("formStatus", "pending");
+      }
+    }
+  });
     // Get today's date in the format YYYY-MM-DD
     let today = new Date().toISOString().split("T")[0];
 

@@ -196,6 +196,7 @@ def kelola_pendaftaran():
                 "keluhan": True, "status": True, "_id": True, "antrian": True}
         ))
 
+
         # Tambahkan nomor urut pada setiap data
         # for index, row in enumerate(data, start=1):
         #     row['no_urut'] = index
@@ -613,7 +614,8 @@ def pendaftaran_post():
 
             # Pindahkan pengecekan status ke sini
             has_pending_or_approved = db.registrations.count_documents({
-                "status": {"$in": ["pending", "approved"]}
+                "status": {"$in": ["pending", "approved"]},
+                "username": user_data['username']
             }) > 0
 
             antrian_data = list(db.registrations.find(
@@ -629,6 +631,33 @@ def pendaftaran_post():
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for('home'))
 
+
+@app.route('/api/antrian/check')
+def check_antrian():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        username = payload.get('id')
+
+        if username:
+            # Ambil data pengguna dari koleksi users
+            user_data = db.users.find_one({'username': username})
+
+            if user_data:
+                # Pindahkan pengecekan status ke sini
+                has_pending_or_approved = db.registrations.count_documents({
+                    "status": {"$in": ["pending", "approved"]},
+                    "username": user_data['username']
+                }) > 0
+
+                return jsonify({'has_pending_or_approved': has_pending_or_approved})
+            else:
+                return jsonify({'has_pending_or_approved': False})
+
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        pass
+
+    return jsonify({'has_pending_or_approved': False})
 # Return Riwayat Pendaftaran Pasien
 @app.route('/api/riwayat_pendaftaran', methods=['GET'])
 def riwayat_pendaftaran_api():
