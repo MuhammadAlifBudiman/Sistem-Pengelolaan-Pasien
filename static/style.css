@@ -5,6 +5,7 @@
 
 body {
   font-family: Arial, sans-serif;
+  background-color: hsl(197, 64%, 95%);
 }
 
 input[type="text"],
@@ -17,7 +18,7 @@ input[type="password"] {
 }
 
 button {
-  background-color: #4caf50;
+  background-color: #05222e;
   color: white;
   padding: 14px 20px;
   margin: 10px 0;
@@ -33,9 +34,9 @@ button:hover {
 .alert {
   padding: 10px;
   margin: 10px 0;
-  border: 1px solid #f00;
-  background-color: #ffcccc;
-  color: #f00;
+  border: 1px solid #62a6db;
+  background-color: #87cbff;
+  color: rgb(31, 56, 76);
 }
 
 .dataTables_filter {
@@ -43,7 +44,7 @@ button:hover {
 }
 
 .btn-logout {
-  background-color: #f57e57;
+  background-color: #091e3e;
   color: #fff;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -70,4 +71,4 @@ button:hover {
 
 .nav-item a.btn:active {
   background-color: #06a3da;
-}
+} 

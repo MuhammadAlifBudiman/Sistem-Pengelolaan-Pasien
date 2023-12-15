@@ -3,105 +3,93 @@
 {% block title %}Home - Klinik Google {% endblock %}
 
 {% block content %}
-  {% include 'base/navbar.html' %}
+{% include 'base/navbar.html' %}
 
-  <div class="container-fluid px-5">
-    <div id="carouselExampleIndicators" class="carousel slide mt-5 pt-5">
-      <div class="carousel-indicators">
-        <button
-          type="button"
-          data-bs-target="#carouselExampleIndicators"
-          data-bs-slide-to="0"
-          class="active"
-          aria-current="true"
-          aria-label="Slide 1"
-        ></button>
-        <button
-          type="button"
-          data-bs-target="#carouselExampleIndicators"
-          data-bs-slide-to="1"
-          aria-label="Slide 2"
-        ></button>
-        <button
-          type="button"
-          data-bs-target="#carouselExampleIndicators"
-          data-bs-slide-to="2"
-          aria-label="Slide 3"
-        ></button>
-      </div>
+<div id="layanan">
+  <div class="container-fluid p-0">
+    <div id="header-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
       <div class="carousel-inner">
         <div class="carousel-item active">
-          <img
-            src="../static/01.jpg"
-            class="d-block w-100"
-            alt="..."
-            style="height: 500px"
-          />
+          <img class="d-block w-100" src="../static/01.jpg" alt="Image" style="height: 520px">
+          <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+            <div class="p-3" style="max-width: 900px;">
+              <p class="display-4 text-white mb-md-4 font-weight animated zoomInRight"
+                style="font-size: 1.8rem; text-align: right; background: none;">
+                Dengan tim dokter dan perawat berpengalaman,
+                kami siap memberikan layanan terbaik dalam segala aspek kesehatan untuk Anda
+              </p>
+            </div>
+
+          </div>
+
         </div>
-        <div class="carousel-item">
-          <img
-            src="../static/02.jpg"
-            class="d-block w-100"
-            alt="..."
-            style="height: 500px"
-          />
+        <div class="carousel-item active">
+          <img class="d-block w-100" src="../static/05.jpg" alt="Image" style="height: 520px">
+          <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+            <div class="p-3" style="max-width: 900px;">
+              <p class="text-white text-uppercase animated slideInDown">
+                Atur janji dengan dokter kami untuk mendapatkan
+                perawatan pribadi dan perhatian khusus sesuai kebutuhan Anda
+              </p>
+              <a href="../pages/pendaftaran.html"
+                class="btn py-2 px-3 me-3 animated slideInUp font-weight-bold custom-btn">
+                <strong>Appointment</strong>
+              </a>
+            </div>
+          </div>
         </div>
-        <div class="carousel-item">
-          <img
-            src="../static/03.jpg"
-            class="d-block w-100"
-            alt="..."
-            style="height: 500px"
-          />
+        <div class="carousel-item active">
+          <img class="d-block w-100" src="../static/06.jpeg" alt="Image" style="height: 520px">
+          <div class="carousel-caption d-flex flex-column align-items-start justify-content-center">
+            <div class="p-3" style="max-width: 900px;">
+              <h5 class="display-2 text-white mb-md-4 font-weight-bold animated fadeInLeft"
+                style="text-align: left; margin-left: 120px;">
+                Selamat datang di Klinik Google
+              </h5>
+              <p class="text-white text-uppercase mb-3 font-weight-bold animated fadeInLeft"
+                style="text-align: left; margin-left: 120px; margin-bottom: 5px;">
+                Pelayanan Terbaik untuk Anda
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <button
-        class="carousel-control-prev"
-        type="button"
-        data-bs-target="#carouselExampleIndicators"
-        data-bs-slide="prev"
-      >
+      <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
         <span class="visually-hidden">Previous</span>
       </button>
-      <button
-        class="carousel-control-next"
-        type="button"
-        data-bs-target="#carouselExampleIndicators"
-        data-bs-slide="next"
-      >
+      <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
         <span class="carousel-control-next-icon" aria-hidden="true"></span>
         <span class="visually-hidden">Next</span>
       </button>
     </div>
   </div>
-  <div class="container mt-5 mb-5">
-    <div class="content">
-      <h2 id="tatacara" class="text-center" style="color: #091e3e">
-        Tata Cara Pendaftaran Online
+</div>
+<div class="container mt-5 mb-5">
+  <div class="content">
+    <div id="tatacara">
+      <h2 class="text-center" style="color: #091e3e">
+        <strong>Tata Cara Pendaftaran Online</strong>
       </h2>
       <p class="text-center">
         Langkah-langkah tata cara pendaftaran online di Klinik Google
       </p>
+      <div class="separator"></div>
       <div class="container custom-container mb-5">
         <div class="row">
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">1</h1>
+                  <h1 class="custom-circle">1</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">Login</h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Silakan login atau registrasi terlebih dahulu
                     </p>
                   </div>
@@ -110,23 +98,19 @@
             </div>
           </div>
 
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">2</h1>
+                  <h1 class="custom-circle">2</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">Pilih Layanan</h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Telusuri daftar layanan yang tersedia yang sesuai dengan
                       kebutuhan kesehatan Anda
                     </p>
@@ -136,25 +120,21 @@
             </div>
           </div>
 
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">3</h1>
+                  <h1 class="custom-circle">3</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">
                       Isi Formulir Pendaftaran
                     </h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Lengkapi formulir pendaftaran online dengan informasi
                       pribadi Anda, termasuk nama, alamat, nomor telepon, dan
                       rincian medis yang relevan
@@ -167,23 +147,19 @@
         </div>
 
         <div class="row mt-5">
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">4</h1>
+                  <h1 class="custom-circle">4</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">Pilih Jadwal Praktek</h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Pilih jadwal praktek yang sesuai dengan ketersediaan
                       Anda. Anda dapat melihat jadwal dokter dan poli untuk
                       memudahkan pemilihan
@@ -194,25 +170,21 @@
             </div>
           </div>
 
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">5</h1>
+                  <h1 class="custom-circle">5</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">
                       Datang ke Klinik Sesuai Jadwal
                     </h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Pada hari janji temu, datang ke klinik tepat waktu dan
                       tunjukkan konfirmasi pendaftaran kepada petugas penerima
                       pasien
@@ -223,23 +195,19 @@
             </div>
           </div>
 
-          <div class="col-md-4 custom-col">
-            <div
-              class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
+          <div class="col-md-3 custom-col">
+            <div class="card text-center h-100 d-flex justify-content-center align-items-center text-light fw-bold"
               style="
                 background-color: #06a3da; /* box-shadow: 0 1px 1px black; */
-              "
-            >
-              <div
-                class="row d-flex justify-content-center align-items-center"
-              >
+              ">
+              <div class="row d-flex justify-content-center align-items-center">
                 <div class="col-2">
-                  <h1 class="text-end">6</h1>
+                  <h1 class="custom-circle">6</h1>
                 </div>
-                <div class="col-9">
+                <div class="col-12">
                   <div class="card-body">
                     <h5 class="card-title fw-bold">Bertemu Dokter</h5>
-                    <p class="card-text">
+                    <p class="card-text" style="font-weight: lighter;">
                       Bertemu dengan dokter sesuai jadwal untuk konsultasi
                       atau perawatan yang Anda butuhkan
                     </p>
@@ -250,15 +218,18 @@
           </div>
         </div>
       </div>
-
+    </div>
+    
+    <div id="jadwal">
       <div class="container mt-5 mb-5">
         {% set table_title='Jadwal Praktik' %}
         {% set table_headers=['Nama', 'Poli', 'Hari', 'Jam Praktek'] %}
         {% set table_id='jadwalTable' %}
         {% include 'partials/datatable.html' %}
       </div>
+    </div>
 
-
+    <div id="antrian">
       <div class="container mt-5 mb-5">
         {% set table_title='Antrian Hari Ini' %}
         {% set table_headers=['Poli', 'Jumlah Pendaftar', 'Dalam Antrian'] %}
@@ -267,7 +238,8 @@
       </div>
     </div>
   </div>
+</div>
 
-  {% include 'base/footer.html' %}
+{% include 'base/footer.html' %}
 
 {% endblock %}
