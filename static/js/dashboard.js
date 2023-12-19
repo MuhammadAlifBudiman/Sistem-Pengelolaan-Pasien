@@ -4,6 +4,7 @@ $(document).ready(function () {
   let myTable = $("#pendaftaranTable").DataTable({
     serverSide: true,
     processing: true,
+    scrollX: true,
     ajax: "/api/pendaftaran",
     columns: [
       {
@@ -20,11 +21,19 @@ $(document).ready(function () {
         orderable: false,
       },
     ],
+    columnDefs: [
+      { width: "20%", targets: 0 }, // Adjust the width as needed
+      { width: "30%", targets: 1 },
+      { width: "30%", targets: 2 },
+      { width: "20%", targets: 3 },
+      { width: "40%", targets: 4 },
+    ],
     order: [[3, "asc"]],
   });
   let checkupTable = $("#checkupTable").DataTable({
     serverSide: true,
     processing: true,
+    scrollX: true,
     ajax: "/api/checkup",
     columns: [
       {
@@ -52,11 +61,21 @@ $(document).ready(function () {
         },
       },
     ],
+    columnDefs: [
+      { width: "10%", targets: 0 }, // Adjust the width as needed
+      { width: "10%", targets: 1 },
+      { width: "10%", targets: 2 },
+      { width: "10%", targets: 3 },
+      { width: "10%", targets: 4 },
+      { width: "10%", targets: 5 },
+      { width: "40%", targets: 6 },
+    ],
     order: [[1, "asc"]],
   });
   let rekamMedisTable = $("#rekamMedisTable").DataTable({
     serverSide: true,
     processing: true,
+    scrollX: true,
     ajax: "/api/rekam_medis",
     columns: [
       {
@@ -74,9 +93,15 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row) {
-          return `<button class='btn btn-primary btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}'>Lihat</button>`;
+          return `<button class='btn text-light btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}' style='background-color: #06a3da'>Lihat</button>`;
         },
       },
+    ],
+    columnDefs: [
+      { width: "10%", targets: 0 }, // Adjust the width as needed
+      { width: "10%", targets: 1 },
+      { width: "10%", targets: 2 },
+      { width: "10%", targets: 3 },
     ],
   });
 
@@ -91,6 +116,7 @@ $(document).ready(function () {
     let list_checkup_user = $("#list_checkup_user").DataTable({
       serverSide: true,
       processing: true,
+      scrollX: true,
       ajax: `/api/checkup/${rekamMedisNik}`,
       columns: [
         {
@@ -116,6 +142,14 @@ $(document).ready(function () {
             return row.hasil_anamnesa || "Belum ada hasil anamnesa";
           },
         },
+      ],
+      columnDefs: [
+        { width: "10%", targets: 0 }, // Adjust the width as needed
+        { width: "10%", targets: 1 },
+        { width: "10%", targets: 2 },
+        { width: "10%", targets: 3 },
+        { width: "10%", targets: 4 },
+        { width: "10%", targets: 5 },
       ],
       order: [[1, "asc"]],
     });

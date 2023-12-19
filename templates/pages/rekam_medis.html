@@ -1,202 +1,222 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %} {% block title %}Rekam Medis - Klinik Google {%
+endblock %} {% block content %} {% include 'base/navbar.html' %}
 
-{% block title %}Rekam Medis - Klinik Google {% endblock %}
+<div class="container mt-5 pt-5 mb-5">
+  <h2 id="jadwal" class="text-center" style="color: #091e3e">
+    Data Rekam Medis
+  </h2>
+  {% set table_title='Pasien Klinik Google' %} {% set table_headers=['No','Nama
+  Pasien', 'NIK', 'Action'] %} {% set table_id='rekam_medisTable' %} {% include
+  'partials/datatable.html' %}
+</div>
 
-{% block content %}
-  {% include 'base/navbar.html' %}
-
-  <div class="container mt-5 pt-5 mb-5">
-    <h2 id="jadwal" class="text-center" style="color: #091e3e">
-      Data Rekam Medis
-    </h2>
-    {% set table_title='Pasien Klinik Google' %}
-    {% set table_headers=['No','Nama Pasien', 'NIK', 'Action'] %}
-    {% set table_id='rekam_medisTable' %}
-    {% include 'partials/datatable.html' %}
-  </div>
-
-  <!-- Buat Modal -->
-  <div
-    class="modal fade"
-    id="buatModal"
-    tabindex="-1"
-    aria-labelledby="buatModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="buatModalLabel">
-            Tambah Data Rekam Medis
-          </h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <form id="buatrekam_medis">
-            <div class="row mb-3">
-              <label
-                for="no"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >No
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="no"
-                  name="no"
-                />
-              </div>
+<!-- Buat Modal -->
+<div
+  class="modal fade"
+  id="buatModal"
+  tabindex="-1"
+  aria-labelledby="buatModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="buatModalLabel">
+          Tambah Data Rekam Medis
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="buatrekam_medis">
+          <div class="row mb-3">
+            <label for="no" class="col-sm-2 col-form-label col-form-label-sm"
+              >No
+            </label>
+            <div class="col-sm-10">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="no"
+                name="no"
+              />
             </div>
-            <div class="row mb-3">
-              <label
-                for="dokter"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Dokter
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="dokter"
-                  name="dokter"
-                />
-              </div>
+          </div>
+          <div class="row mb-3">
+            <label
+              for="dokter"
+              class="col-sm-2 col-form-label col-form-label-sm"
+              >Dokter
+            </label>
+            <div class="col-sm-10">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="dokter"
+                name="dokter"
+              />
             </div>
-            <div class="field">
-              <label class="label" for="textarea-about">Hasil Anamnesa</label>
+          </div>
+          <div class="field">
+            <label class="label" for="textarea-about">Hasil Anamnesa</label>
 
-              <p class="control">
-                <textarea
-                  id="textarea-about"
-                  class="textarea"
-                  placeholder="Introduce yourself"
-                  cols="50"
-                  ,
-                  name="hasil_anamnesa"
-                >
-                </textarea>
-              </p>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button
-                type="button"
-                class="btn btn-secondary me-2"
-                data-bs-dismiss="modal"
+            <div class="col-sm-12">
+              <textarea
+                id="textarea-about"
+                class="textarea form-control form-control-sm"
+                name="hasil_anamnesa"
               >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">Save</button>
+              </textarea>
             </div>
-          </form>
+          </div>
+          <div class="d-flex justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary me-2"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- lihat Modal -->
+<div
+  class="modal fade"
+  id="lihatModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="lihatModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-fullscreen" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="row">
+          <div class="col">
+            <h1>Data Rekam Medis Pasien Klinik Google</h1>
+          </div>
+          <div class="col">
+            <div class="row d-flex align-items-center">
+              <p >No Kartu: </p>
+              <p id="no_kartu"></p>
+            </div>
+            <div class="row d-flex align-items-center">
+              <p >Nama: </p>
+              <p id="nama"></p>
+            </div>
+            <div class="row d-flex align-items-center">
+              <p >NIK: </p>
+              <p id="nik"></p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="row d-flex align-items-center">
+              <p>Umur: </p>
+              <p id="umur"></p>
+            </div>
+            <div class="row d-flex align-items-center">
+              <p>Alamat: </p>
+              <p id="alamat"></p>
+            </div>
+            <div class="row d-flex align-items-center">
+              <p>No telp: </p>
+              <p id="no_telp"></p>
+            </div>
+          </div>
         </div>
-        <div class="modal-footer"></div>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        {% set table_title='' %} {% set table_headers=['No', 'Tgl Periksa',
+        'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan', 'Action'] %}
+        {% set table_id='list_checkup_user' %} {% include
+        'partials/datatable.html' %}
       </div>
     </div>
   </div>
+</div>
 
-  <!-- lihat Modal -->
-  <div
-    class="modal fade"
-    id="lihatModal"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="lihatModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog modal-fullscreen" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title" id="lihatModalLabel">Hasil Periksa</h2>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          {% set table_title='' %}
-          {% set table_headers=['No', 'Tgl Periksa', 'Dokter', 'Poli', 'Keluhan', 'Anamnesa Hasil Pemeriksaan', 'Action'] %}
-          {% set table_id='list_checkup_user' %}
-          {% include 'partials/datatable.html' %}
-        </div>
+<!-- edit Modal -->
+<div
+  class="modal fade"
+  id="editModal"
+  tabindex="-1"
+  aria-labelledby="editModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="editModalLabel">
+          Tambah Data Rekam Medis
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
-    </div>
-  </div>
-
-  <!-- edit Modal -->
-  <div
-    class="modal fade"
-    id="editModal"
-    tabindex="-1"
-    aria-labelledby="editModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="editModalLabel">
-            Tambah Data Rekam Medis
-          </h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <form id="edit">
-            <div class="row mb-3">
-              <label
-                for="dokter"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Dokter
-              </label>
-              <div class="col-sm-10">
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="dokter"
-                  name="dokter"
-                />
-              </div>
+      <div class="modal-body">
+        <form id="edit">
+          <div class="row mb-3">
+            <label
+              for="dokter"
+              class="col-sm-2 col-form-label col-form-label-sm"
+              >Dokter
+            </label>
+            <div class="col-sm-10">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="dokter"
+                name="dokter"
+              />
             </div>
-            <div class="field">
-              <label class="label" for="textarea-about">Hasil Anamnesa</label>
-              <p class="control">
-                <textarea
-                  id="hasil_anamnesa"
-                  class="textarea"
-                  cols="45"
-                  name="hasil_anamnesa"
-                >
-                </textarea>
-              </p>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button
-                type="button"
-                class="btn btn-secondary me-2"
-                data-bs-dismiss="modal"
+          </div>
+          <div class="field">
+            <label class="label" for="textarea-about">Hasil Anamnesa</label>
+            <p class="control">
+              <textarea
+                id="hasil_anamnesa"
+                class="textarea"
+                cols="45"
+                name="hasil_anamnesa"
               >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">Save</button>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer"></div>
+              </textarea>
+            </p>
+          </div>
+          <div class="d-flex justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary me-2"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
       </div>
+      <div class="modal-footer"></div>
     </div>
   </div>
+</div>
 
-  {% include 'base/footer.html' %}
-
-{% endblock %}
+{% include 'base/footer.html' %} {% endblock %}

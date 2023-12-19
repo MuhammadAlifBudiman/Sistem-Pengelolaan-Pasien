@@ -4,6 +4,7 @@ $(document).ready(function () {
   let rekam_medisTable = $("#rekam_medisTable").DataTable({
     serverSide: true,
     processing: true,
+    scrollX: true,
     ajax: "/api/users/pasien",
     columns: [
       {
@@ -28,6 +29,13 @@ $(document).ready(function () {
         },
       },
     ],
+    columnDefs: [
+      { width: "10%", targets: 0 }, // Adjust the width as needed
+      { width: "10%", targets: 1 },
+      { width: "10%", targets: 2 },
+      { width: "10%", targets: 3 },
+    ],
+    order: [[1, "asc"]],
   });
 
   // Event listener for Submit button
@@ -38,11 +46,6 @@ $(document).ready(function () {
       .off("submit")
       .submit(function (e) {
         e.preventDefault();
-
-        // Ambil nilai input
-        let no_kartu = $("#no_kartu").val();
-        let dokter = $("#dokter").val();
-        let hasil_anamnesa = $("#hasil_anamnesa").val();
 
         let formData = $(this).serializeArray();
         formData.push({ name: "nik", value: rekamMedisNik });
@@ -63,7 +66,7 @@ $(document).ready(function () {
             rekam_medisTable.ajax.reload();
           },
           error: function (error) {
-            console.log("Error:", error);
+            showToast(error.responseJSON.message, "error", 3000)
           },
         });
       });
@@ -117,6 +120,23 @@ $(document).ready(function () {
       ],
       order: [[1, "asc"]],
     });
+
+    $.ajax({
+      url: `/api/rekam_medis/${rekamMedisNik}`,
+      type: "GET",
+      success: function (response) {
+        console.log(response)
+        $("#lihatModal").find("#no_kartu").text(response.data.no_kartu);
+        $("#lihatModal").find("#nama").text(response.data.nama);
+        $("#lihatModal").find("#nik").text(response.data.nik);
+        $("#lihatModal").find("#umur").text(response.data.umur);
+        $("#lihatModal").find("#alamat").text(response.data.alamat);
+        $("#lihatModal").find("#no_telp").text(response.data.no_telp);
+      },
+      error: function (error) {
+        showToast(error.responseJSON.message, "error", 3000)
+      },
+    })
   });
 
   // Event listener for Edit buttons

@@ -871,7 +871,8 @@ def api_riwayat_checkup_pegawai(decoded_token):
     # Adjust the query for sorting
     sort_column = ["_id", "tgl_periksa", "nama", "dokter", "poli", "keluhan", "hasil_anamnesa"][order_column_index]
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).skip(start).limit(length))
+    collation = {'locale': 'en', 'strength': 2}
+    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
@@ -915,9 +916,10 @@ def api_pasien_checkup(decoded_token, nik):
         ]
 
     # Adjust the query for sorting
-    sort_column = ["_id", "tgl_periksa", "dokter", "poli", "keluhan", "hasil_anamnesa", "action"][order_column_index]
+    sort_column = ["_id", "tgl_periksa", "dokter", "poli", "keluhan", "hasil_anamnesa", "_id"][order_column_index]
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).skip(start).limit(length))
+    collation = {'locale': 'en', 'strength': 2}
+    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
@@ -1109,7 +1111,8 @@ def api_rekam_medis(decoded_token):
     # Adjust the query for sorting
     sort_column = ["_id", "nama", "nik", "umur"][order_column_index]
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    data = list(db.rekam_medis.find(query).sort(sort_column, sort_direction).skip(start).limit(length))
+    collation = {'locale': 'en', 'strength': 2}
+    data = list(db.rekam_medis.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
@@ -1188,6 +1191,17 @@ def api_rekam_medis_post(decoded_token):
         {'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
     
     response = api_response(True, 200, "success", "Rekam medis berhasil dibuat")
+    return jsonify(response.__dict__)
+
+
+@app.route('/api/rekam_medis/<nik>')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+def api_detail_rekam_medis(decoded_token, nik):
+    data = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
+    if not data:
+        raise HttpException(False, 400, "failed", "Data tidak ditemukan")
+    response = api_response(True, 200, "success", "Data berhasil diambil", data)
     return jsonify(response.__dict__)
 
 
