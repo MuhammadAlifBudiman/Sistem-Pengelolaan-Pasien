@@ -10,7 +10,7 @@
       Data Rekam Medis
     </h2>
     {% set table_title='Pasien Klinik Google' %}
-    {% set table_headers=['Nama Pasien', 'NIK', 'Action'] %}
+    {% set table_headers=['No','Nama Pasien', 'NIK', 'Action'] %}
     {% set table_id='rekam_medisTable' %}
     {% include 'partials/datatable.html' %}
   </div>
@@ -172,11 +172,9 @@
               <label class="label" for="textarea-about">Hasil Anamnesa</label>
               <p class="control">
                 <textarea
-                  id="textarea-about"
+                  id="hasil_anamnesa"
                   class="textarea"
-                  placeholder="Introduce yourself"
                   cols="45"
-                  ,
                   name="hasil_anamnesa"
                 >
                 </textarea>

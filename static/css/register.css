@@ -17,3 +17,12 @@
 .form-control {
   background-color: #e9f5ff;
 }
+
+@media (max-width: 768px) {
+  .buat-akun {
+    margin: 0px; 
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+}

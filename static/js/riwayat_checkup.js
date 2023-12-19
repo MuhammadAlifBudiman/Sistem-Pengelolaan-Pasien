@@ -1,29 +1,43 @@
 $(document).ready(function () {
   // Inisialisasi DataTables
-  let myTable = $("#myTable").DataTable();
-
-  // Ambil data riwayat pendaftaran
-  $.ajax({
-    url: "/api/riwayat_checkup",
-    type: "GET",
-    success: function (data) {
-      console.log(data);
-      // Isi tabel riwayat pendaftaran
-      myTable.clear().draw();
-      data.data_list_checkup_user.forEach(function (row, index) {
-        let dokter = row.dokter || "Belum ada dokter";
-        let hasil_anamnesa = row.hasil_anamnesa || "Belum ada hasil anamnesa";
-        myTable.row
-          .add([
-            index + 1,
-            row.tgl_periksa,
-            row.poli,
-            dokter,
-            row.keluhan,
-            hasil_anamnesa,
-          ])
-          .draw(false);
-      });
-    },
+  let myTable = $("#myTable").DataTable({
+    serverSide: true,
+    processing: true,
+    scrollX: true,
+    ajax: "/api/checkup/me",
+    columns: [
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row, meta) {
+          return meta.row + meta.settings._iDisplayStart + 1;
+        },
+      },
+      { data: "tgl_periksa" },
+      { data: "poli" },
+      {
+        data: null,
+        render: function (data, type, row) {
+          return row.dokter || "Belum ada dokter";
+        },
+      },
+      { data: "keluhan" },
+      {
+        data: null,
+        render: function (data, type, row) {
+          return row.hasil_anamnesa || "Belum ada hasil anamnesa";
+        },
+      },
+    ],
+    columnDefs: [
+      { width: "20%", targets: 0 }, // Adjust the width as needed
+      { width: "20%", targets: 1 },
+      { width: "20%", targets: 2 },
+      { width: "20%", targets: 3 },
+      { width: "20%", targets: 4 },
+      { width: "20%", targets: 5 },
+    ],
+    order: [[1, "asc"]],
   });
 });

@@ -1,6 +1,28 @@
 $(document).ready(function () {
   // Get today's date in the format YYYY-MM-DD
-  var today = new Date().toISOString().split("T")[0];
+  let today = new Date().toISOString().split("T")[0];
+  let passwordInput = $("#password");
+  let confirmPasswordInput = $("#confirm");
+
+  $("#password-addon1").click(function () {
+    if (passwordInput.attr("type") === "password") {
+      passwordInput.attr("type", "text");
+      $(this).html('<i class="fa-solid fa-eye-slash"></i>');
+    } else {
+      passwordInput.attr("type", "password");
+      $(this).html('<i class="fa-solid fa-eye"></i>');
+    }
+  })
+  
+  $("#password-addon2").click(function () {
+    if (confirmPasswordInput.attr("type") === "password") {
+      confirmPasswordInput.attr("type", "text");
+      $(this).html('<i class="fa-solid fa-eye-slash"></i>');
+    } else {
+      confirmPasswordInput.attr("type", "password");
+      $(this).html('<i class="fa-solid fa-eye"></i>');
+    }
+  })
 
   // Set the max attribute of the date input to today
   $("#tgl-lahir").attr("max", today);
@@ -10,6 +32,7 @@ $(document).ready(function () {
     event.preventDefault();
     signUp();
   });
+
 });
 
 async function signUp() {
@@ -31,7 +54,7 @@ async function signUp() {
   // Validate form data
   const validationMessage = validateForm(formData);
   if (validationMessage) {
-    alert(validationMessage);
+    showToast(validationMessage, "error", 3000)
     return;
   }
 
@@ -43,13 +66,13 @@ async function signUp() {
     const registrationResponse = await registerUser(formData);
 
     if (registrationResponse.result === "success") {
-      alert(registrationResponse.message);
-      window.location.replace("/login");
+      // alert(registrationResponse.message);
+      window.location.replace(`/login?msg=${registrationResponse.message}`);
     } else {
-      alert(registrationResponse.message);
+      showToast(registrationResponse.message, "error", 3000);
     }
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error", 3000);
   }
 }
 
@@ -89,18 +112,6 @@ function validateForm(formData) {
     }
   }
 
-  // Password regex validation
-  const passwordRegex =
-    /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(formData.password)) {
-    return "Password harus memenuhi persyaratan: minimal 8 karakter, setidaknya 1 huruf kapital, 1 angka, dan 1 simbol";
-  }
-
-  // Confirm password match validation
-  if (formData.password !== formData.confirmPassword) {
-    return "Password dan konfirmasi password tidak cocok";
-  }
-
   return null; // No validation issues
 }
 
@@ -120,8 +131,4 @@ async function registerUser(data) {
   return response.json();
 }
 
-// Function to format date from yyyy-mm-dd to dd-mm-yyyy
-function formatDateString(dateString) {
-  const [year, month, day] = dateString.split("-");
-  return `${day}-${month}-${year}`;
-}
+

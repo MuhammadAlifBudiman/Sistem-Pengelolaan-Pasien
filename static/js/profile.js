@@ -1,15 +1,16 @@
+
 // Function to update the profile
 function updateProfile() {
   // Fetch updated data from modal inputs (you can add more fields as needed)
-  var updatedName = $("#input-name").val();
-  var updatedPic = $("#input-pic")[0].files[0];
-  var updatednik = $("#input-nik").val();
-  var updatedtlg_lahir = $("#input-tgl-lahir").val();
-  var updatedtgender = $("input[name='input-gender']:checked").val();
-  var updatedtagama = $("#input-agama").val();
-  var updatedtstatus = $("#input-status").val();
-  var updatedtalamat = $("#input-alamat").val();
-  var updatedtno_tlp = $("#input-no-telp").val();
+  let updatedName = $("#input-name").val();
+  let updatedPic = $("#input-pic")[0].files[0];
+  let updatednik = $("#input-nik").val();
+  let updatedtlg_lahir = $("#input-tgl-lahir").val();
+  let updatedtgender = $("input[name='input-gender']:checked").val();
+  let updatedtagama = $("#input-agama").val();
+  let updatedtstatus = $("#input-status").val();
+  let updatedtalamat = $("#input-alamat").val();
+  let updatedtno_tlp = $("#input-no-telp").val();
   // buat form data
   let form_data = new FormData();
   form_data.append("name", updatedName);
@@ -31,22 +32,17 @@ function updateProfile() {
     contentType: false,
     processData: false,
     success: function (response) {
-      if (response.result === "success") {
-        // reload page
-        alert(response.message);
-        window.location.reload();
-      } else {
-        alert(response.message);
+      if (response.result === "failed") {
+        showToast(response.message, "error", 3000);
+        return;
       }
+      showToast(response.message, "success", 3000);
+      window.location.reload();
     },
     error: function (error) {
-      alert("Failed to update profile");
+      showToast("Gagal memperbarui profil", "error", 3000)
     },
   });
 }
 
-// Function to format date from yyyy-mm-dd to dd-mm-yyyy
-function formatDateString(dateString) {
-  const [year, month, day] = dateString.split("-");
-  return `${day}-${month}-${year}`;
-}
+

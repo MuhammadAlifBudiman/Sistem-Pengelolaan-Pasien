@@ -1,13 +1,13 @@
-$(document).ready(function () {
-  $.ajax({
-    type: "GET",
-    url: "/api/antrian/check",
-    success: function (data) {
-      if(data.has_pending_or_approved){
-        sessionStorage.setItem("formStatus", "pending");
-      }
-    }
-  });
+$(document).ready(async function () {
+  const response = await fetch("/api/antrian/check");
+  const dataResponse = await response.json();
+  if(dataResponse.data.has_pending_or_approved){
+    sessionStorage.setItem("formStatus", "pending");
+  } else {
+    // remove formstatus from session storage
+    sessionStorage.removeItem("formStatus");
+  }
+
     // Get today's date in the format YYYY-MM-DD
     let today = new Date().toISOString().split("T")[0];
 
@@ -15,12 +15,14 @@ $(document).ready(function () {
     $("#tanggal").attr("min", today);
   // Fungsi untuk merender tabel berdasarkan data yang diberikan
   function renderTable(data) {
-    console.log("Data for rendering table:", data);
+    let table = $(".card-body");
+    // add class table-responsive to table
+    table.addClass("table-responsive");
 
     let tbody = $("#antrian-container tbody");
     tbody.empty();
 
-    data.forEach(function (item, index) {
+    data.forEach(function (item) {
       let row = $("<tr>");
       let antrian = item.antrian || "-";
       row.append(`<td>${antrian}</td>`);
@@ -51,7 +53,6 @@ $(document).ready(function () {
 
   // Periksa sessionStorage saat halaman dimuat
   let formStatus = sessionStorage.getItem("formStatus");
-  console.log("formStatus:", formStatus);
 
   if (
     formStatus === "done" ||
@@ -66,13 +67,12 @@ $(document).ready(function () {
     if (formStatus === "pending" || formStatus === "approved") {
       $.ajax({
         type: "GET",
-        url: "/get_antrian_data",
+        url: "/api/antrian/me",
         success: function (data) {
-          console.log("Response from the server:", data);
-          renderTable(data.antrian_data);
+          renderTable(data.data);
         },
         error: function () {
-          console.error("Failed to fetch queue data");
+          showToast("Gagal memuat data antrian", "error", 3000)
         },
       });
     }
@@ -83,9 +83,7 @@ $(document).ready(function () {
     event.preventDefault();
 
     if (formStatus === "done" || formStatus === "rejected") {
-      alert(
-        "Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi."
-      );
+      showToast("Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.", "error", 3000)
       return;
     }
 
@@ -93,26 +91,26 @@ $(document).ready(function () {
     let tanggal = $("#tanggal").val();
     let keluhan = $("#keluhan").val();
 
+    if (!poli){
+      showToast("Harap pilih jenis poli sebelum mengirim formulir", "error", 3000)
+      return;
+    }
+
+    if (!tanggal) {
+      showToast("Harap pilih tanggal berobat sebelum mengirim formulir", "error", 3000)
+      return;
+    }
+
+    if (!keluhan) {
+      showToast("Harap isi keluhan Anda sebelum mengirim formulir", "error", 3000)
+      return;
+    }
+
     let formData = {
       poli: poli,
-      tanggal: tanggal,
+      tanggal: formatDateString(tanggal),
       keluhan: keluhan,
     };
-
-    if (formData.poli === "") {
-      alert("Harap pilih jenis poli sebelum mengirim formulir");
-      return;
-    }
-
-    if (formData.tanggal === "") {
-      alert("Harap pilih tanggal berobat sebelum mengirim formulir");
-      return;
-    }
-
-    if (formData.keluhan === "") {
-      alert("Harap isi keluhan Anda sebelum mengirim formulir");
-      return;
-    }
 
     // Permintaan Ajax untuk mengirim formulir
     $.ajax({
@@ -120,25 +118,22 @@ $(document).ready(function () {
       url: "/api/pendaftaran",
       data: formData,
       success: function (data) {
-        if (data.result === "fail"){
-          alert("Gagal melakukan pendaftaran. Silakan coba lagi.");
+        if (data.result === "failed"){
+          showToast(data.message, "error", 3000);
           return;
         }
-        console.log(
-          "Response from the server after submitting the form:",
-          data
-        );
         let newStatus = "pending";
-        showToast("Formulir telah diproses. Silakan tunggu.", "success", 3000);
+        showToast(data.message, "success", 3000);
 
         sessionStorage.setItem("formStatus", newStatus);
-        toggleFormAndAntrian(
-          newStatus === "pending" || newStatus === "approved"
-        );
-        renderTable(data.antrian_data);
+        toggleFormAndAntrian(true);
+        // change object data.data to list data
+        let listData = [];
+        listData.push(data.data);
+        renderTable(listData);
       },
       error: function () {
-        alert("Gagal melakukan pendaftaran. Silakan coba lagi.");
+        showToast("Gagal mengirim formulir", "error", 3000)
       },
     });
   });

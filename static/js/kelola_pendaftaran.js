@@ -1,113 +1,94 @@
-function renderTable(data) {
-  let table = $("#myTable").DataTable();
-  table.clear().draw();
-
-  data.forEach((row) => {
-    let statusButton = ``;
-    let antrian = row.antrian || "-";
-    if (row.status === "pending") {
-      statusButton = `
-                        <button class="btn btn-primary btn-action" data-registration-id="${row._id}" data-status="approved">Approve</button>
-                        <button class="btn btn-danger btn-action" data-registration-id="${row._id}" data-status="rejected">Reject</button>
-                    `;
-    } else if (row.status === "approved") {
-      statusButton = `
-                        <button class="btn btn-success btn-action-done" data-registration-id="${row._id}" data-status="done">Done</button>
-                    `;
-    }
-
-    if (row.status === "pending" || row.status === "approved") {
-      table.row
-        .add([
-          antrian,
-          row.name,
-          row.poli,
-          row.tanggal,
-          row.keluhan,
-          `
+$(document).ready(function () {
+  let myDataTable = $("#myTable").DataTable({
+    serverSide: true,
+    processing: true,
+    scrollX: true,
+    ajax: "/api/pendaftaran?status=pending&status=approved",
+    columns: [
+      {
+        data: null,
+        render: function (data, type, row) {
+          return row.antrian || "-";
+        },
+      },
+      { data: "name" },
+      { data: "poli" },
+      { data: "tanggal" },
+      { data: "keluhan" },
+      {
+        data: null,
+        render: function (data, type, row) {
+          let statusButton = ``;
+          if (row.status === "pending") {
+            statusButton = `
+                              <button class="btn btn-primary btn-action" data-registration-id="${row._id}" data-status="approved">Approve</button>
+                              <button class="btn btn-danger btn-action" data-registration-id="${row._id}" data-status="rejected">Reject</button>
+                          `;
+          } else if (row.status === "approved") {
+            statusButton = `
+                              <button class="btn btn-success btn-action-done" data-registration-id="${row._id}" data-status="done">Done</button>
+                          `;
+          }
+          return `
             <div class="btn-group" role="group">
                 ${statusButton}
             </div>
-          `,
-        ])
-        .draw(false);
-    }
-  });
-}
-
-$(document).ready(function () {
-  let myDataTable = $("#myTable").DataTable();
-
-  // Ambil data kelola pendaftaran
-  $.ajax({
-    url: "/api/kelola_pendaftaran",
-    type: "GET",
-    success: function (data) {
-      // Isi tabel kelola pendaftaran
-      renderTable(data.data);
-    },
+          `;
+        },
+      },
+    ],
+    order: [[3, "asc"]],
   });
 
   // Menangani klik tombol action (Approve, Reject, Done)
   $(document).on("click", ".btn-action", function () {
     let registrationId = $(this).data("registration-id");
     let status = $(this).data("status");
-    let btnClicked = $(this);
 
     // Kirim permintaan ke server untuk mengubah status
-    $.ajax({
-      url: "/update_status",
-      method: "POST",
-      data: { registrationId: registrationId, status: status },
-      success: function (response) {
-        console.log("Response from the server:", response);
-
-        if (status === "approved") {
-          console.log("Approved button clicked");
-          btnClicked.closest("tr").find(".btn-action").hide();
-          btnClicked.closest("tr").find(".btn-action-done").show();
-          window.location.reload();
-        } else if (status === "done") {
-          console.log("Done button clicked");
-          myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
-        } else if (status === "rejected") {
-          console.log("Rejected button clicked");
-          myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
-        }
-
-        // Perbarui data antrian jika diterima dari server
-        // renderTable(response.antrian_data);
-      },
-
-      error: function (error) {
-        console.error("Gagal mengubah status:", error);
-      },
-    });
+    if (status === "approved") {
+      $.ajax({
+        url: `/api/pendaftaran/${registrationId}/approve`,
+        method: "POST",
+        success: function (response) {
+          showToast(response.message, "success", 3000);
+          myDataTable.ajax.reload();
+        },
+        error: function (error) {
+          showToast("Gagal mengubah status", "error", 3000);
+        },
+      });
+    }
+    else if (status === "rejected") {
+      $.ajax({
+        url: `/api/pendaftaran/${registrationId}/reject`,
+        method: "POST",
+        success: function (response) {
+          showToast(response.message, "success", 3000);
+          myDataTable.ajax.reload();
+        },
+        error: function (error) {
+          showToast("Gagal mengubah status", "error", 3000);
+        },
+      });
+    }
   });
 
   // Menangani klik tombol 'done'
   $(document).on("click", ".btn-action-done", function () {
     let registrationId = $(this).data("registration-id");
-    let status = $(this).data("status");
-    let btnClicked = $(this);
 
     // Kirim permintaan ke server untuk mengubah status
     $.ajax({
-      url: "/update_status",
+      url: `/api/pendaftaran/${registrationId}/done`,
       method: "POST",
-      data: { registrationId: registrationId, status: status },
       success: function (response) {
-        console.log("Done button clicked");
-        myDataTable.row(btnClicked.closest("tr")).remove().draw(false);
-
-        // Perbarui data antrian jika diterima dari server
-        // renderTable(response.antrian_data);
+        showToast(response.message, "success", 3000);
+        myDataTable.ajax.reload();
       },
       error: function (error) {
-        console.error("Gagal mengubah status:", error);
+        showToast("Gagal mengubah status", "error", 3000);
       },
     });
   });
 });
-
-

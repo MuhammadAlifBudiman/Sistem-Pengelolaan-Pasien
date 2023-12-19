@@ -89,6 +89,12 @@
     {% block scripts %} {% for script in scripts %}
     <script src="{{ url_for('static', filename=script) }}"></script>
     {% endfor %} {% endblock %}
+
+    <script>
+      {% if msg %}
+        let globalMessage = "{{ msg|safe }}";
+      {% endif %}
+    </script>
   </head>
   <body class="d-flex flex-column min-vh-100">
     <!-- Content Container -->

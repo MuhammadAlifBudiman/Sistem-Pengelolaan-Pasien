@@ -1,3 +1,17 @@
 body {
   background-color: #091e3e;
 }
+
+.profile-container {
+  width: 700px;
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    width: auto;
+  }
+}
+
+button {
+  width: auto;
+}

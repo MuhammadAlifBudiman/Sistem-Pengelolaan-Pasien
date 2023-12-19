@@ -1,110 +1,73 @@
 // Jadwal Table
 $(document).ready(function () {
   // Inisialisasi datatables
-  let jadwalTable = $("#jadwalTable").DataTable();
+  let jadwalTable = $("#jadwalTable").DataTable({
+    serverSide: true,
+    processing: true,
+    ajax: "/api/jadwal",
+    columns: [
+      { data: "nama" },
+      { data: "poli" },
+      { data: "hari" },
+      {
+        data: null,
+        render: function (data, type, row) {
+          return row.jam_buka + " - " + row.jam_tutup;
+        },
+      },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row) {
+          return `<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal' data-jadwal-id='${row._id}'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal' data-jadwal-id='${row._id}'>Delete</button>`;
+        },
+      },
+    ],
+  });
 
   // insert button tambah below h2 with id jadwal
   $("#jadwal").append(
     '<div class="d-grid gap-2 d-md-block col-2"> <button type="button" class="btn btn-primary text-light" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #06a3da">Tambah</button></div>'
   );
 
-  // Ambil data jadwal praktek
-  $.ajax({
-    url: "/api/get_jadwal",
-    type: "GET",
-    success: function (data) {
-      console.log()
-      // Isi tabel jadwal praktek
-      jadwalTable.clear().draw();
-      data.jadwal.forEach(function (row) {
-        console.log(row._id)
-        // Update tabel
-        let newRow = [
-          row.nama,
-          row.poli,
-          row.hari,
-          row.jam_buka + " - " + row.jam_tutup,
-          "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-        ];
-        let rowNode = jadwalTable.row.add(newRow).draw().node();
-        $(rowNode).attr("id", row._id);
-      });
-    },
-    error: function (error) {
-      alert(error.responseJSON.message);
-    },
-  });
-
   // Event listener for Add button
   $("#tambahJadwal").submit(function (e) {
     e.preventDefault();
 
-    // Ambil nilai input
-    let nama = $("#nama").val();
-    let poli = $("#listPoli").val();
-    let hari = $("input[name='hari']:checked").val();
-    let jamBuka = $("#jamBuka").val();
-    let jamTutup = $("#jamTutup").val();
-
-    // Lakukan validasi
-    if (!nama || !poli || !hari || !jamBuka || !jamTutup) {
-      alert("Semua field harus diisi!");
-      return;
-    }
-
-    if (jamBuka >= jamTutup) {
-      alert("Jam buka harus lebih kecil dari jam tutup!");
-      return;
-    }
-
     let formData = $(this).serializeArray();
 
     $.ajax({
-      url: "/api/tambah_jadwal",
+      url: "/api/jadwal",
       type: "POST",
       data: formData,
       success: function (response) {
-        if (response.result == "success") {
-          let jadwal = response.jadwal;
-          // Update tabel
-          let newRow = [
-            jadwal.nama,
-            jadwal.poli,
-            jadwal.hari,
-            jadwal.jam_buka + " - " + jadwal.jam_tutup,
-            "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-          ];
-          let rowNode = jadwalTable.row.add(newRow).draw().node();
-          $(rowNode).attr("id", jadwal._id); // Set ID for the new row
-
-          alert(response.message);
-          // Reset the form
-          $("#tambahJadwal")[0].reset();
-
-          // Close the modal
-          $("#exampleModal").modal("hide");
-        } else {
-          alert(response.message);
+        if (response.result === "failed") {
+          showToast(response.message, "error", 3000);
+          return;
         }
+        showToast(response.message, "success", 3000);
+        jadwalTable.ajax.reload();
+        // reset form
+        $("#tambahJadwal")[0].reset();
+        // close modal
+        $("#exampleModal").modal("hide");
       },
       error: function (error) {
-        alert(error.responseJSON.message);
+        showToast(error.responseJSON.message, "error", 3000);
       },
     });
   });
 
   // Event listener for Edit buttons
   $("#jadwalTable").on("click", ".btn-edit", function () {
-    let action = $(this).text();
-    let row = jadwalTable.row($(this).parents("tr"));
-    let rowData = row.data();
-    let rowId = $(this).parents("tr").attr("id");
+    let jadwalId = $(this).data("jadwal-id");
     let editModal = $("#editModal");
     $.ajax({
-      url: "/api/get_jadwal/" + rowId,
+      url: `/api/jadwal/${jadwalId}`,
       type: "GET",
       success: function (response) {
-        let jadwal = response.jadwal;
+        let jadwal = response.data;
 
         // populate the edit modal
         editModal.find("#nama").val(jadwal.nama);
@@ -116,11 +79,14 @@ $(document).ready(function () {
         // Check the checkboxes based on the received values
         for (let i = 0; i < jadwal.hari.length; i++) {
           editModal
-            .find("input[name='hari'][value='" + jadwal.hari[i].toLowerCase() + "']")
+            .find(
+              "input[name='hari'][value='" + jadwal.hari[i].toLowerCase() + "']"
+            )
             .prop("checked", true);
         }
       },
       error: function (error) {
+        showToast(error.responseJSON.message, "error", 3000);
         alert(error.responseJSON.message);
       },
     });
@@ -132,57 +98,29 @@ $(document).ready(function () {
       .submit(function (e) {
         e.preventDefault();
 
-        // Ambil nilai input
-        let nama = editModal.find("#nama").val();
-        let poli = editModal.find("#listPoli").val();
-        let hari = editModal.find("input[name='hari']:checked").val();
-        let jamBuka = editModal.find("#jamBuka").val();
-        let jamTutup = editModal.find("#jamTutup").val();
-
-        // Lakukan validasi
-        if (!nama || !poli || !hari || !jamBuka || !jamTutup) {
-          alert("Semua field harus diisi!");
-          return;
-        }
-
-        if (jamBuka >= jamTutup) {
-          alert("Jam buka harus lebih kecil dari jam tutup!");
-          return;
-        }
-
         let formData = $(this).serializeArray();
 
         $.ajax({
-          url: "/api/edit_jadwal/" + rowId,
+          url: `/api/jadwal/${jadwalId}`,
           type: "POST",
           data: formData,
           success: function (response) {
-            if (response.result == "success") {
-              let jadwal = response.jadwal;
-              // Update the row
-              row
-                .data([
-                  jadwal.nama,
-                  jadwal.poli,
-                  jadwal.hari,
-                  jadwal.jam_buka + " - " + jadwal.jam_tutup,
-                  "<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal'>Delete</button>",
-                ])
-                .draw();
-
-              alert(response.message);
-
-              // Reset the form
-              editModal.find("#editJadwal")[0].reset();
-
-              // Close the modal
-              editModal.modal("hide");
-            } else {
-              alert(response.message);
+            if (response.result === "failed") {
+              showToast(response.message, "error", 3000);
+              return;
             }
+
+            showToast(response.message, "success", 3000);
+            jadwalTable.ajax.reload();
+
+            // Reset the form
+            editModal.find("#editJadwal")[0].reset();
+
+            // Close the modal
+            editModal.modal("hide");
           },
           error: function (error) {
-            alert(error.responseJSON.message);
+            showToast(error.responseJSON.message, "error", 3000);
           },
         });
       });
@@ -190,35 +128,41 @@ $(document).ready(function () {
 
   // Event listener for Delete buttons
   $("#jadwalTable").on("click", ".btn-delete", function () {
-    let rowId = $(this).parents("tr").attr("id");
+    let jadwalId = $(this).data("jadwal-id");
+    $.ajax({
+      url: `/api/jadwal/${jadwalId}`,
+      type: "GET",
+      success: function (response) {
+        let jadwal = response.data;
+        $("#deleteModal").find("#deleteTitle").text(`Yakin hapus data ${jadwal.nama}?`);
+      },
+      error: function (error) {
+        showToast(error.responseJSON.message, "error", 3000);
+      },
+    })
+    
     $("#hapusJadwal")
       .off("submit")
       .submit(function (e) {
         e.preventDefault();
 
         $.ajax({
-          url: "/api/hapus_jadwal/" + rowId,
-          type: "POST",
+          url: `/api/jadwal/${jadwalId}`,
+          type: "DELETE",
           success: function (response) {
-            if (response.result == "success") {
-              // Delete the row
-              jadwalTable
-                .row("#" + rowId)
-                .remove()
-                .draw();
-
-              alert(response.message);
-              // Close the modal
-              $("#deleteModal").modal("hide");
-            } else {
-              alert(response.message);
+            if (response.result === "failed") {
+              showToast(response.message, "error", 3000);
+              return;
             }
+            showToast(response.message, "success", 3000);
+            jadwalTable.ajax.reload();
+            // Close the modal
+            $("#deleteModal").modal("hide");
           },
           error: function (error) {
-            alert(error.responseJSON.message);
+            showToast(error.responseJSON.message, "error", 3000);
           },
         });
       });
   });
 });
-

@@ -71,4 +71,18 @@ button:hover {
 
 .nav-item a.btn:active {
   background-color: #06a3da;
-} 
+}
+
+button.navbar-toggler {
+  width: auto;
+}
+
+.form-container {
+  width: 500px;
+}
+
+@media (max-width: 767px) {
+  .form-container {
+    width: auto;
+  }
+}

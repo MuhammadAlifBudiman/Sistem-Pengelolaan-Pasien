@@ -5,8 +5,3 @@ class Pagination:
         self.max_page = max_page
         self.total_data = total_data
 
-
-def paginate_data(data: list, page: int, per_page: int):
-    start_index = (page - 1) * per_page
-    end_index = start_index + per_page
-    return data[start_index:end_index]

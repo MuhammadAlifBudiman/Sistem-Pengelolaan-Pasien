@@ -2,8 +2,11 @@ $(document).ready(function () {
   AOS.init();
 });
 
-function sign_out() {
-  $.removeCookie("mytoken", { path: "/" });
+async function sign_out() {
+  await fetch("/api/logout", {
+    method: "POST",
+  });
+  // $.removeCookie("mytoken", { path: "/" });
   // showToast("You have been logged out.", "success", 3000)
   // showAlert();
   // setTimeout(function () {
@@ -16,7 +19,7 @@ function sign_out() {
 function showToast(title, icon, timer) {
   const Toast = Swal.mixin({
     toast: true,
-    position: 'top-end',
+    position: "top-end",
     showConfirmButton: false,
     timer: timer,
     timerProgressBar: true,
@@ -24,7 +27,7 @@ function showToast(title, icon, timer) {
 
   Toast.fire({
     icon: icon,
-    title: title
+    title: title,
   });
 }
 
@@ -32,6 +35,12 @@ function showAlert() {
   Swal.fire({
     title: "Good job!",
     text: "You clicked the button!",
-    icon: "success"
+    icon: "success",
   });
+}
+
+// Function to format date from yyyy-mm-dd to dd-mm-yyyy
+function formatDateString(dateString) {
+  const [year, month, day] = dateString.split("-");
+  return `${day}-${month}-${year}`;
 }

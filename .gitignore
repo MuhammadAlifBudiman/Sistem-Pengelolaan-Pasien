@@ -2,3 +2,4 @@
 .vscode
 /venv
 static/profile_pics
+/__pycache__
