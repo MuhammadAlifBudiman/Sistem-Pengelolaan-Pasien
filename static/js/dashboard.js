@@ -153,5 +153,22 @@ $(document).ready(function () {
       ],
       order: [[1, "asc"]],
     });
+
+    $.ajax({
+      url: `/api/rekam_medis/${rekamMedisNik}`,
+      type: "GET",
+      success: function (response) {
+        console.log(response)
+        $("#lihatModal").find("#no_kartu").text(response.data.no_kartu);
+        $("#lihatModal").find("#nama").text(response.data.nama);
+        $("#lihatModal").find("#nik").text(response.data.nik);
+        $("#lihatModal").find("#umur").text(response.data.umur);
+        $("#lihatModal").find("#alamat").text(response.data.alamat);
+        $("#lihatModal").find("#no_telp").text(response.data.no_telp);
+      },
+      error: function (error) {
+        showToast(error.responseJSON.message, "error", 3000)
+      },
+    })
   });
 });
