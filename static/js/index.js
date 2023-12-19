@@ -10,7 +10,7 @@ $(document).ready(function () {
   let jadwalTable = $("#jadwalTable").DataTable({
     serverSide: true,
     processing: true,
-    scrollX: true,
+    scrollX: isSmallDevice(),
     ajax: "/api/jadwal",
     columns: [
       { data: "nama" },
@@ -29,16 +29,11 @@ $(document).ready(function () {
       { width: "20%", targets: 2 },
       { width: "40%", targets: 3 },
     ],
-    initComplete: function () {
-      // Add AOS attributes dynamically after DataTable is populated
-      $("#jadwalTable tbody tr").each(function (index) {
-        $(this).attr("data-aos", "fade-up");
-        $(this).attr("data-aos-delay", index * 100);
-      });
-    },
   });
 
-  let antrianTable = $("#antrianTable").DataTable({});
+  let antrianTable = $("#antrianTable").DataTable({
+    scrollX: isSmallDevice(),
+  });
 
   // Ambil data antrian hari ini
   $.ajax({
@@ -51,24 +46,7 @@ $(document).ready(function () {
         antrianTable.row
           .add([row.poli, row.jumlah_pendaftar, row.dalam_antrian])
           .draw(false);
-        // Add AOS attributes dynamically after adding data to the DataTable
-        $("#antrianTable tbody tr:last").attr("data-aos", "fade-up");
-        $("#antrianTable tbody tr:last").attr(
-          "data-aos-delay",
-          (index + jadwalTable.rows().count()) * 100
-        );
       });
     },
   });
-
-  // Check screen size on window resize
-  $(window).resize(function () {
-    // Update DataTable settings based on screen size
-    jadwalTable.settings()[0].scrollX = isSmallDevice();
-    jadwalTable.draw();
-  });
-
-  // Initial check for screen size on page load
-  jadwalTable.settings()[0].scrollX = isSmallDevice();
-  jadwalTable.draw();
 });

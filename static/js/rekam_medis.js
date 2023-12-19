@@ -21,10 +21,10 @@ $(document).ready(function () {
         data: null,
         render: function (data, type, row) {
           if (row.has_rekam_medis){
-            return `<button class='btn btn-danger btn-sm btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}'>Lihat</button>`;
+            return `<button class='btn btn-sm btn-lihat text-light' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}' style='background-color: #091e3e'>Lihat</button>`;
           }
           else{
-            return `<button class='btn btn-warning btn-sm btn-buat' data-bs-toggle='modal' data-bs-target='#buatModal' data-rekammedis-nik='${row.nik}'>Buat</button>`;
+            return `<button class='btn btn-sm btn-buat text-light' data-bs-toggle='modal' data-bs-target='#buatModal' data-rekammedis-nik='${row.nik}' style='background-color: #06a3da'>Buat</button>`;
           }
         },
       },
@@ -114,7 +114,7 @@ $(document).ready(function () {
           orderable: false,
           searchable: false,
           render: function (data, type, row) {
-            return `<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal' data-checkup-id='${row._id}' data-rekammedis-nik='${rekamMedisNik}'>Edit</button>`;
+            return `<button class='btn btn-sm btn-edit text-light' data-bs-toggle='modal'        data-bs-target='#editModal' data-checkup-id='${row._id}' data-rekammedis-nik='${rekamMedisNik}' style='background-color: #06a3da'>Edit</button>`;
           },
         }
       ],
@@ -125,7 +125,6 @@ $(document).ready(function () {
       url: `/api/rekam_medis/${rekamMedisNik}`,
       type: "GET",
       success: function (response) {
-        console.log(response)
         $("#lihatModal").find("#no_kartu").text(response.data.no_kartu);
         $("#lihatModal").find("#nama").text(response.data.nama);
         $("#lihatModal").find("#nik").text(response.data.nik);

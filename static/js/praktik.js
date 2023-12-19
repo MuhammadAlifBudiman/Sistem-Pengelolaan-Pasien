@@ -4,6 +4,7 @@ $(document).ready(function () {
   let jadwalTable = $("#jadwalTable").DataTable({
     serverSide: true,
     processing: true,
+    scrollX: true,
     ajax: "/api/jadwal",
     columns: [
       { data: "nama" },
@@ -20,9 +21,16 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row) {
-          return `<button class='btn btn-warning btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal' data-jadwal-id='${row._id}'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal' data-jadwal-id='${row._id}'>Delete</button>`;
+          return `<button class='btn text-light btn-sm btn-edit' data-bs-toggle='modal'        data-bs-target='#editModal' data-jadwal-id='${row._id}' style='background-color: #06a3da'>Edit</button> <button class='btn btn-danger btn-sm btn-delete' data-bs-toggle='modal' data-bs-target='#deleteModal' data-jadwal-id='${row._id}' style='background-color: #091e3e'>Delete</button>`;
         },
       },
+    ],
+    columnDefs: [
+      { width: "20%", targets: 0 }, // Adjust the width as needed
+      { width: "20%", targets: 1 },
+      { width: "20%", targets: 2 },
+      { width: "10%", targets: 3 },
+      { width: "10%", targets: 4 },
     ],
   });
 
@@ -87,7 +95,6 @@ $(document).ready(function () {
       },
       error: function (error) {
         showToast(error.responseJSON.message, "error", 3000);
-        alert(error.responseJSON.message);
       },
     });
 

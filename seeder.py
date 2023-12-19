@@ -169,7 +169,7 @@ def seed_registrations_pasien(num_registration=3):
                         'status_pernikahan': user['status'],
                         'alamat': user['alamat'],
                         'no_telp': user['no_telp'],
-                        'tanggal': (datetime.now() - timedelta(days=random.randint(0, 3))).strftime('%Y-%m-%d'),
+                        'tanggal': (datetime.now() - timedelta(days=random.randint(0, 3))).strftime('%d-%m-%Y'),
                         'keluhan': fake.sentence(),
                         'status': fake.random_element(elements=['approved', 'done', 'rejected'])
                     }
@@ -225,7 +225,7 @@ def seed_registrations_pasien(num_registration=3):
                         'status_pernikahan': user['status'],
                         'alamat': user['alamat'],
                         'no_telp': user['no_telp'],
-                        'tanggal': (datetime.now() - timedelta(days=random.randint(0, 3))).strftime('%Y-%m-%d'),
+                        'tanggal': (datetime.now() - timedelta(days=random.randint(0, 3))).strftime('%d-%m-%Y'),
                         'keluhan': fake.sentence(),
                         'status': fake.random_element(elements=status_choices)
                     }
@@ -251,7 +251,7 @@ def seed_registrations_pasien(num_registration=3):
                     if registration_data['status'] == 'pending':
                         # Set only one registration as pending for today
                         registration_data['tanggal'] = datetime.now().strftime(
-                            '%Y-%m-%d')
+                            '%d-%m-%Y')
 
                     # Check if there are more "done" registrations than "approved" registrations on the same date
                     if registration_data['status'] == 'done':

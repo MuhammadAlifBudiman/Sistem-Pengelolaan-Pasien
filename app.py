@@ -1146,7 +1146,7 @@ def api_rekam_medis_post(decoded_token):
     if existing_no_kartu:
         raise HttpException(False, 400, "failed", "Nomor kartu sudah digunakan")
     if not is_valid_no_kartu(no_kartu):
-        raise HttpException(False, 400, "failed", "Format nomor kartu tidak valid, gunakan format nn-nn-nn")
+        raise HttpException(False, 400, "failed", "Format nomor kartu tidak valid, gunakan format xx-xx-xx")
     dokter = request.form.get('dokter')
     dokter_list = list(db.jadwal.distinct('nama'))
     if not dokter:
@@ -1229,13 +1229,15 @@ def api_users_pasien(decoded_token):
         ]
 
     # Adjust the query for sorting
-    sort_column = ["_id","name", "nik", "action"][order_column_index]
+    sort_column = ["_id","name", "nik", "_id"][order_column_index]
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # Fetch user details from users collection based on unique usernames
     data_pasien_list = (
         db.users.find(query)
         .sort(sort_column, sort_direction)
+        .collation(collation)
         .skip(start)
         .limit(length)
     )
