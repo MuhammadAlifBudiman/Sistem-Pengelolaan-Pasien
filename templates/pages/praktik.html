@@ -1,445 +1,530 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %} {% block title %}Kelola Praktik - Klinik Google
+{% endblock %} {% block content %} {% include 'base/navbar.html' %}
 
-{% block title %}Kelola Praktik - Klinik Google {% endblock %}
+<div class="container mt-5 pt-5 mb-5" id="jadwal">
+  {% set table_title='Jadwal Praktik' %}{% set table_headers=['Nama', 'Poli',
+  'Hari', 'Jam Praktek', 'Action'] %} {% set table_id='jadwalTable' %} {%
+  include 'partials/datatable.html' %}
+</div>
 
-{% block content %}
-  {% include 'base/navbar.html' %}
-
-  <div class="container mt-5 pt-5 mb-5">
-    {% set table_title='Jadwal Praktik' %}
-    {% set table_title_id='jadwal' %}
-    {% set table_headers=['Nama', 'Poli', 'Hari', 'Jam Praktek', 'Action'] %}
-    {% set table_id='jadwalTable' %}
-    {% include 'partials/datatable.html' %}
-  </div>
-
-  <!-- Add Modal -->
-  <div
-    class="modal fade"
-    id="exampleModal"
-    tabindex="-1"
-    aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">
-            Tambah Jadwal Praktik
-          </h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+<!-- The modal for filtering -->
+<div
+  class="modal fade"
+  id="jadwalFilterModal"
+  tabindex="-1"
+  aria-labelledby="jadwalFilterModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="jadwalFilterModalLabel">Filter Data</h5>
+        <button
+          type="button"
+          class="btn w-auto py-0 my-0"
+          onclick="clearFilterJadwal()"
+        >
+          Clear
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="name-jadwal" class="col-sm-2">Nama</label>
+          <div class="col-sm-10">
+            <select id="name-jadwal" class="form-select"></select>
+          </div>
         </div>
-        <div class="modal-body">
-          <form id="tambahJadwal">
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="nama"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Nama
-              </label>
-              <div class="col-sm-10">
+
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="poli-jadwal" class="col-sm-2">Poli</label>
+          <div class="col-sm-10">
+            <select id="poli-jadwal" class="form-select"></select>
+          </div>
+        </div>
+
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="status-daftar" class="col-sm-2">Hari</label>
+          <div class="col-sm-10">
+            <div class="row">
+              <div class="form-check form-check-inline w-auto">
                 <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="nama"
-                  name="nama"
+                  type="checkbox"
+                  class="form-check-input"
+                  id="senin"
+                  name="hari-jadwal"
+                  value="senin"
                 />
+                <label class="form-check-label" for="senin">Senin</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="selasa"
+                  name="hari-jadwal"
+                  value="selasa"
+                />
+                <label class="form-check-label" for="selasa">Selasa</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="rabu"
+                  name="hari-jadwal"
+                  value="rabu"
+                />
+                <label class="form-check-label" for="rabu">Rabu</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="kamis"
+                  name="hari-jadwal"
+                  value="kamis"
+                />
+                <label class="form-check-label" for="kamis">Kamis</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="jumat"
+                  name="hari-jadwal"
+                  value="jumat"
+                />
+                <label class="form-check-label" for="jumat">Jumat</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="sabtu"
+                  name="hari-jadwal"
+                  value="sabtu"
+                />
+                <label class="form-check-label" for="sabtu">Sabtu</label>
+              </div>
+              <div class="form-check form-check-inline w-auto">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="minggu"
+                  name="hari-jadwal"
+                  value="minggu"
+                />
+                <label class="form-check-label" for="minggu">Minggu</label>
               </div>
             </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="poli"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Poli
-              </label>
-              <div class="col-sm-10">
-                <select name="poli" id="listPoli">
-                  <option value="pilih" selected disabled>--Pilih--</option>
-                  <option value="Umum">Umum</option>
-                  <option value="Gigi">Gigi</option>
-                  <option value="Mata">Mata</option>
-                  <option value="Jantung">Jantung</option>
-                  <option value="THT">THT</option>
-                  <option value="Syaraf">Syaraf</option>
-                  <option value="Kesehatan Jiwa">Kesehatan Jiwa</option>
-                  <option value="Anak">Anak</option>
-                  <option value="Fisioterapi">Fisioterapi</option>
-                </select>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <label
-                for="hari"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Hari
-              </label>
-              <div class="col-sm-10">
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSenin"
-                    name="hari"
-                    value="senin"
-                  />
-                  <label class="form-check-label" for="hariSenin"
-                    >Senin</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSelasa"
-                    name="hari"
-                    value="selasa"
-                  />
-                  <label class="form-check-label" for="hariSelasa"
-                    >Selasa</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariRabu"
-                    name="hari"
-                    value="rabu"
-                  />
-                  <label class="form-check-label" for="hariRabu">Rabu</label>
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariKamis"
-                    name="hari"
-                    value="kamis"
-                  />
-                  <label class="form-check-label" for="hariKamis"
-                    >Kamis</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariJumat"
-                    name="hari"
-                    value="jumat"
-                  />
-                  <label class="form-check-label" for="hariJumat"
-                    >Jumat</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSabtu"
-                    name="hari"
-                    value="sabtu"
-                  />
-                  <label class="form-check-label" for="hariSabtu"
-                    >Sabtu</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariMinggu"
-                    name="hari"
-                    value="minggu"
-                  />
-                  <label class="form-check-label" for="hariMinggu"
-                    >Minggu</label
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <label
-                for="jam"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Jam</label
-              >
-              <div class="col-sm-10">
-                <div class="d-inline-block">
-                  <input
-                    type="time"
-                    class="form-control form-control-sm d-inline"
-                    id="jamBuka"
-                    name="jam_buka"
-                  />
-                </div>
-                <p class="d-inline mx-2">s/d</p>
-                <div class="d-inline-block">
-                  <input
-                    type="time"
-                    class="form-control form-control-sm d-inline"
-                    id="jamTutup"
-                    name="jam_tutup"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button
-                type="button"
-                class="btn text-light me-2"
-                data-bs-dismiss="modal"
-                style="background-color: #091e3e;"
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn text-light" style="background-color: #06a3da;">Save</button>
-            </div>
-          </form>
+          </div>
         </div>
-        <div class="modal-footer"></div>
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <button
+          type="button"
+          class="btn text-light w-auto"
+          data-bs-dismiss="modal"
+          style="background-color: #091e3e"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn text-light w-auto"
+          id="applyFilterJadwal"
+          style="background-color: #06a3da"
+        >
+          Apply Filter
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Edit Modal -->
-  <div
-    class="modal fade"
-    id="editModal"
-    tabindex="-1"
-    aria-labelledby="editModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="editModalLabel">
-            Edit Jadwal Praktik
-          </h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <form id="editJadwal">
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="nama"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Nama
-              </label>
-              <div class="col-sm-10">
+<!-- Add Modal -->
+<div
+  class="modal fade"
+  id="exampleModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">
+          Tambah Jadwal Praktik
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="tambahJadwal">
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="nama" class="col-sm-2 col-form-label col-form-label-sm"
+              >Nama
+            </label>
+            <div class="col-sm-10">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="nama"
+                name="nama"
+              />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="poli" class="col-sm-2 col-form-label col-form-label-sm"
+              >Poli
+            </label>
+            <div class="col-sm-10">
+              <select name="poli" id="listPoli"></select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <label for="hari" class="col-sm-2 col-form-label col-form-label-sm"
+              >Hari
+            </label>
+            <div class="col-sm-10">
+              <div class="form-check">
                 <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="nama"
-                  name="nama"
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSenin"
+                  name="hari"
+                  value="senin"
+                />
+                <label class="form-check-label" for="hariSenin">Senin</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSelasa"
+                  name="hari"
+                  value="selasa"
+                />
+                <label class="form-check-label" for="hariSelasa">Selasa</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariRabu"
+                  name="hari"
+                  value="rabu"
+                />
+                <label class="form-check-label" for="hariRabu">Rabu</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariKamis"
+                  name="hari"
+                  value="kamis"
+                />
+                <label class="form-check-label" for="hariKamis">Kamis</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariJumat"
+                  name="hari"
+                  value="jumat"
+                />
+                <label class="form-check-label" for="hariJumat">Jumat</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSabtu"
+                  name="hari"
+                  value="sabtu"
+                />
+                <label class="form-check-label" for="hariSabtu">Sabtu</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariMinggu"
+                  name="hari"
+                  value="minggu"
+                />
+                <label class="form-check-label" for="hariMinggu">Minggu</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <label for="jam" class="col-sm-2 col-form-label col-form-label-sm"
+              >Jam</label
+            >
+            <div class="col-sm-10">
+              <div class="d-inline-block">
+                <input
+                  type="time"
+                  class="form-control form-control-sm d-inline"
+                  id="jamBuka"
+                  name="jam_buka"
+                />
+              </div>
+              <p class="d-inline mx-2">s/d</p>
+              <div class="d-inline-block">
+                <input
+                  type="time"
+                  class="form-control form-control-sm d-inline"
+                  id="jamTutup"
+                  name="jam_tutup"
                 />
               </div>
             </div>
-            <div class="row mb-3 d-flex align-items-center">
-              <label
-                for="poli"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Poli
-              </label>
-              <div class="col-sm-10">
-                <select name="poli" id="listPoli">
-                  <option value="pilih" selected disabled>--Pilih--</option>
-                  <option value="Umum">Umum</option>
-                  <option value="Gigi">Gigi</option>
-                  <option value="Mata">Mata</option>
-                  <option value="Jantung">Jantung</option>
-                  <option value="THT">THT</option>
-                  <option value="Syaraf">Syaraf</option>
-                  <option value="Kesehatan Jiwa">Kesehatan Jiwa</option>
-                  <option value="Anak">Anak</option>
-                  <option value="Fisioterapi">Fisioterapi</option>
-                </select>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <label
-                for="hari"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Hari
-              </label>
-              <div class="col-sm-10">
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSenin"
-                    name="hari"
-                    value="senin"
-                  />
-                  <label class="form-check-label" for="hariSenin"
-                    >Senin</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSelasa"
-                    name="hari"
-                    value="selasa"
-                  />
-                  <label class="form-check-label" for="hariSelasa"
-                    >Selasa</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariRabu"
-                    name="hari"
-                    value="rabu"
-                  />
-                  <label class="form-check-label" for="hariRabu">Rabu</label>
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariKamis"
-                    name="hari"
-                    value="kamis"
-                  />
-                  <label class="form-check-label" for="hariKamis"
-                    >Kamis</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariJumat"
-                    name="hari"
-                    value="jumat"
-                  />
-                  <label class="form-check-label" for="hariJumat"
-                    >Jumat</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariSabtu"
-                    name="hari"
-                    value="sabtu"
-                  />
-                  <label class="form-check-label" for="hariSabtu"
-                    >Sabtu</label
-                  >
-                </div>
-                <div class="form-check">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="hariMinggu"
-                    name="hari"
-                    value="minggu"
-                  />
-                  <label class="form-check-label" for="hariMinggu"
-                    >Minggu</label
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <label
-                for="jam"
-                class="col-sm-2 col-form-label col-form-label-sm"
-                >Jam</label
-              >
-              <div class="col-sm-10">
-                <div class="d-inline-block">
-                  <input
-                    type="time"
-                    class="form-control form-control-sm d-inline"
-                    id="jamBuka"
-                    name="jam_buka"
-                  />
-                </div>
-                <p class="d-inline mx-2">s/d</p>
-                <div class="d-inline-block">
-                  <input
-                    type="time"
-                    class="form-control form-control-sm d-inline"
-                    id="jamTutup"
-                    name="jam_tutup"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="d-flex justify-content-center">
-              <button
-                type="button"
-                class="btn text-light me-2"
-                data-bs-dismiss="modal"
-                style="background-color: #091e3e;"
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn text-light" style="background-color: #06a3da;">Save</button>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer"></div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <button
+              type="button"
+              class="btn text-light me-2"
+              data-bs-dismiss="modal"
+              style="background-color: #091e3e"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn text-light"
+              style="background-color: #06a3da"
+            >
+              Save
+            </button>
+          </div>
+        </form>
       </div>
+      <div class="modal-footer"></div>
     </div>
   </div>
+</div>
 
-  <!-- Delete Modal -->
-  <div
-    class="modal fade"
-    id="deleteModal"
-    tabindex="-1"
-    aria-labelledby="deleteModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5 text-center" id="deleteModalLabel">
-            Confirm
-          </h1>
+<!-- Edit Modal -->
+<div
+  class="modal fade"
+  id="editModal"
+  tabindex="-1"
+  aria-labelledby="editModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="editModalLabel">
+          Edit Jadwal Praktik
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="editJadwal">
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="nama" class="col-sm-2 col-form-label col-form-label-sm"
+              >Nama
+            </label>
+            <div class="col-sm-10">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="nama"
+                name="nama"
+              />
+            </div>
+          </div>
+          <div class="row mb-3 d-flex align-items-center">
+            <label for="poli" class="col-sm-2 col-form-label col-form-label-sm"
+              >Poli
+            </label>
+            <div class="col-sm-10">
+              <select name="poli" id="editlistPoli"></select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <label for="hari" class="col-sm-2 col-form-label col-form-label-sm"
+              >Hari
+            </label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSenin"
+                  name="hari"
+                  value="senin"
+                />
+                <label class="form-check-label" for="hariSenin">Senin</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSelasa"
+                  name="hari"
+                  value="selasa"
+                />
+                <label class="form-check-label" for="hariSelasa">Selasa</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariRabu"
+                  name="hari"
+                  value="rabu"
+                />
+                <label class="form-check-label" for="hariRabu">Rabu</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariKamis"
+                  name="hari"
+                  value="kamis"
+                />
+                <label class="form-check-label" for="hariKamis">Kamis</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariJumat"
+                  name="hari"
+                  value="jumat"
+                />
+                <label class="form-check-label" for="hariJumat">Jumat</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariSabtu"
+                  name="hari"
+                  value="sabtu"
+                />
+                <label class="form-check-label" for="hariSabtu">Sabtu</label>
+              </div>
+              <div class="form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="hariMinggu"
+                  name="hari"
+                  value="minggu"
+                />
+                <label class="form-check-label" for="hariMinggu">Minggu</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <label for="jam" class="col-sm-2 col-form-label col-form-label-sm"
+              >Jam</label
+            >
+            <div class="col-sm-10">
+              <div class="d-inline-block">
+                <input
+                  type="time"
+                  class="form-control form-control-sm d-inline"
+                  id="jamBuka"
+                  name="jam_buka"
+                />
+              </div>
+              <p class="d-inline mx-2">s/d</p>
+              <div class="d-inline-block">
+                <input
+                  type="time"
+                  class="form-control form-control-sm d-inline"
+                  id="jamTutup"
+                  name="jam_tutup"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-center">
+            <button
+              type="button"
+              class="btn text-light me-2"
+              data-bs-dismiss="modal"
+              style="background-color: #091e3e"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn text-light"
+              style="background-color: #06a3da"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div
+  class="modal fade"
+  id="deleteModal"
+  tabindex="-1"
+  aria-labelledby="deleteModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5 text-center" id="deleteModalLabel">
+          Confirm
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body" id="deleteTitle">
+        Yakin ingin menghapus data ini
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <button
+          type="button"
+          class="btn text-light"
+          data-bs-dismiss="modal"
+          style="background-color: #091e3e; display: inline-block; width: auto"
+        >
+          Cancel
+        </button>
+        <form id="hapusJadwal" style="display: inline-block">
           <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body" id="deleteTitle">Yakin ingin menghapus data ini</div>
-        <div class="modal-footer d-flex justify-content-center">
-          <button
-            type="button"
+            type="submit"
             class="btn text-light"
-            data-bs-dismiss="modal"
-            style="background-color: #091e3e; display: inline-block; width: auto;"
+            style="background-color: #06a3da"
           >
-            Cancel
+            Yes
           </button>
-          <form id="hapusJadwal" style="display: inline-block;">
-            <button type="submit" class="btn text-light" style="background-color: #06a3da;">Yes</button>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   </div>
+</div>
 
-  {% include 'base/footer.html' %}
-
-{% endblock %}
+{% include 'base/footer.html' %} {% endblock %}

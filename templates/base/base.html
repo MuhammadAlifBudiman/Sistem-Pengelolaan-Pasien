@@ -35,8 +35,21 @@
       href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css"
     />
 
+    <!-- Datatables Responsive -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css"
+    />
+
     <!-- AOS CSS -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+
+    <!-- Select2 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+      rel="stylesheet"
+    />
 
     <!-- Default CSS -->
     <link
@@ -73,14 +86,30 @@
     <script
       type="text/javascript"
       charset="utf8"
-      src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"
+      src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"
     ></script>
+
+    
+
+    <!-- Datatables Responsive -->
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
     <!-- Sweet Alert 2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Aos JS -->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <!-- Socket IO -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"
+      integrity="sha512-zoJXRvW2gC8Z0Xo3lBbao5+AS3g6YWr5ztKqaicua11xHo+AvE1b0lT9ODgrHTmNUxeCw0Ry4BGRYZfXu70weg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- Default Script -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
@@ -90,6 +119,7 @@
     <script src="{{ url_for('static', filename=script) }}"></script>
     {% endfor %} {% endblock %}
 
+    
     <script>
       {% if msg %}
         let globalMessage = "{{ msg|safe }}";
@@ -100,5 +130,4 @@
     <!-- Content Container -->
     {% block content %}{% endblock %}
   </body>
-
 </html>

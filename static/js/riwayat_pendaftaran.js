@@ -1,10 +1,54 @@
 $(document).ready(function () {
   // Inisialisasi DataTables
   let myTable = $("#myTable").DataTable({
+    deferRender: true,
     serverSide: true,
     processing: true,
-    scrollX: true,
-    ajax: "/api/pendaftaran/me",
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+        renderer: function (api, rowIdx, columns) {
+          let data = columns
+            .map((col, i) => {
+              if (typeof col.data === "object") {
+                let hari = col.data.join(", ");
+                col.data = hari;
+              }
+              return col.hidden
+                ? '<tr data-dt-row="' +
+                    col.rowIndex +
+                    '" data-dt-column="' +
+                    col.columnIndex +
+                    '">' +
+                    "<td class='fw-bold'>" +
+                    col.title +
+                    "</td> " +
+                    "<td>" +
+                    col.data +
+                    "</td>" +
+                    "</tr>"
+                : "";
+            })
+            .join("");
+
+          let table = document.createElement("table");
+          table.innerHTML = data;
+
+          return data ? table : false;
+        },
+      },
+    },
+    ajax: {
+      url: "/api/pendaftaran/me",
+      dataFilter: function (data) {
+        let json = jQuery.parseJSON(data);
+        json.recordsTotal = json.datatables.recordsTotal;
+        json.recordsFiltered = json.datatables.recordsFiltered;
+
+        return JSON.stringify(json); // return JSON string
+      },
+    },
     columns: [
       {
         data: null,
@@ -19,14 +63,6 @@ $(document).ready(function () {
       { data: "poli" },
       { data: "tanggal" },
       { data: "status" },
-    ],
-    columnDefs: [
-      { width: "20%", targets: 0 }, // Adjust the width as needed
-      { width: "20%", targets: 1 },
-      { width: "20%", targets: 2 },
-      { width: "20%", targets: 3 },
-      { width: "20%", targets: 4 },
-      { width: "20%", targets: 5 },
     ],
     order: [[4, "asc"]],
   });

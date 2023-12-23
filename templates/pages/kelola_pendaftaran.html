@@ -1,18 +1,99 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %} {% block title %}Kelola Pendaftaran - Klinik
+Google {% endblock %} {% block content %} {% include 'base/navbar.html' %}
 
-{% block title %}Kelola Pendaftaran - Klinik Google {% endblock %}
+<div class="container mt-5 pt-5 mb-5">
+  {% set table_title='Pendaftaran' %} {% set table_title_id='pendaftaran' %} {%
+  set table_headers=['No Urut', 'Nama', 'Poli', 'Tanggal Periksa', 'Keluhan',
+  'Action'] %} {% set table_id='myTable' %} {% include 'partials/datatable.html'
+  %}
+</div>
 
-{% block content %}
-  {% include 'base/navbar.html' %}
+<!-- The modal for filtering -->
+<div
+  class="modal fade"
+  id="filterModal"
+  tabindex="-1"
+  aria-labelledby="filterModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModalLabel">Filter Data</h5>
+        <button type="button" class="btn w-auto py-0 my-0" onclick="clearFilter()">
+          Clear
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="name" class="col-sm-2">Nama</label>
+          <div class="col-sm-10">
+            <select id="name" class="form-select"></select>
+          </div>
+        </div>
 
-  <div class="container mt-5 pt-5 mb-5">
-    {% set table_title='Pendaftaran' %}
-    {% set table_headers=['No Urut', 'Nama', 'Poli', 'Tanggal Periksa', 'Keluhan', 'Action'] %}
-    {% set table_id='myTable' %}
-    {% include 'partials/datatable.html' %}
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="poli" class="col-sm-2">Poli</label>
+          <div class="col-sm-10">
+            <select id="poli" class="form-select"></select>
+          </div>
+        </div>
+        
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="tanggal" class="col-sm-2">Tanggal</label>
+          <div class="col-sm-10">
+            <select id="tanggal" class="form-select"></select>
+          </div>
+        </div>
 
+        <div class="row mb-3 d-flex align-items-center">
+          <label for="status" class="col-sm-2">Status</label>
+          <div class="col-sm-10">
+            <div class="form-check form-check-inline">
+              <input
+                type="radio"
+                class="form-check-input"
+                id="pending"
+                name="status"
+                value="pending"
+              />
+              <label class="form-check-label" for="pending">Pending</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input
+                type="radio"
+                class="form-check-input"
+                id="approved"
+                name="status"
+                value="approved"
+              />
+              <label class="form-check-label" for="approved"
+                >Approved</label
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <button
+          type="button"
+          class="btn text-light w-auto"
+          data-bs-dismiss="modal"
+          style="background-color: #091e3e"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn text-light w-auto"
+          id="applyFilter"
+          style="background-color: #06a3da"
+        >
+          Apply Filter
+        </button>
+      </div>
+    </div>
   </div>
+</div>
 
-  {% include 'base/footer.html' %}
-
-{% endblock %}
+{% include 'base/footer.html' %} {% endblock %}

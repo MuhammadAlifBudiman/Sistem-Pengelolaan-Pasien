@@ -1,10 +1,54 @@
 $(document).ready(function () {
   // Inisialisasi DataTables
   let myTable = $("#myTable").DataTable({
+    deferRender: true,
     serverSide: true,
     processing: true,
-    scrollX: true,
-    ajax: "/api/checkup/me",
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+        renderer: function (api, rowIdx, columns) {
+          let data = columns
+            .map((col, i) => {
+              if (typeof col.data === "object") {
+                let hari = col.data.join(", ");
+                col.data = hari;
+              }
+              return col.hidden
+                ? '<tr data-dt-row="' +
+                    col.rowIndex +
+                    '" data-dt-column="' +
+                    col.columnIndex +
+                    '">' +
+                    "<td class='fw-bold'>" +
+                    col.title +
+                    "</td> " +
+                    "<td>" +
+                    col.data +
+                    "</td>" +
+                    "</tr>"
+                : "";
+            })
+            .join("");
+
+          let table = document.createElement("table");
+          table.innerHTML = data;
+
+          return data ? table : false;
+        },
+      },
+    },
+    ajax: {
+      url: "/api/checkup/me",
+      dataFilter: function (data) {
+        let json = jQuery.parseJSON(data);
+        json.recordsTotal = json.datatables.recordsTotal;
+        json.recordsFiltered = json.datatables.recordsFiltered;
+
+        return JSON.stringify(json); // return JSON string
+      },
+    },
     columns: [
       {
         data: null,
@@ -29,14 +73,6 @@ $(document).ready(function () {
           return row.hasil_anamnesa || "Belum ada hasil anamnesa";
         },
       },
-    ],
-    columnDefs: [
-      { width: "20%", targets: 0 }, // Adjust the width as needed
-      { width: "20%", targets: 1 },
-      { width: "20%", targets: 2 },
-      { width: "20%", targets: 3 },
-      { width: "20%", targets: 4 },
-      { width: "20%", targets: 5 },
     ],
     order: [[1, "asc"]],
   });

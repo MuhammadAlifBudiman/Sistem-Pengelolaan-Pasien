@@ -1,11 +1,81 @@
 // Jadwal Table
 $(document).ready(function () {
+  $("#name-jadwal").select2({
+    dropdownParent: $("#jadwalFilterModal"),
+    dropdownAutoWidth: true,
+    placeholder: "Cari nama dokter",
+  });
+  $("#poli-jadwal").select2({
+    dropdownParent: $("#jadwalFilterModal"),
+    dropdownAutoWidth: true,
+    placeholder: "Cari poli",
+  });
+  fetchList("#name-jadwal", "/api/jadwal?nama=nama");
+  fetchList("#poli-jadwal", "/api/jadwal?poli=poli");
   // Inisialisasi datatables
   let jadwalTable = $("#jadwalTable").DataTable({
+    deferRender: true,
     serverSide: true,
     processing: true,
-    scrollX: true,
-    ajax: "/api/jadwal",
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+        renderer: function (api, rowIdx, columns) {
+          let data = columns
+            .map((col, i) => {
+              if (typeof col.data === "object") {
+                let hari = col.data.join(", ");
+                col.data = hari;
+              }
+              return col.hidden
+                ? '<tr data-dt-row="' +
+                    col.rowIndex +
+                    '" data-dt-column="' +
+                    col.columnIndex +
+                    '">' +
+                    "<td class='fw-bold'>" +
+                    col.title +
+                    "</td> " +
+                    "<td>" +
+                    col.data +
+                    "</td>" +
+                    "</tr>"
+                : "";
+            })
+            .join("");
+
+          let table = document.createElement("table");
+          table.innerHTML = data;
+
+          return data ? table : false;
+        },
+      },
+    },
+    ajax: {
+      url: "/api/jadwal",
+      data: function (d) {
+        d.nama = $("#name-jadwal").val();
+        d.poli = $("#poli-jadwal").val();
+        // Create an array to store selected days
+        let selectedDays = [];
+
+        // Iterate through the checked checkboxes and add their values to the array
+        $("input[name='hari-jadwal']:checked").each(function () {
+          selectedDays.push($(this).val());
+        });
+
+        // Assign the array to the 'hari' property
+        d.hari = selectedDays;
+      },
+      dataFilter: function (data) {
+        let json = jQuery.parseJSON(data);
+        json.recordsTotal = json.datatables.recordsTotal;
+        json.recordsFiltered = json.datatables.recordsFiltered;
+
+        return JSON.stringify(json); // return JSON string
+      },
+    },
     columns: [
       { data: "nama" },
       { data: "poli" },
@@ -25,19 +95,31 @@ $(document).ready(function () {
         },
       },
     ],
-    columnDefs: [
-      { width: "20%", targets: 0 }, // Adjust the width as needed
-      { width: "20%", targets: 1 },
-      { width: "20%", targets: 2 },
-      { width: "10%", targets: 3 },
-      { width: "10%", targets: 4 },
-    ],
+  });
+
+  $("#applyFilterJadwal").on("click", function () {
+    jadwalTable.ajax.reload();
+    $("#jadwalFilterModal").modal("hide"); // Close the modal
   });
 
   // insert button tambah below h2 with id jadwal
-  $("#jadwal").append(
-    '<div class="d-grid gap-2 d-md-block col-2"> <button type="button" class="btn btn-primary text-light" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #06a3da">Tambah</button></div>'
+  $("#jadwal .card-header").prepend(
+    '<button type="button" class="btn text-light" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #06a3da; width: auto" id="btn-tambah">Tambah</button>'
   );
+  $("#jadwal .card-header").append(
+    '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#jadwalFilterModal" style="color: #091e3e; cursor: pointer"></i>'
+  );
+
+  $("#btn-tambah").click(function () {
+    let listPoli = $("#listPoli"); // Array to store unique poli values
+    listPoli.select2({
+      tags: true,
+      dropdownParent: $("#exampleModal"),
+      dropdownAutoWidth: true,
+      placeholder: "--Silakan Pilih Poli--",
+    });
+    fetchList("#listPoli", "/api/jadwal?poli=poli");
+  });
 
   // Event listener for Add button
   $("#tambahJadwal").submit(function (e) {
@@ -69,6 +151,15 @@ $(document).ready(function () {
 
   // Event listener for Edit buttons
   $("#jadwalTable").on("click", ".btn-edit", function () {
+    let listPoli = $("#editlistPoli"); // Array to store unique poli values
+    listPoli.select2({
+      tags: true,
+      dropdownParent: $("#editModal"),
+      dropdownAutoWidth: true,
+      placeholder: "--Silakan Pilih Poli--",
+    });
+    fetchList("#editlistPoli", "/api/jadwal?poli=poli");
+
     let jadwalId = $(this).data("jadwal-id");
     let editModal = $("#editModal");
     $.ajax({
@@ -79,7 +170,8 @@ $(document).ready(function () {
 
         // populate the edit modal
         editModal.find("#nama").val(jadwal.nama);
-        editModal.find("#listPoli").val(jadwal.poli);
+        editModal.find("#editlistPoli").val(jadwal.poli).trigger("change");
+
         editModal.find("#jamBuka").val(jadwal.jam_buka);
         editModal.find("#jamTutup").val(jadwal.jam_tutup);
         // Clear all checkboxes first
@@ -141,13 +233,15 @@ $(document).ready(function () {
       type: "GET",
       success: function (response) {
         let jadwal = response.data;
-        $("#deleteModal").find("#deleteTitle").text(`Yakin hapus data ${jadwal.nama}?`);
+        $("#deleteModal")
+          .find("#deleteTitle")
+          .text(`Yakin hapus data ${jadwal.nama}?`);
       },
       error: function (error) {
         showToast(error.responseJSON.message, "error", 3000);
       },
-    })
-    
+    });
+
     $("#hapusJadwal")
       .off("submit")
       .submit(function (e) {
@@ -173,3 +267,41 @@ $(document).ready(function () {
       });
   });
 });
+
+// Function to fetch list dropdown options
+function fetchList(selector, url) {
+  $.ajax({
+    url: url,
+    type: "GET",
+    success: function (response) {
+      data = response.data;
+      populateDropdown(selector, data);
+    },
+    error: function (error) {
+      showToast("Error", "error", 3000);
+    },
+  });
+}
+
+// Function to populate dropdown with options
+function populateDropdown(selector, options) {
+  let dropdown = $(selector);
+  dropdown.empty();
+  dropdown.append('<option value="">Semua</option>');
+  for (let i = 0; i < options.length; i++) {
+    dropdown.append(
+      '<option value="' + options[i] + '">' + options[i] + "</option>"
+    );
+  }
+}
+
+// Function to clear all filters
+function clearFilterJadwal() {
+  let listName = $("#name-jadwal");
+  let listPoli = $("#poli-jadwal");
+  let listTanggal = $("#tanggal-jadwal");
+  listName.val(null).trigger("change");
+  listPoli.val(null).trigger("change");
+  listTanggal.val(null).trigger("change");
+  $("input[name='hari-jadwal']").prop("checked", false);
+}

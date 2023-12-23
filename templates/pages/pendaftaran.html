@@ -1,38 +1,29 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base.html' %} {% block title %}Pendaftaran - Klinik Google {%
+endblock %} {% block content %} {% include 'base/navbar.html' %}
 
-{% block title %}Pendaftaran - Klinik Google {% endblock %}
-
-{% block content %}
-  {% include 'base/navbar.html' %}
-
-  <!-- Formulir Pendaftaran -->
-  <div id="formulir-container">
-    <div
-      class="container mt-5 mb-5 pt-5 d-flex justify-content-center flex-column align-items-center"
-    >
-      <div class="form-container">
-        <div class="card" >
-          <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
-          <div class="card-body">
-            <form action="/pendaftaran" method="POST">
-              <div class="form-group">
-                <label for="poli" class="mr-2"> Poli </label>
+<!-- Formulir Pendaftaran -->
+<div id="formulir-container">
+  <div
+    class="container mt-5 mb-5 pt-5 d-flex justify-content-center flex-column align-items-center"
+  >
+    <div class="form-container">
+      <div class="card">
+        <h3 class="card-title text-center mt-3">Formulir Pendaftaran</h3>
+        <div class="card-body">
+          <form action="/pendaftaran" method="POST">
+            <div class="form-group row d-flex align-items-center">
+              <label for="poli" class="mr-2 col-sm"> Poli </label>
+              <div class="col-sm-8">
                 <select class="form-control" id="poli" name="poli">
-                  <option value="" selected disabled>Pilih Poli</option>
-                  <option value="Umum">Umum</option>
-                  <option value="Gigi">Gigi</option>
-                  <option value="Mata">Mata</option>
-                  <option value="Jantung">Jantung</option>
-                  <option value="THT">THT</option>
-                  <option value="Syaraf">Syaraf</option>
-                  <option value="Kesehatan Jiwa">Kesehatan Jiwa</option>
-                  <option value="Anak">Anak</option>
-                  <option value="Fisioterapi">Fisioterapi</option>
                 </select>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="tanggal" class="mr-2"> Tanggal Berobat </label>
+            <div class="form-group row d-flex align-items-center">
+              <label for="tanggal" class="mr-2 col-sm">
+                Tanggal Berobat
+              </label>
+              <div class="col-sm-8">
                 <input
                   type="date"
                   class="form-control"
@@ -40,40 +31,39 @@
                   name="tanggal"
                 />
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="keluhan" class="mr-2"> Keluhan </label>
-                <textarea
-                  class="form-control"
-                  id="keluhan"
-                  name="keluhan"
-                  rows="3"
-                ></textarea>
-              </div>
+            <div class="form-group">
+              <label for="keluhan" class="mr-2"> Keluhan </label>
+              <textarea
+                class="form-control"
+                id="keluhan"
+                name="keluhan"
+                rows="3"
+              ></textarea>
+            </div>
 
-              <div class="d-flex justify-content-center mt-2">
-                <button type="submit" class="btn btn-submit-form text-light" style="background-color: #06a3da;">
-                  Kirim
-                </button>
-              </div>
-            </form>
-          </div>
+            <div class="d-flex justify-content-center mt-2">
+              <button
+                type="submit"
+                class="btn btn-submit-form text-light"
+                style="background-color: #06a3da"
+              >
+                Kirim
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Antrian Pendaftaran -->
-  <div
-    class="container mt-5 pt-5 mb-5"
-    id="antrian-container"
-  >
-    {% set table_title='Antrian Pendaftaran' %}
-    {% set table_headers=['No Urut', 'Nama', 'NIK', 'Tanggal', 'Status'] %}
-    {% set table_id='myTable' %}
-    {% include 'partials/datatable.html' %}
-  </div>
+<!-- Antrian Pendaftaran -->
+<div class="container mt-5 pt-5 mb-5" id="antrian-container">
+  {% set table_title='Antrian Pendaftaran' %} {% set table_headers=['No Urut',
+  'Nama', 'NIK', 'Tanggal', 'Status'] %} {% set table_id='myTable' %} {% include
+  'partials/datatable.html' %}
+</div>
 
-  {% include 'base/footer.html' %}
-
-{% endblock %}
+{% include 'base/footer.html' %} {% endblock %}

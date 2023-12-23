@@ -1,18 +1,29 @@
 $(document).ready(async function () {
   const response = await fetch("/api/antrian/check");
   const dataResponse = await response.json();
-  if(dataResponse.data.has_pending_or_approved){
+  if (dataResponse.data.has_pending_or_approved) {
     sessionStorage.setItem("formStatus", "pending");
   } else {
     // remove formstatus from session storage
     sessionStorage.removeItem("formStatus");
   }
 
-    // Get today's date in the format YYYY-MM-DD
-    let today = new Date().toISOString().split("T")[0];
+  
 
-    // Set the max attribute of the date input to today
-    $("#tanggal").attr("min", today);
+  let listPoli = $("#poli");
+  let uniquePoli = [];
+  listPoli.select2({
+    dropdownAutoWidth: true,
+    placeholder: "--Silakan Pilih Poli--",
+  });
+
+  fetchList("#poli", "/api/jadwal?poli=poli");
+
+  // Get today's date in the format YYYY-MM-DD
+  let today = new Date().toISOString().split("T")[0];
+
+  // Set the max attribute of the date input to today
+  $("#tanggal").attr("min", today);
   // Fungsi untuk merender tabel berdasarkan data yang diberikan
   function renderTable(data) {
     let table = $(".card-body");
@@ -23,6 +34,10 @@ $(document).ready(async function () {
     tbody.empty();
 
     data.forEach(function (item) {
+      $("#antrian-container .card-header button").remove();
+      $("#antrian-container .card-header").append(
+        `<button class="btn text-light w-auto" onclick="confirmButton('/api/pendaftaran/${item._id}/cancel')" style="background-color: #091e3e;">Cancel</button>`
+      );
       let row = $("<tr>");
       let antrian = item.antrian || "-";
       row.append(`<td>${antrian}</td>`);
@@ -72,7 +87,7 @@ $(document).ready(async function () {
           renderTable(data.data);
         },
         error: function () {
-          showToast("Gagal memuat data antrian", "error", 3000)
+          showToast("Gagal memuat data antrian", "error", 3000);
         },
       });
     }
@@ -83,7 +98,11 @@ $(document).ready(async function () {
     event.preventDefault();
 
     if (formStatus === "done" || formStatus === "rejected") {
-      showToast("Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.", "error", 3000)
+      showToast(
+        "Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.",
+        "error",
+        3000
+      );
       return;
     }
 
@@ -91,18 +110,30 @@ $(document).ready(async function () {
     let tanggal = $("#tanggal").val();
     let keluhan = $("#keluhan").val();
 
-    if (!poli){
-      showToast("Harap pilih jenis poli sebelum mengirim formulir", "error", 3000)
+    if (!poli) {
+      showToast(
+        "Harap pilih jenis poli sebelum mengirim formulir",
+        "error",
+        3000
+      );
       return;
     }
 
     if (!tanggal) {
-      showToast("Harap pilih tanggal berobat sebelum mengirim formulir", "error", 3000)
+      showToast(
+        "Harap pilih tanggal berobat sebelum mengirim formulir",
+        "error",
+        3000
+      );
       return;
     }
 
     if (!keluhan) {
-      showToast("Harap isi keluhan Anda sebelum mengirim formulir", "error", 3000)
+      showToast(
+        "Harap isi keluhan Anda sebelum mengirim formulir",
+        "error",
+        3000
+      );
       return;
     }
 
@@ -118,7 +149,7 @@ $(document).ready(async function () {
       url: "/api/pendaftaran",
       data: formData,
       success: function (data) {
-        if (data.result === "failed"){
+        if (data.result === "failed") {
           showToast(data.message, "error", 3000);
           return;
         }
@@ -133,9 +164,70 @@ $(document).ready(async function () {
         renderTable(listData);
       },
       error: function () {
-        showToast("Gagal mengirim formulir", "error", 3000)
+        showToast("Gagal mengirim formulir", "error", 3000);
       },
     });
   });
 });
 
+// Function to fetch list dropdown options
+function fetchList(selector, url) {
+  $.ajax({
+    url: url,
+    type: "GET",
+    success: function (response) {
+      data = response.data;
+      populateDropdown(selector, data);
+    },
+    error: function (error) {
+      showToast("Error", "error", 3000);
+    },
+  });
+}
+
+// Function to populate dropdown with options
+function populateDropdown(selector, options) {
+  let dropdown = $(selector);
+  dropdown.empty();
+  dropdown.append('<option value="">Semua</option>');
+  for (let i = 0; i < options.length; i++) {
+    dropdown.append(
+      '<option value="' + options[i] + '">' + options[i] + "</option>"
+    );
+  }
+}
+
+function confirmButton(url){
+  swal.fire({
+    title: "Apa kamu yakin ?",
+    text: "Tindakan ini tidak bisa dipulihkan!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Ya",
+    confirmButtonColor: "#06a3da",
+    cancelButtonText: "Tidak",
+    cancelButtonColor: "#091e3e",
+    reverseButtons: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: url,
+        method: "POST",
+        success: function (response) {
+          swal.fire({
+            title: "Berhasil!",
+            text: response.message,
+            icon: "success"
+          });
+          window.location.reload();
+        },
+        error: function (error) {
+          showToast("Gagal mengubah status", "error", 3000);
+        },
+      });
+      
+    }
+  });
+
+  $("button.swal2-default-outline").addClass("w-auto");
+}

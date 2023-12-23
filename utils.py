@@ -29,8 +29,8 @@ def create_user_session(user_id, db):
 
 def check_session_active(session_id, db):
     session = db.user_sessions.find_one({'_id': session_id})
-    session['_id'] = str(session['_id'])
     if session and session['status'] == 'ACTIVE':
+        session['_id'] = str(session['_id'])
         return session
     return False
 
@@ -56,6 +56,52 @@ def logout_user_session(session_id, db):
     if result.modified_count == 0:
         return False
     return True
+
+def get_antrian_today(db):
+        # Ambil data antrian hari ini
+    antrian_data = list(db.jadwal.aggregate([
+        {
+            "$lookup": {
+                "from": "registrations",
+                "localField": "poli",
+                "foreignField": "poli",
+                "as": "registrations"
+            }
+        },
+        {
+            "$unwind": {
+                "path": "$registrations",
+                "preserveNullAndEmptyArrays": True
+            }
+        },
+        {
+            "$group": {
+                "_id": "$poli"
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "poli": "$_id",
+                "jumlah_pendaftar": 1,
+                "dalam_antrian": 1
+            }
+        }
+    ]))
+    
+    for antrian in antrian_data:
+        antrian['jumlah_pendaftar'] = db.registrations.count_documents({
+            "poli": antrian['poli'],
+            "tanggal": datetime.now().strftime("%d-%m-%Y"),
+            "status": {"$in": ["approved", "done"]}
+        })
+        antrian['dalam_antrian'] = db.registrations.count_documents({
+            "poli": antrian['poli'],
+            "tanggal": datetime.now().strftime("%d-%m-%Y"),
+            "status": "done"
+        })
+
+    return antrian_data
 
 def is_valid_nik(nik):
     return nik.isdigit() and len(nik) == 16

@@ -5,3 +5,10 @@ class Pagination:
         self.max_page = max_page
         self.total_data = total_data
 
+class DatatablesPagination:
+    def __init__(self, recordsTotal: int, recordsFiltered: int, draw: int = None, start: int = None, length: int = None,):
+        self.draw = draw
+        self.start = start
+        self.length = length
+        self.recordsTotal = recordsTotal
+        self.recordsFiltered = recordsFiltered

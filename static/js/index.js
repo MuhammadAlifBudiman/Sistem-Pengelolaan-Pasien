@@ -1,17 +1,68 @@
 $(document).ready(function () {
+  let antrianSocket = io("/antrian");
+  let jadwalSocket = io("/jadwal");
+  antrianSocket.on("new_antrian", function (data) {
+    antrianTable.clear().draw();
+    data.forEach(function (row, index) {
+      antrianTable.row
+        .add([row.poli, row.jumlah_pendaftar, row.dalam_antrian])
+        .draw(false);
+    });
+  });
+
   if (typeof globalMessage !== "undefined") {
     showToast(globalMessage, "success", 3000);
   }
 
-  function isSmallDevice() {
-    return window.innerWidth <= 531; // Adjust the threshold as needed
-  }
-
   let jadwalTable = $("#jadwalTable").DataTable({
+    deferRender: true,
     serverSide: true,
     processing: true,
-    scrollX: isSmallDevice(),
-    ajax: "/api/jadwal",
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+        renderer: function (api, rowIdx, columns) {
+          let data = columns
+            .map((col, i) => {
+              if (typeof col.data === "object") {
+                let hari = col.data.join(", ");
+                col.data = hari;
+              }
+              return col.hidden
+                ? '<tr data-dt-row="' +
+                    col.rowIndex +
+                    '" data-dt-column="' +
+                    col.columnIndex +
+                    '">' +
+                    "<td class='fw-bold'>" +
+                    col.title +
+                    "</td> " +
+                    "<td>" +
+                    col.data +
+                    "</td>" +
+                    "</tr>"
+                : "";
+            })
+            .join("");
+
+          let table = document.createElement("table");
+          table.innerHTML = data;
+
+          return data ? table : false;
+        },
+      },
+    },
+    ajax: {
+      url: "/api/jadwal",
+      dataFilter: function (data) {
+        let json = jQuery.parseJSON(data);
+        json.recordsTotal = json.datatables.recordsTotal;
+        json.recordsFiltered = json.datatables.recordsFiltered;
+
+        return JSON.stringify(json); // return JSON string
+      },
+    },
     columns: [
       { data: "nama" },
       { data: "poli" },
@@ -23,16 +74,44 @@ $(document).ready(function () {
         },
       },
     ],
-    columnDefs: [
-      { width: "20%", targets: 0 }, // Adjust the width as needed
-      { width: "20%", targets: 1 },
-      { width: "20%", targets: 2 },
-      { width: "40%", targets: 3 },
-    ],
+  });
+
+  jadwalSocket.on("new_jadwal", function () {
+    jadwalTable.ajax.reload();
   });
 
   let antrianTable = $("#antrianTable").DataTable({
-    scrollX: isSmallDevice(),
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+        renderer: function (api, rowIdx, columns) {
+          let data = columns
+            .map((col, i) => {
+              return col.hidden
+                ? '<tr data-dt-row="' +
+                    col.rowIndex +
+                    '" data-dt-column="' +
+                    col.columnIndex +
+                    '">' +
+                    "<td class='fw-bold'>" +
+                    col.title +
+                    "</td> " +
+                    "<td>" +
+                    col.data +
+                    "</td>" +
+                    "</tr>"
+                : "";
+            })
+            .join("");
+
+          let table = document.createElement("table");
+          table.innerHTML = data;
+
+          return data ? table : false;
+        },
+      },
+    },
   });
 
   // Ambil data antrian hari ini

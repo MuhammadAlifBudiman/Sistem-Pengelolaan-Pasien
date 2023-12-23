@@ -11,12 +11,13 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from flask_bcrypt import Bcrypt
-from pagination import Pagination
+from pagination import *
 from exceptions import HttpException, handle_http_exception
 from apiresponse import api_response
 from utils import *
 from middlewares import *
 from flask import make_response
+from flask_socketio import SocketIO, Namespace
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -25,6 +26,7 @@ app = Flask(__name__)
 # Register the error handler
 app.errorhandler(HttpException)(handle_http_exception)
 bcrypt = Bcrypt(app)
+socketio = SocketIO(app)
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -44,8 +46,43 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set")
 
 
+class PendaftaranNamespace(Namespace):
+    def on_connect(self):
+        print('Client connected')
+
+    def on_disconnect(self):
+        print('Client disconnected')
+
+    def on_new_pendaftaran(self, data):
+        self.emit('new_pendaftaran', data)
 
 
+class AntrianNamespace(Namespace):
+    def on_connect(self):
+        print('Client connected')
+
+    def on_disconnect(self):
+        print('Client disconnected')
+
+    def on_new_antrian(self, data):
+        self.emit('new_antrian', data)
+
+
+class JadwalNamespace(Namespace):
+    def on_connect(self):
+        print('Client connected')
+
+    def on_disconnect(self):
+        print('Client disconnected')
+
+    def on_new_jadwal(self, data):
+        self.emit('new_jadwal', data)
+
+
+# Register the namespace
+socketio.on_namespace(PendaftaranNamespace('/pendaftaran'))
+socketio.on_namespace(AntrianNamespace('/antrian'))
+socketio.on_namespace(JadwalNamespace('/jadwal'))
 
 
 #################### TEMPLATE ROUTES ####################
@@ -60,7 +97,7 @@ def home(decoded_token):
     if decoded_token:
         user_id = ObjectId(decoded_token.get("uid"))
         user_info = db.users.find_one({"_id": user_id}, {
-                                        '_id': False, 'password': False})
+            '_id': False, 'password': False})
         return render_template('pages/index.html', user_info=user_info, active_page='home', scripts=scripts, css=css, msg=msg)
     else:
         return render_template('pages/index.html', active_page='home', scripts=scripts, css=css, msg=msg)
@@ -91,7 +128,7 @@ def pendaftaran_get(decoded_token):
     scripts = ['js/pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     return render_template('pages/pendaftaran.html', user_info=user_info, active_page='pendaftaran', scripts=scripts)
 
 
@@ -103,7 +140,7 @@ def riwayat_pendaftaran(decoded_token):
     scripts = ['js/riwayat_pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     return render_template("pages/riwayat_pendaftaran.html", user_info=user_info, active_page='riwayat_pendaftaran', scripts=scripts)
 
 
@@ -115,9 +152,8 @@ def riwayat_checkup(decoded_token):
     scripts = ['js/riwayat_checkup.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     return render_template("pages/riwayat_checkup.html", user_info=user_info, active_page='riwayat_checkup', scripts=scripts)
-
 
 
 # Return Profile Page
@@ -128,9 +164,10 @@ def profile(decoded_token):
     css = ['css/profile.css']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     if is_valid_date(user_info.get('tgl_lahir')):
-        user_info['tgl_lahir'] = datetime.strptime(user_info.get('tgl_lahir'), '%d-%m-%Y').strftime('%Y-%m-%d')
+        user_info['tgl_lahir'] = datetime.strptime(
+            user_info.get('tgl_lahir'), '%d-%m-%Y').strftime('%Y-%m-%d')
     print(user_info)
     return render_template('pages/profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
 
@@ -143,7 +180,7 @@ def kelola_pendaftaran(decoded_token):
     scripts = ['js/kelola_pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
     data = list(db.registrations.find(
         {"status": {"$in": ["pending", "approved", "done"]}},
@@ -162,7 +199,7 @@ def dashboard(decoded_token):
     scripts = ['js/dashboard.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     return render_template("pages/dashboard.html", user_info=user_info, active_page='dashboard', scripts=scripts)
 
 
@@ -174,18 +211,9 @@ def get_rekam_medis(decoded_token):
     scripts = ['js/rekam_medis.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
-    data_rekam_medis = []
-    for d in db.users.find():
-        exist = db.registrations.find_one({'username': d['username']})
-        if exist:
-            data_rekam_medis.append({
-                'username': d['username'],
-                'nik': d['nik'],
-                'name': d['name'],
-                'action': 'lihat' if db.rekam_medis.find_one({'nik': d['nik']}) else 'buat'
-            })
-    return render_template("pages/rekam_medis.html", data_rekam_medis=data_rekam_medis, user_info=user_info, active_page='rekam_medis', scripts=scripts)
+        '_id': False, 'password': False})
+
+    return render_template("pages/rekam_medis.html", user_info=user_info, active_page='rekam_medis', scripts=scripts)
 
 
 # Return Kelola Jadwal Page
@@ -196,11 +224,8 @@ def kelola_praktik(decoded_token):
     scripts = ['js/praktik.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     return render_template('pages/praktik.html', user_info=user_info, active_page='kelola_praktik', scripts=scripts)
-
-
-
 
 
 #################### API ROUTES ####################
@@ -210,8 +235,9 @@ def kelola_praktik(decoded_token):
 def api_register():
     body = request.is_json
     if not body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk JSON")
-    
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk JSON")
+
     data = request.get_json()
     if not data:
         raise HttpException(False, 400, "failed", "Data JSON tidak valid")
@@ -231,7 +257,6 @@ def api_register():
     # Cek apakah semua input sudah diisi
     if not all([username, name, nik, tgl_lahir, gender, agama, status, alamat, no_telp, password]):
         raise HttpException(False, 400, "failed", "Semua input harus diisi")
-    
 
     # Cek apakah username sudah ada di database
     existing_user = db.users.find_one({'username': username})
@@ -240,7 +265,8 @@ def api_register():
 
     # Cek apakah nik memiliki 16 digit angka
     if not is_valid_nik(nik):
-        raise HttpException(False, 400, "failed", "NIK harusterdiri dari 16 digit angka")
+        raise HttpException(False, 400, "failed",
+                            "NIK harusterdiri dari 16 digit angka")
 
     existing_nik = db.users.find_one({'nik': nik})
     if existing_nik:
@@ -248,11 +274,13 @@ def api_register():
 
     # Cek apakah format tanggal lahir valid
     if not is_valid_date(tgl_lahir):
-        raise HttpException(False, 400, "failed", "Format tanggal lahir tidak valid, gunakan format dd-mm-yyyy")
+        raise HttpException(
+            False, 400, "failed", "Format tanggal lahir tidak valid, gunakan format dd-mm-yyyy")
 
     # Cek apakah tanggal lahir valid
     if not is_max_date_now(tgl_lahir):
-        raise HttpException(False, 400, "failed", "Tanggal lahir tidak boleh lebih dari hari ini")
+        raise HttpException(False, 400, "failed",
+                            "Tanggal lahir tidak boleh lebih dari hari ini")
 
     # Cek apakah jenis kelamin valid
     if not is_valid_gender(gender):
@@ -260,23 +288,29 @@ def api_register():
 
     # Cek apakah nomor telepon valid
     if not is_valid_phone_number(no_telp):
-        raise HttpException(False, 400, "failed", "Nomor telepon tidak valid, gunakan format nomor 10 - 13 digit")
+        raise HttpException(
+            False, 400, "failed", "Nomor telepon tidak valid, gunakan format nomor 10 - 13 digit")
 
     # Cek apakah password sesuai
     if len(password) < 8:
-        raise HttpException(False, 400, "failed", "Password harus memiliki minimal 8 karakter")
+        raise HttpException(False, 400, "failed",
+                            "Password harus memiliki minimal 8 karakter")
 
     if not any(char.isupper() for char in password):
-        raise HttpException(False, 400, "failed", "Password harus memiliki minimal 1 huruf kapital")
+        raise HttpException(False, 400, "failed",
+                            "Password harus memiliki minimal 1 huruf kapital")
 
     if not any(char.isdigit() for char in password):
-        raise HttpException(False, 400, "failed", "Password harus memiliki minimal 1 angka")
+        raise HttpException(False, 400, "failed",
+                            "Password harus memiliki minimal 1 angka")
 
     if not any(not char.isalnum() for char in password):
-        raise HttpException(False, 400, "failed", "Password harus memiliki minimal 1 karakter spesial")
+        raise HttpException(
+            False, 400, "failed", "Password harus memiliki minimal 1 karakter spesial")
 
     if password != confirm_password:
-        raise HttpException(False, 400, "failed", "Password dan konfirmasi password tidak sesuai")
+        raise HttpException(False, 400, "failed",
+                            "Password dan konfirmasi password tidak sesuai")
 
     # Generate a unique salt for each user
     salt = secrets.token_hex(16)
@@ -303,7 +337,8 @@ def api_register():
     }
 
     result = db.users.insert_one(user_data)
-    response = api_response(True, 201, "success", "Pendaftaran akun berhasil", {'user_id': str(result.inserted_id), 'username': username})
+    response = api_response(True, 201, "success", "Pendaftaran akun berhasil", {
+                            'user_id': str(result.inserted_id), 'username': username})
     return jsonify(response.__dict__)
 
 
@@ -312,22 +347,26 @@ def api_register():
 def sign_in():
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
     # Sign in
     username_receive = request.form.get("username")
     password_receive = request.form.get("password")
 
     if not username_receive:
-        raise HttpException(False, 400, "failed", "Username tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Username tidak boleh kosong")
     if not password_receive:
-        raise HttpException(False, 400, "failed", "Password tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Password tidak boleh kosong")
 
     user = db.users.find_one({"username": username_receive})
     if not user:
         raise HttpException(False, 400, "failed", "Username / password salah")
-    
+
     # Use bcrypt to verify the password with the stored salt
-    check_password = bcrypt.check_password_hash(user.get('password'), user.get('salt') + password_receive + user.get('salt'))
+    check_password = bcrypt.check_password_hash(
+        user.get('password'), user.get('salt') + password_receive + user.get('salt'))
     if not check_password:
         raise HttpException(False, 400, "failed", "Username / password salah")
 
@@ -341,10 +380,11 @@ def sign_in():
 
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-    response = api_response(True, 200, "success", "Login berhasil", {TOKEN_KEY: token})
+    response = api_response(True, 200, "success",
+                            "Login berhasil", {TOKEN_KEY: token})
     response_data = make_response(jsonify(response.__dict__))
     response_data.headers.add(
-"Set-Cookie", f"{TOKEN_KEY}={token}; HttpOnly; Secure; Max-Age={60 * 60 * 24}; Path=/")
+        "Set-Cookie", f"{TOKEN_KEY}={token}; HttpOnly; Secure; Max-Age={60 * 60 * 24}; Path=/")
     return response_data
 
 
@@ -367,22 +407,108 @@ def logout(decoded_token):
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
 def api_pendaftaran(decoded_token):
+    name = request.args.get('name')
+    poli = request.args.get('poli')
+    tanggal = request.args.get('tanggal')
+    status_filter = request.args.getlist('status_filter')
+
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
     status = request.args.getlist('status')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
-    order_direction = request.args.get('order[0][dir]', 'asc')
+    order_column_index = int(request.args.get('order[0][column]', 0))
+    order_direction = request.args.get('order[0][dir]')
+    # Adjust the query for sorting
+    if status:
+        sort_column = ["antrian", "name", "poli", "tanggal",
+                       "keluhan", "status"][order_column_index]
+    else:
+        sort_column = ["antrian", "name", "poli",
+                       "tanggal", "status"][order_column_index]
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    if name == 'name' and status:
+        list_nama = list(db.registrations.distinct(
+            'name', {'status': {'$in': status}}))
+
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+    if name == 'name' and not status:
+        list_nama = list(db.registrations.distinct('name'))
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+    if poli == 'poli' and status:
+        list_poli = list(db.registrations.distinct(
+            'poli', {'status': {'$in': status}}))
+        sorted_list_poli = sorted(list_poli, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_poli)
+        return jsonify(response.__dict__)
+    if poli == 'poli' and not status:
+        list_poli = list(db.registrations.distinct('poli'))
+        sorted_list_poli = sorted(list_poli, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_poli)
+        return jsonify(response.__dict__)
+    if tanggal == 'tanggal' and status:
+        list_tanggal = list(db.registrations.distinct(
+            'tanggal', {'status': {'$in': status}}))
+        sorted_list_tanggal = sorted(list_tanggal)
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_tanggal)
+        return jsonify(response.__dict__)
+    if tanggal == 'tanggal' and not status:
+        list_tanggal = list(db.registrations.distinct('tanggal'))
+        sorted_list_tanggal = sorted(list_tanggal)
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_tanggal)
+        return jsonify(response.__dict__)
 
     # Define regex pattern for matching variations of "Approve"
-    approve_pattern = re.compile(r'^a(p(p(r(o(v(e?)?)?)?)?)?)?', re.IGNORECASE)
-    reject_pattern = re.compile(r'^r(e(j(e(c(t?)?)?)?)?)?', re.IGNORECASE)
-    done_pattern = re.compile(r'^d(o(n(e?)?)?)?', re.IGNORECASE)
+    approve_pattern = re.compile(
+        r'^a(p(p(r(o(v(e?)?)?)?)?)?)?$', re.IGNORECASE)
+    reject_pattern = re.compile(r'^r(e(j(e(c(t?)?)?)?)?)?$', re.IGNORECASE)
+    done_pattern = re.compile(r'^d(o(n(e?)?)?)?$', re.IGNORECASE)
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page - 1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # MongoDB query with search
     query = {}
+    if name:
+        query['name'] = name
+    if poli:
+        query['poli'] = poli
+    if tanggal:
+        query['tanggal'] = tanggal
+    if status_filter:
+        status = status_filter
     if status:
         query['status'] = {"$in": status}
     if search_value:
@@ -395,41 +521,54 @@ def api_pendaftaran(decoded_token):
         ]
     # check if status is approve and search value match with approve pattern
     if status and search_value and (approve_pattern.match(search_value) or reject_pattern.match(search_value)):
-         query["$or"] += [
+        query["$or"] += [
             {"status": "pending"},
-         ]
+        ]
     # check if status is done and search value match with done pattern
     if status and search_value and done_pattern.match(search_value):
-            query["$or"] += [
-                {"status": "approved"},
-            ]
+        query["$or"] += [
+            {"status": "approved"},
+        ]
 
     if not status and search_value:
         query["$or"] += [
-                {"status": {"$regex": search_value, "$options": "i"}},
-            ]
+            {"status": {"$regex": search_value, "$options": "i"}},
+        ]
 
-    # Adjust the query for sorting
-    sort_column = ["antrian", "name", "poli", "tanggal", "keluhan", "status"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.registrations.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    if sort_column:
+        data = list(db.registrations.find(query).sort(
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.registrations.find(query).collation(
+            collation).skip(start).limit(length))
+
     for d in data:
         d['_id'] = str(d['_id'])
-    
 
     # Total records count (unfiltered)
     total_records = db.registrations.count_documents({})
 
+    if draw and status:
+        total_records = db.registrations.count_documents({
+            "status": {"$in": status}
+        })
+
     # Total records count after filtering
     filtered_records = db.registrations.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
+
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
+
     # return jsonify(response.__dict__)
-    response = api_response(True, 200, "success", "Data fetched successfully", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+    response = api_response(True, 200, "success", "Data fetched successfully",
+                            data, pagination.__dict__, datatables_pagination.__dict__)
 
     return jsonify(response.__dict__)
 
@@ -441,29 +580,34 @@ def api_pendaftaran(decoded_token):
 def pendaftaran_post(decoded_token):
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
-    
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
+
     user_id = ObjectId(decoded_token.get("uid"))
     # Ambil data pengguna dari koleksi users
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
-    
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
+
     poli = request.form.get('poli')
     # get all poli from collection jadwal in a list
     poli_list = list(db.jadwal.distinct('poli'))
     if not poli:
         raise HttpException(False, 400, "failed", "Poli tidak boleh kosong")
     if poli not in poli_list:
-        raise HttpException(False, 400, "failed", f"Poli {poli} tidak tersedia, pilih dari {poli_list}")
+        raise HttpException(
+            False, 400, "failed", f"Poli {poli} tidak tersedia, pilih dari {poli_list}")
     tanggal = request.form.get('tanggal')
     if not tanggal:
         raise HttpException(False, 400, "failed", "Tanggal tidak boleh kosong")
     if not is_valid_date(tanggal):
-        raise HttpException(False, 400, "failed", "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+        raise HttpException(
+            False, 400, "failed", "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
     if not is_min_date_now(tanggal):
-        raise HttpException(False, 400, "failed", "Tanggal tidak boleh kurang dari hari ini")
+        raise HttpException(False, 400, "failed",
+                            "Tanggal tidak boleh kurang dari hari ini")
     keluhan = request.form.get('keluhan')
     if not keluhan:
         raise HttpException(False, 400, "failed", "Keluhan tidak boleh kosong")
@@ -472,14 +616,16 @@ def pendaftaran_post(decoded_token):
         "username": user_data.get('username')
     }) > 0)
     if has_pending_registration:
-        raise HttpException(False, 400, "failed", "Anda sudah memiliki pendaftaran yang sedang diproses")
+        raise HttpException(
+            False, 400, "failed", "Anda sudah memiliki pendaftaran yang sedang diproses")
     has_approved_registration = bool(db.registrations.count_documents({
         "status": {"$in": ["approved"]},
         "username": user_data.get('username')
     }) > 0)
     if has_approved_registration:
-        raise HttpException(False, 400, "failed", "Anda sudah memiliki pendaftaran yang disetujui")
-    
+        raise HttpException(False, 400, "failed",
+                            "Anda sudah memiliki pendaftaran yang disetujui")
+
     # Masukkan data pendaftaran ke MongoDB
     data_pendaftaran = {
         'username': user_data.get('username'),
@@ -499,8 +645,10 @@ def pendaftaran_post(decoded_token):
 
     result = db.registrations.insert_one(data_pendaftaran)
     data_pendaftaran["_id"] = str(result.inserted_id)
-
-    response = api_response(True, 201, "success", "Formulir telah diproses. Silakan tunggu.", data_pendaftaran)
+    socketio.emit('new_pendaftaran', data_pendaftaran,
+                  namespace='/pendaftaran')
+    response = api_response(
+        True, 201, "success", "Formulir telah diproses. Silakan tunggu.", data_pendaftaran)
     return jsonify(response.__dict__)
 
 
@@ -511,21 +659,48 @@ def pendaftaran_post(decoded_token):
 def riwayat_pendaftaran_api(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     username = user_data.get('username')
 
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
-    order_direction = request.args.get('order[0][dir]', 'asc')
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
+    order_column_index = int(request.args.get('order[0][column]', 0))
+    order_direction = request.args.get('order[0][dir]')
+    # Adjust the query for sorting
+    sort_column = ["_id", "name", "nik", "poli",
+                   "tanggal", "status"][order_column_index]
 
-    
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
     
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page -1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+    
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
+
     # MongoDB query with search
     query = {'username': username}
     if search_value:
@@ -537,43 +712,57 @@ def riwayat_pendaftaran_api(decoded_token):
             {"status": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id","name", "nik", "poli", "tanggal", "status"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.registrations.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    
+    if sort_column:
+        data = list(db.registrations.find(query).sort(
+        sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.registrations.find(query).collation(
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
-    
+
     # Total records count (unfiltered)
     total_records = db.registrations.count_documents({'username': username})
 
     # Total records count after filtering
     filtered_records = db.registrations.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
-    
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+
+    response = api_response(True, 200, "success", "Data berhasil diambil", data,
+                            pagination.__dict__, datatables_pagination.__dict__)
     return jsonify(response.__dict__)
 
 
 @app.route('/api/pendaftaran/<id>/approve', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-def approve_pendaftaran(decoded_token, id):    
+def approve_pendaftaran(decoded_token, id):
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
     if data_pendaftaran.get('status') == 'approved':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah disetujui")
-    
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah disetujui")
+
     if data_pendaftaran.get('status') == 'done':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
-    
+
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
+    
+    if data_pendaftaran.get('status') == 'expired':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
+    
+    if data_pendaftaran.get('status') == 'canceled':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
 
     # Calculate the antrian based on the number of registrations for the same date and poli
     antrian = db.registrations.count_documents({
@@ -586,10 +775,13 @@ def approve_pendaftaran(decoded_token, id):
     db.registrations.update_one(
         {'_id': ObjectId(id)},
         {'$set': {'status': 'approved',
-                    'antrian': f"{antrian + 1:03d}"}}
+                  'antrian': f"{antrian + 1:03d}"}}
     )
 
-    response = api_response(True, 200, "success", "Pendaftaran berhasil disetujui")
+    socketio.emit('new_antrian', get_antrian_today(db), namespace='/antrian')
+
+    response = api_response(True, 200, "success",
+                            "Pendaftaran berhasil disetujui")
     return jsonify(response.__dict__)
 
 
@@ -601,13 +793,20 @@ def reject_pendaftaran(decoded_token, id):
         {"_id": ObjectId(id)})
 
     if data_pendaftaran.get('status') == 'approved':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah disetujui")
-    
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah disetujui")
+
     if data_pendaftaran.get('status') == 'done':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
-    
+
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
+    
+    if data_pendaftaran.get('status') == 'expired':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
+
+    if data_pendaftaran.get('status') == 'canceled':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
 
     # Logika untuk menolak pendaftaran (mengubah status menjadi rejected)
     db.registrations.update_one(
@@ -615,7 +814,8 @@ def reject_pendaftaran(decoded_token, id):
         {'$set': {'status': 'rejected'}}
     )
 
-    response = api_response(True, 200, "success", "Pendaftaran berhasil ditolak")
+    response = api_response(True, 200, "success",
+                            "Pendaftaran berhasil ditolak")
     return jsonify(response.__dict__)
 
 
@@ -628,12 +828,18 @@ def done_pendaftaran(decoded_token, id):
 
     if data_pendaftaran.get('status') == 'pending':
         raise HttpException(False, 400, "failed", "Pendaftaran masih diproses")
-    
+
     if data_pendaftaran.get('status') == 'done':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
-    
+
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
+    
+    if data_pendaftaran.get('status') == 'expired':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
+    
+    if data_pendaftaran.get('status') == 'canceled':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
 
     # Logika untuk menyelesaikan pendaftaran (mengubah status menjadi done)
     db.registrations.update_one(
@@ -649,95 +855,69 @@ def done_pendaftaran(decoded_token, id):
         'keluhan': data_pendaftaran['keluhan']
     })
 
+    socketio.emit('new_antrian', get_antrian_today(db), namespace='/antrian')
+
     response = api_response(True, 200, "success", "Pendaftaran selesai")
     return jsonify(response.__dict__)
 
 
+@app.route('/api/pendaftaran/<id>/cancel', methods=['POST'])
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pasien"])
+def cancel_pendaftaran(decoded_token, id):
+    data_pendaftaran = db.registrations.find_one(
+        {"_id": ObjectId(id)})
+
+    if data_pendaftaran.get('status') == 'done':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
+
+    if data_pendaftaran.get('status') == 'rejected':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
+    
+    if data_pendaftaran.get('status') == 'expired':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
+
+    # Logika untuk membatalkan pendaftaran (mengubah status menjadi canceled)
+    db.registrations.update_one(
+        {'_id': ObjectId(id)},
+        {'$set': {'status': 'canceled'}}
+    )
+
+    data_pendaftaran["_id"] = str(data_pendaftaran["_id"])
+
+    socketio.emit('new_pendaftaran', data_pendaftaran,
+                  namespace='/pendaftaran')
+
+    response = api_response(True, 200, "success", "Pendaftaran dibatalkan")
+    return jsonify(response.__dict__)
+
+
+@app.route('/api/pendaftaran/expire', methods=['POST'])
+def expire_pendaftaran():
+    now = datetime.now()
+    # check if now is midnight
+    if now.hour != 0 and now.minute != 0 and now.second != 0:
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak berhasil diubah")
+
+    db.registrations.update_many(
+        {"status": {"$in": ["pending", "approved"]}, "tanggal": {"$lt": now.strftime("%d-%m-%Y")}},
+        {"$set": {"status": "expired"}}
+    )
+
+    socketio.emit('new_pendaftaran', {"data": "data"},
+                namespace='/pendaftaran')
+
+    response = api_response(True, 200, "success", "Pendaftaran berhasil diubah")
+    return jsonify(response.__dict__)
+    
+
 # Return Atrian Hari Ini
 @app.route('/api/antrian/today')
 def get_antrian():
-    # Ambil data antrian hari ini
-    antrian_data = list(db.jadwal.aggregate([
-        {
-            "$lookup": {
-                "from": "registrations",
-                "localField": "poli",
-                "foreignField": "poli",
-                "as": "registrations"
-            }
-        },
-        {
-            "$unwind": {
-                "path": "$registrations",
-                "preserveNullAndEmptyArrays": True
-            }
-        },
-        {
-            "$group": {
-                "_id": "$poli",
-                "jumlah_pendaftar": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {
-                                        "$or": [
-                                            {"$eq": [
-                                                "$registrations.status", "approved"]},
-                                            {"$eq": [
-                                                "$registrations.status", "done"]}
-                                        ]
-                                    },
-                                    {"$eq": [
-                                        "$registrations.tanggal", datetime.now().strftime("%d-%m-%Y")]}
-                                ]
-                            },
-                            1,
-                            0
-                        ]
-                    }
-                },
-                "dalam_antrian": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": [
-                                        "$registrations.status", "done"]},
-                                    {"$eq": [
-                                        "$registrations.tanggal", datetime.now().strftime("%d-%m-%Y")]}
-                                ]
-                            },
-                            1,
-                            0
-                        ]
-                    }
-                },
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "poli": "$_id",
-                "jumlah_pendaftar": 1,
-                "dalam_antrian": 1
-            }
-        }
-    ]))
-    for antrian in antrian_data:
-        antrian['jumlah_pendaftar'] = db.registrations.count_documents({
-            "poli": antrian['poli'],
-            "tanggal": datetime.now().strftime("%d-%m-%Y"),
-            "status": {"$in": ["approved", "done"]}
-        })
-        antrian['dalam_antrian'] = db.registrations.count_documents({
-            "poli": antrian['poli'],
-            "tanggal": datetime.now().strftime("%d-%m-%Y"),
-            "status": "done"
-        })
-    response = api_response(True, 200, "success", "Antrian berhasil diambil", antrian_data)
+    antrian_data = get_antrian_today(db)
+    response = api_response(True, 200, "success",
+                            "Antrian berhasil diambil", antrian_data)
     return jsonify(response.__dict__)
-
 
 
 # Return Antrian Pasien
@@ -747,24 +927,24 @@ def get_antrian():
 def get_antrian_data(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
 
     antrian_data = list(db.registrations.find(
         {
             "username": user_data.get('username'),
             "status": {"$in": ["pending", "approved"]}
-        },
-        {
-            "_id": False
         }
     ))
+    for antrian in antrian_data:
+        antrian["_id"] = str(antrian["_id"])
 
-    response = api_response(True, 200, "success", "Data berhasil diambil", antrian_data)
+    response = api_response(True, 200, "success",
+                            "Data berhasil diambil", antrian_data)
 
     return jsonify(response.__dict__)
-
 
 
 @app.route('/api/antrian/check')
@@ -773,17 +953,18 @@ def get_antrian_data(decoded_token):
 def check_antrian(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
-
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
 
     has_pending_or_approved = bool(db.registrations.count_documents({
         "status": {"$in": ["pending", "approved"]},
         "username": user_data.get('username')
     }) > 0)
 
-    response = api_response(True, 200, "success", "Data berhasil dimabil", {'has_pending_or_approved': has_pending_or_approved})
+    response = api_response(True, 200, "success", "Data berhasil dimabil", {
+                            'has_pending_or_approved': has_pending_or_approved})
     return jsonify(response.__dict__)
 
 
@@ -794,22 +975,50 @@ def check_antrian(decoded_token):
 def api_riwayat_checkup(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
     nik = user_data.get('nik')
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
+    order_column_index = int(request.args.get('order[0][column]', 0))
     order_direction = request.args.get('order[0][dir]', 'asc')
+    # Adjust the query for sorting
+    sort_column = ["_id", "tgl_periksa", "poli", "dokter",
+                   "keluhan", "hasil_anamnesa"][order_column_index]
 
-    
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page -1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
     
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
+
     # MongoDB query with search
     query = {'nik': nik}
     if search_value:
@@ -821,26 +1030,33 @@ def api_riwayat_checkup(decoded_token):
             {"hasil_anamnesa": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id", "tgl_periksa", "poli", "dokter", "keluhan", "hasil_anamnesa"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    
+    if sort_column:
+        data = list(db.list_checkup_user.find(query).sort(
+        sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.list_checkup_user.find(query).collation(
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
-    
+
     # Total records count (unfiltered)
     total_records = db.list_checkup_user.count_documents({'nik': nik})
 
     # Total records count after filtering
     filtered_records = db.list_checkup_user.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+
+    response = api_response(True, 200, "success", "Data berhasil diambil", data,
+                            pagination.__dict__, datatables_pagination.__dict__)
     return jsonify(response.__dict__)
 
 
@@ -848,16 +1064,82 @@ def api_riwayat_checkup(decoded_token):
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
 def api_riwayat_checkup_pegawai(decoded_token):
+    name = request.args.get('name')
+    dokter = request.args.get('dokter')
+    poli = request.args.get('poli')
+    tanggal = request.args.get('tanggal')
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
     search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
-    order_direction = request.args.get('order[0][dir]', 'asc')
+    order_column_index = int(request.args.get('order[0][column]', 0))
+    order_direction = request.args.get('order[0][dir]')
+    sort_column = ["_id", "tgl_periksa", "nama", "dokter",
+                   "poli", "keluhan", "hasil_anamnesa"][order_column_index]
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    if name == 'name':
+        list_nama = list(db.list_checkup_user.distinct('nama'))
+
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+    if dokter == 'dokter':
+        list_dokter = list(db.list_checkup_user.distinct('dokter'))
+        sorted_list_dokter = sorted(list_dokter, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_dokter)
+        return jsonify(response.__dict__)
+    if poli == 'poli':
+        list_poli = list(db.list_checkup_user.distinct('poli'))
+        sorted_list_poli = sorted(list_poli, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_poli)
+        return jsonify(response.__dict__)
+    if tanggal == 'tanggal':
+        list_tanggal = list(db.list_checkup_user.distinct('tgl_periksa'))
+        sorted_list_tanggal = sorted(list_tanggal)
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_tanggal)
+        return jsonify(response.__dict__)
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page - 1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    # Adjust the query for sorting
+
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # MongoDB query with search
     query = {}
+    if name:
+        query['nama'] = name
+    if dokter:
+        query['dokter'] = dokter
+    if poli:
+        query['poli'] = poli
+    if tanggal:
+        query['tgl_periksa'] = tanggal
     if search_value:
         query["$or"] = [
             {"tgl_periksa": {"$regex": search_value, "$options": "i"}},
@@ -868,28 +1150,34 @@ def api_riwayat_checkup_pegawai(decoded_token):
             {"hasil_anamnesa": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id", "tgl_periksa", "nama", "dokter", "poli", "keluhan", "hasil_anamnesa"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    if sort_column:
+        data = list(db.list_checkup_user.find(query).sort(
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.list_checkup_user.find(query).collation(
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
-    
+
     # Total records count (unfiltered)
     total_records = db.list_checkup_user.count_documents({})
 
     # Total records count after filtering
     filtered_records = db.list_checkup_user.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
-    return jsonify(response.__dict__)
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
 
+    response = api_response(True, 200, "success", "Data berhasil diambil",
+                            data, pagination.__dict__, datatables_pagination.__dict__)
+    return jsonify(response.__dict__)
 
 
 @app.route("/api/checkup/<nik>")
@@ -897,12 +1185,40 @@ def api_riwayat_checkup_pegawai(decoded_token):
 @authorized_roles_api(["pegawai"])
 def api_pasien_checkup(decoded_token, nik):
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
+    order_column_index = int(request.args.get('order[0][column]', 0))
     order_direction = request.args.get('order[0][dir]', 'desc')
+    sort_column = ["_id", "tgl_periksa", "dokter", "poli",
+                   "keluhan", "hasil_anamnesa", "_id"][order_column_index]
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page - 1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    # Adjust the query for sorting
+
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # MongoDB query with search
     query = {'nik': nik}
@@ -915,15 +1231,16 @@ def api_pasien_checkup(decoded_token, nik):
             {"hasil_anamnesa": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id", "tgl_periksa", "dokter", "poli", "keluhan", "hasil_anamnesa", "_id"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.list_checkup_user.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    if sort_column:
+        data = list(db.list_checkup_user.find(query).sort(
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.list_checkup_user.find(query).collation(
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
-    
+
     # Total records count (unfiltered)
     total_records = db.list_checkup_user.count_documents({'nik': nik})
 
@@ -934,18 +1251,25 @@ def api_pasien_checkup(decoded_token, nik):
 
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
+
+    response = api_response(True, 200, "success", "Data berhasil diambil",
+                            data, pagination.__dict__, datatables_pagination.__dict__)
     return jsonify(response.__dict__)
 
 
 @app.route('/api/checkup/<nik>/<id>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-def api_detail_checkup(decoded_token,nik, id):
+def api_detail_checkup(decoded_token, nik, id):
     data = db.list_checkup_user.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
-    response = api_response(True, 200, "success", "Data berhasil diambil", data)
+    response = api_response(True, 200, "success",
+                            "Data berhasil diambil", data)
     return jsonify(response.__dict__)
 
 
@@ -965,7 +1289,8 @@ def edit_checkup(decoded_token, nik, id):
     dokter_list = list(db.jadwal.distinct('nama'))
     if dokter:
         if dokter not in dokter_list:
-            raise HttpException(False, 400, "failed", f"Dokter {dokter} tidak tersedia, pilih dari {dokter_list}")
+            raise HttpException(
+                False, 400, "failed", f"Dokter {dokter} tidak tersedia, pilih dari {dokter_list}")
         doc['dokter'] = dokter
 
     hasil_anamnesa = request.form.get('hasil_anamnesa')
@@ -984,8 +1309,9 @@ def edit_checkup(decoded_token, nik, id):
 def api_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
-    response = api_response(True, 200, "success", "Data berhasil diambil", user_data)
+        '_id': False, 'password': False})
+    response = api_response(True, 200, "success",
+                            "Data berhasil diambil", user_data)
     return jsonify(response.__dict__)
 
 
@@ -995,11 +1321,12 @@ def api_profile(decoded_token):
 def edit_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
-                                    '_id': False, 'password': False})
+        '_id': False, 'password': False})
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
-    
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
+
     username = user_data.get('username')
     old_nik = user_data.get('nik')
     file_path = user_data.get('profile_pic')
@@ -1025,7 +1352,8 @@ def edit_profile(decoded_token):
         rekam_medis['nama'] = name
     if nik:
         if not is_valid_nik(nik):
-            raise HttpException(False, 400, "failed", "NIK harus terdiri dari 16 digit angka")
+            raise HttpException(False, 400, "failed",
+                                "NIK harus terdiri dari 16 digit angka")
         existing_nik = db.users.find_one({'nik': nik})
         if existing_nik and existing_nik['username'] != username:
             raise HttpException(False, 400, "failed", "NIK sudah digunakan")
@@ -1035,15 +1363,19 @@ def edit_profile(decoded_token):
         rekam_medis['nik'] = nik
     if tgl_lahir:
         if not is_valid_date(tgl_lahir):
-            raise HttpException(False, 400, "failed", "Format tanggal lahir tidak valid, gunakan format dd-mm-yyyy")
+            raise HttpException(
+                False, 400, "failed", "Format tanggal lahir tidak valid, gunakan format dd-mm-yyyy")
         if not is_max_date_now(tgl_lahir):
-            raise HttpException(False, 400, "failed", "Tanggal lahir tidak boleh lebih dari hari ini")
+            raise HttpException(False, 400, "failed",
+                                "Tanggal lahir tidak boleh lebih dari hari ini")
         profile_doc['tgl_lahir'] = tgl_lahir
         registration_doc['tgl_lahir'] = tgl_lahir
-        rekam_medis['umur'] = (datetime.now() - datetime.strptime(tgl_lahir, '%d-%m-%Y')).days // 365
+        rekam_medis['umur'] = (
+            datetime.now() - datetime.strptime(tgl_lahir, '%d-%m-%Y')).days // 365
     if gender:
         if not is_valid_gender(gender):
-            raise HttpException(False, 400, "failed", "Jenis kelamin tidak valid")
+            raise HttpException(False, 400, "failed",
+                                "Jenis kelamin tidak valid")
         profile_doc['gender'] = gender
         registration_doc['gender'] = gender
     if agama:
@@ -1058,7 +1390,8 @@ def edit_profile(decoded_token):
         rekam_medis['alamat'] = alamat
     if no_telp:
         if not is_valid_phone_number(no_telp):
-            raise HttpException(False, 400, "failed", "Nomor telepon tidak valid, gunakan format nomor 10 - 13 digit")
+            raise HttpException(
+                False, 400, "failed", "Nomor telepon tidak valid, gunakan format nomor 10 - 13 digit")
         profile_doc['no_telp'] = no_telp
         registration_doc['no_telp'] = no_telp
         rekam_medis['no_telp'] = no_telp
@@ -1066,24 +1399,28 @@ def edit_profile(decoded_token):
     if 'profile_pic' in request.files:
         file = request.files['profile_pic']
         if file.filename == '':
-            raise HttpException(False, 400, "failed", "Profile picture tidak boleh kosong")
+            raise HttpException(False, 400, "failed",
+                                "Profile picture tidak boleh kosong")
         filename = secure_filename(file.filename)
         extension = filename.split(".")[-1]
         if extension not in ["jpg", "jpeg", "png"]:
-            raise HttpException(False, 400, "failed", "Profile picture harus berupa file gambar")
+            raise HttpException(False, 400, "failed",
+                                "Profile picture harus berupa file gambar")
         file_path = f"profile_pics/{username}.{extension}"
         file.save("./static/" + file_path)
         profile_doc["profile_pic"] = file_path
     # update collection users
     db.users.update_one({"username": username}, {"$set": profile_doc})
     # update collection registrations
-    db.registrations.update_many({"username": username}, {"$set": registration_doc})
+    db.registrations.update_many({"username": username}, {
+                                 "$set": registration_doc})
     # update collection checkup
     db.list_checkup_user.update_many({"nik": old_nik}, {"$set": checkup_doc})
     # update collection rekam_medis
     db.rekam_medis.update_many({"nik": old_nik}, {"$set": rekam_medis})
 
-    response = api_response(True, 200, "success", "Profile berhasil diperbarui")
+    response = api_response(True, 200, "success",
+                            "Profile berhasil diperbarui")
 
     return jsonify(response.__dict__)
 
@@ -1092,27 +1429,73 @@ def edit_profile(decoded_token):
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
 def api_rekam_medis(decoded_token):
+    nik = request.args.get('nik')
+    name = request.args.get('name')
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
-    order_direction = request.args.get('order[0][dir]', 'asc')
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
+    order_column_index = int(request.args.get('order[0][column]', 0))
+    order_direction = request.args.get('order[0][dir]')
+    sort_column = ["_id", "nik", "nama", "umur"][order_column_index]
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page - 1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    if nik == 'nik':
+        list_nik = list(db.rekam_medis.distinct('nik'))
+        sorted_list_nik = sorted(list_nik)
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nik)
+        return jsonify(response.__dict__)
+    if name == 'name':
+        list_nama = list(db.rekam_medis.distinct('nama'))
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+
+    # Adjust the query for sorting
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # MongoDB query with search
     query = {}
+    if nik:
+        query['nik'] = nik
+    if name:
+        query['nama'] = name
     if search_value:
         query["$or"] = [
             {"nama": {"$regex": search_value, "$options": "i"}},
             {"nik": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id", "nama", "nik", "umur"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.rekam_medis.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    if sort_column:
+        data = list(db.rekam_medis.find(query).sort(
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
+    else:
+        data = list(db.rekam_medis.find(query).collation(
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
@@ -1123,11 +1506,17 @@ def api_rekam_medis(decoded_token):
     # Total records count after filtering
     filtered_records = db.rekam_medis.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
+
+    response = api_response(True, 200, "success", "Data berhasil diambil",
+                            data, pagination.__dict__, datatables_pagination.__dict__)
     return jsonify(response.__dict__)
 
 
@@ -1137,25 +1526,36 @@ def api_rekam_medis(decoded_token):
 def api_rekam_medis_post(decoded_token):
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
-    
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
+
     no_kartu = request.form.get('no')
-    existing_no_kartu = bool(db.rekam_medis.count_documents({'no_kartu': no_kartu}) > 0)
+    existing_no_kartu = bool(
+        db.rekam_medis.count_documents({'no_kartu': no_kartu}) > 0)
     if not no_kartu:
-        raise HttpException(False, 400, "failed", "Nomor kartu tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Nomor kartu tidak boleh kosong")
     if existing_no_kartu:
-        raise HttpException(False, 400, "failed", "Nomor kartu sudah digunakan")
+        raise HttpException(False, 400, "failed",
+                            "Nomor kartu sudah digunakan")
     if not is_valid_no_kartu(no_kartu):
-        raise HttpException(False, 400, "failed", "Format nomor kartu tidak valid, gunakan format xx-xx-xx")
+        raise HttpException(
+            False, 400, "failed", "Format nomor kartu tidak valid, gunakan format xx-xx-xx")
     dokter = request.form.get('dokter')
     dokter_list = list(db.jadwal.distinct('nama'))
     if not dokter:
         raise HttpException(False, 400, "failed", "Dokter tidak boleh kosong")
     if dokter not in dokter_list:
-        raise HttpException(False, 400, "failed", f"Dokter {dokter} tidak tersedia, pilih dari {dokter_list}")
+        raise HttpException(
+            False, 400, "failed", f"Dokter {dokter} tidak tersedia, pilih dari {dokter_list}")
     hasil_anamnesa = request.form.get('hasil_anamnesa')
+    print(hasil_anamnesa)
     if not hasil_anamnesa:
-        raise HttpException(False, 400, "failed", "Hasil anamnesa tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Hasil anamnesa tidak boleh kosong")
+    if hasil_anamnesa == '':
+        raise HttpException(False, 400, "failed",
+                            "Hasil anamnesa tidak boleh kosong")
     nik = request.form.get('nik')
     if not nik:
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
@@ -1164,14 +1564,17 @@ def api_rekam_medis_post(decoded_token):
         raise HttpException(False, 400, "failed", "Rekam medis sudah ada")
     user_data = db.users.find_one({'nik': nik})
     if not user_data:
-        raise HttpException(False, 400, "failed", "Data pengguna tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pengguna tidak ditemukan")
     data_reg = db.registrations.find_one({'nik': nik})
     if not data_reg:
-        raise HttpException(False, 400, "failed", "Data pendaftaran tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Data pendaftaran tidak ditemukan")
     nama = user_data.get('name')
     data_rekam_medis = {
         'no_kartu': no_kartu,
         'nama': nama,
+        'username': user_data['username'],
         'nik': nik,
         'umur': (datetime.now() - datetime.strptime(user_data['tgl_lahir'], '%d-%m-%Y')).days // 365,
         'alamat': user_data['alamat'],
@@ -1189,8 +1592,9 @@ def api_rekam_medis_post(decoded_token):
 
     db.list_checkup_user.update_one(
         {'nik': nik}, {'$set': data_list_checkup_user}, upsert=True)
-    
-    response = api_response(True, 200, "success", "Rekam medis berhasil dibuat")
+
+    response = api_response(True, 200, "success",
+                            "Rekam medis berhasil dibuat")
     return jsonify(response.__dict__)
 
 
@@ -1201,7 +1605,8 @@ def api_detail_rekam_medis(decoded_token, nik):
     data = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
-    response = api_response(True, 200, "success", "Data berhasil diambil", data)
+    response = api_response(True, 200, "success",
+                            "Data berhasil diambil", data)
     return jsonify(response.__dict__)
 
 
@@ -1209,38 +1614,102 @@ def api_detail_rekam_medis(decoded_token, nik):
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
 def api_users_pasien(decoded_token):
+    name = request.args.get('name')
+    nik = request.args.get('nik')
+    status_filter = request.args.get('status_filter')
+    if status_filter == 'True':
+        print('jalan')
+
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
     order_column_index = int(request.args.get('order[0][column]', 0))
     order_direction = request.args.get('order[0][dir]', 'asc')
 
     # Get unique usernames from registrations with status: done
-    unique_usernames = db.registrations.distinct("username", {"status": "done"})
+    unique_usernames = db.registrations.distinct(
+        "username", {"status": "done"})
+    if status_filter == 'True':
+        unique_usernames = db.rekam_medis.distinct(
+            "username")
+    if status_filter == 'False':
+        has_rekam = db.rekam_medis.distinct("username")
+        unique_usernames = list(set(unique_usernames) - set(has_rekam))
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    if name == 'name':
+        list_nama = list(db.registrations.distinct(
+        "name", {"status": "done"}))
+
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+    if nik == 'nik':
+        list_nik = list(db.registrations.distinct(
+        "nik", {"status": "done"}))
+
+        sorted_list_nik = sorted(list_nik)
+
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nik)
+        return jsonify(response.__dict__)
+    
+    # Adjust the query for sorting
+    sort_column = ["_id", "name", "nik", "_id"][order_column_index]
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page - 1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
 
     # MongoDB query with search
     query = {"username": {"$in": unique_usernames}}
+    if name:
+        query['name'] = name
+    if nik:
+        query['nik'] = nik
     if search_value:
         query["$or"] = [
             {"name": {"$regex": search_value, "$options": "i"}},
             {"nik": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["_id","name", "nik", "_id"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-
     # Fetch user details from users collection based on unique usernames
-    data_pasien_list = (
-        db.users.find(query)
-        .sort(sort_column, sort_direction)
-        .collation(collation)
-        .skip(start)
-        .limit(length)
-    )
+    if sort_column:
+        data_pasien_list = (
+            db.users.find(query)
+            .sort(sort_column, sort_direction)
+            .collation(collation)
+            .skip(start)
+            .limit(length)
+        )
+    else:
+        data_pasien_list = (
+            db.users.find(query).collation(collation).skip(start).limit(length)
+        )
 
     # Process the data_pasien_list to include 'has_rekam_medis' field
     data_pasien = []
@@ -1254,33 +1723,94 @@ def api_users_pasien(decoded_token):
         })
 
     # Total records count (unfiltered)
-    total_records = db.users.count_documents({'username': {'$in': unique_usernames}})
+    total_records = db.users.count_documents(
+        {'username': {'$in': unique_usernames}})
 
     # Total records count after filtering
     filtered_records = db.users.count_documents(query)
 
-    total_pages = (filtered_records + length - 1) // length  # Calculate total pages
+    total_pages = (filtered_records + length -
+                   1) // length  # Calculate total pages
     # Create the meta pagination object
     pagination = Pagination(start + 1, length, total_pages, filtered_records)
 
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
+
     response = api_response(
-        True, 200, "success", "Data berhasil diambil", data_pasien, pagination.__dict__, draw, start, length, total_records, filtered_records
+        True, 200, "success", "Data berhasil diambil", data_pasien, pagination.__dict__, datatables_pagination.__dict__
     )
     return jsonify(response.__dict__)
-  
+
 
 @app.route('/api/jadwal')
 def api_jadwal():
+    nama = request.args.get('nama')
+    poli = request.args.get('poli')
+    hari = request.args.getlist('hari[]')
+
     # Get parameters from DataTables request
-    draw = int(request.args.get('draw', 0))
-    start = int(request.args.get('start', 0))
-    length = int(request.args.get('length', 10))
-    search_value = request.args.get('search[value]', '')
-    order_column_index = int(request.args.get('order[0][column]', 0))  
+    draw = request.args.get('draw')
+    if draw:
+        draw = int(draw)
+    start = request.args.get('start')
+    if start:
+        start = int(start)
+    length = request.args.get('length')
+    if length:
+        length = int(length)
+    search_value = request.args.get('search[value]')
+    order_column_index = int(request.args.get('order[0][column]', 0))
     order_direction = request.args.get('order[0][dir]', 'asc')
+
+    # Get parameters for your own pagination
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    search = request.args.get('search')
+    order = request.args.get('order')
+    sort = request.args.get('sort', 'asc')
+
+    # Adjust the query for sorting
+    sort_column = ["nama", "poli", "hari",
+                   "jam_buka", "jam_tutup"][order_column_index]
+    
+
+    # Decide whether to use DataTables pagination or your own pagination
+    if not draw:
+        start = page -1
+        length = limit
+        search_value = search
+        sort_column = order
+        order_direction = sort
+
+    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
+    collation = {'locale': 'en', 'strength': 2}
+
+
+    if nama == 'nama':
+        list_nama = list(db.jadwal.distinct('nama'))
+
+        sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_nama)
+        return jsonify(response.__dict__)
+    if poli == 'poli':
+        list_poli = list(db.jadwal.distinct('poli'))
+
+        sorted_list_poli = sorted(list_poli, key=lambda x: x.lower())
+        response = api_response(True, 200, "success",
+                                "Data berhasil diambil", sorted_list_poli)
+        return jsonify(response.__dict__)
 
     # MongoDB query with search
     query = {}
+    if nama:
+        query['nama'] = nama
+    if poli:
+        query['poli'] = poli
+    if hari:
+        query['hari'] = {"$in": hari}
     if search_value:
         query["$or"] = [
             {"nama": {"$regex": search_value, "$options": "i"}},
@@ -1290,15 +1820,17 @@ def api_jadwal():
             {"jam_tutup": {"$regex": search_value, "$options": "i"}},
         ]
 
-    # Adjust the query for sorting
-    sort_column = ["nama", "poli", "hari", "jam_buka", "jam_tutup"][order_column_index]
-    sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
-    collation = {'locale': 'en', 'strength': 2}
-    data = list(db.jadwal.find(query).sort(sort_column, sort_direction).collation(collation).skip(start).limit(length))
+
+    if sort_column:
+        data = list(db.jadwal.find(query).sort(sort_column, sort_direction).collation(
+        collation).skip(start).limit(length))
+    else:
+        data = list(db.jadwal.find(query).collation(
+        collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
-    
+
     # Total records count (unfiltered)
     total_records = db.jadwal.count_documents({})
 
@@ -1310,7 +1842,11 @@ def api_jadwal():
     # Create the meta pagination object
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
-    response = api_response(True, 200, "success", "Data berhasil diambil", data, pagination.__dict__, draw, start, length, total_records, filtered_records)
+    # Create datatables pagination object
+    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+
+    response = api_response(True, 200, "success", "Data berhasil diambil", data,
+                            pagination.__dict__, datatables_pagination.__dict__)
 
     return jsonify(response.__dict__)
 
@@ -1321,33 +1857,40 @@ def api_jadwal():
 def api_jadwal_post(decoded_token):
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
-    
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
+
     nama = request.form.get('nama')
     if not nama:
         raise HttpException(False, 400, "failed", "Nama tidak boleh kosong")
     poli = request.form.get('poli')
     if not poli:
         raise HttpException(False, 400, "failed", "Poli tidak boleh kosong")
+    poli = poli.title()
     hari = request.form.getlist('hari')
     if not hari:
         raise HttpException(False, 400, "failed", "Hari tidak boleh kosong")
     jam_buka = request.form.get('jam_buka')
     if not jam_buka:
-        raise HttpException(False, 400, "failed", "Jam buka tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Jam buka tidak boleh kosong")
     jam_tutup = request.form.get('jam_tutup')
     if not jam_tutup:
-        raise HttpException(False, 400, "failed", "Jam tutup tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Jam tutup tidak boleh kosong")
     if not isinstance(hari, list):
         raise HttpException(False, 400, "failed", "Hari harus merupakan list")
     if any(x for x in hari if x.lower() not in ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']):
         raise HttpException(False, 400, "failed", "Hari tidak valid")
     if not is_valid_time(jam_buka):
-        raise HttpException(False, 400, "failed", "Format jam buka tidak valid")
+        raise HttpException(False, 400, "failed",
+                            "Format jam buka tidak valid")
     if not is_valid_time(jam_tutup):
-        raise HttpException(False, 400, "failed", "Format jam tutup tidak valid")
+        raise HttpException(False, 400, "failed",
+                            "Format jam tutup tidak valid")
     if datetime.strptime(jam_buka, '%H:%M') > datetime.strptime(jam_tutup, '%H:%M'):
-        raise HttpException(False, 400, "failed", "Jam buka tidak boleh lebih besar dari jam tutup")
+        raise HttpException(False, 400, "failed",
+                            "Jam buka tidak boleh lebih besar dari jam tutup")
     jadwal_data = {
         "nama": nama,
         "poli": poli,
@@ -1355,9 +1898,13 @@ def api_jadwal_post(decoded_token):
         "jam_buka": jam_buka,
         "jam_tutup": jam_tutup,
     }
+
     result = db.jadwal.insert_one(jadwal_data)
     jadwal_data["_id"] = str(result.inserted_id)
-    response = api_response(True, 200, "success", "Jadwal berhasil ditambahkan", jadwal_data)
+    socketio.emit('new_jadwal', jadwal_data, namespace='/jadwal')
+
+    response = api_response(True, 200, "success",
+                            "Jadwal berhasil ditambahkan", jadwal_data)
     return jsonify(response.__dict__)
 
 
@@ -1368,7 +1915,8 @@ def api_detail_jadwal(decoded_token, id):
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
-    response = api_response(True, 200, "success", "Data berhasil diambil", data)
+    response = api_response(True, 200, "success",
+                            "Data berhasil diambil", data)
     return jsonify(response.__dict__)
 
 
@@ -1378,7 +1926,8 @@ def api_detail_jadwal(decoded_token, id):
 def api_jadwal_put(decoded_token, id):
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
     doc = {}
     nama = request.form.get('nama')
     if nama:
@@ -1389,52 +1938,38 @@ def api_jadwal_put(decoded_token, id):
     hari = request.form.getlist('hari')
     if hari:
         if not isinstance(hari, list):
-            raise HttpException(False, 400, "failed", "Hari harus merupakan list")
+            raise HttpException(False, 400, "failed",
+                                "Hari harus merupakan list")
         if any(x for x in hari if x.lower() not in ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']):
             raise HttpException(False, 400, "failed", "Hari tidak valid")
         doc['hari'] = hari
     jam_buka = request.form.get('jam_buka')
     jam_tutup = request.form.get('jam_tutup')
     if jam_buka and not jam_tutup:
-        raise HttpException(False, 400, "failed", "Jam tutup tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Jam tutup tidak boleh kosong")
     if not jam_buka and jam_tutup:
-        raise HttpException(False, 400, "failed", "Jam buka tidak boleh kosong")
+        raise HttpException(False, 400, "failed",
+                            "Jam buka tidak boleh kosong")
     if jam_buka and jam_tutup:
         if not is_valid_time(jam_buka):
-            raise HttpException(False, 400, "failed", "Format jam buka tidak valid")
+            raise HttpException(False, 400, "failed",
+                                "Format jam buka tidak valid")
         if not is_valid_time(jam_tutup):
-            raise HttpException(False, 400, "failed", "Format jam tutup tidak valid")
+            raise HttpException(False, 400, "failed",
+                                "Format jam tutup tidak valid")
         if datetime.strptime(jam_buka, '%H:%M') > datetime.strptime(jam_tutup, '%H:%M'):
-            raise HttpException(False, 400, "failed", "Jam buka tidak boleh lebih besar dari jam tutup")
+            raise HttpException(
+                False, 400, "failed", "Jam buka tidak boleh lebih besar dari jam tutup")
         doc['jam_buka'] = jam_buka
         doc['jam_tutup'] = jam_tutup
 
+    jadwal_data = db.jadwal.update_one({"_id": ObjectId(id)}, {"$set": doc})
 
-    db.jadwal.update_one({"_id": ObjectId(id)}, {"$set": doc})
+    socketio.emit('new_jadwal', doc, namespace='/jadwal')
 
     response = api_response(True, 200, "success", "Jadwal berhasil diperbarui")
     return jsonify(response.__dict__)
-
-
-
-# Handle Hapus Jadwal
-@app.route("/api/hapus_jadwal/<id>", methods=["POST"])
-def hapus_jadwal(id):
-    token_receive = get_authorization()
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        username = payload.get('id')
-        user_info = db.users.find_one({'username': username}, {'_id': False})
-        if user_info['role'] != 'pegawai':
-            return jsonify({'result': 'fail', 'message': 'You must login as pegawai'})
-        # hapus jadwal data dari database
-        db.jadwal.delete_one({"_id": ObjectId(id)})
-
-        return jsonify({"result": "success", "message": "Jadwal berhasil dihapus"})
-    except jwt.ExpiredSignatureError:
-        return jsonify({'result': 'fail', 'message': 'Your login token has expired'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'message': 'There was an error decoding your token'})
 
 
 @app.route('/api/jadwal/<id>', methods=['DELETE'])
@@ -1444,11 +1979,12 @@ def api_jadwal_delete(decoded_token, id):
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
-    db.jadwal.delete_one({"_id": ObjectId(id)})
+
+    result = db.jadwal.delete_one({"_id": ObjectId(id)})
+    socketio.emit('new_jadwal', data, namespace='/jadwal')
     response = api_response(True, 200, "success", "Jadwal berhasil dihapus")
     return jsonify(response.__dict__)
 
 
-
 if __name__ == '__main__':
-    app.run('0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
