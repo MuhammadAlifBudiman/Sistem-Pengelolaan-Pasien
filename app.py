@@ -1,5 +1,5 @@
 import re
-from flask import render_template, jsonify, request, redirect, url_for
+from flask import render_template, jsonify, request, redirect, send_file, url_for
 import secrets
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from pymongo import MongoClient, ASCENDING, DESCENDING
@@ -18,6 +18,8 @@ from utils import *
 from middlewares import *
 from flask import make_response
 from flask_socketio import SocketIO, Namespace
+import pandas as pd
+from io import BytesIO
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -911,6 +913,86 @@ def expire_pendaftaran():
     return jsonify(response.__dict__)
     
 
+@app.route('/api/pendaftaran/export')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+def export_pendaftaran(decoded_token):
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+    # Get startdate and enddate from query parameters
+    startdate_str = request.args.get('startdate')
+    enddate_str = request.args.get('enddate')
+
+    if not startdate_str:
+        raise HttpException(False, 400, "failed",
+                            "startdate tidak boleh kosong") 
+    
+    if not enddate_str:
+        raise HttpException(False, 400, "failed",
+                            "enddate tidak boleh kosong") 
+
+    if not is_valid_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    if not is_valid_date(enddate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    
+    if parse_date(enddate_str) < parse_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "startdate harus lebih kecil dibanding enddate")
+    
+    # Parse startdate and enddate to datetime objects
+    startdate_iso = {'$dateFromString': {'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {'dateString': enddate_str, 'format': '%d-%m-%Y'}}
+
+
+    # Query registrations within the specified date range
+    registrations = db.registrations.find({
+        "$expr": {
+            "$and": [
+                {"$gte": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, enddate_iso]}
+            ]
+        }
+    }, {"_id": False})
+
+    # Convert MongoDB cursor to a list of dictionaries
+    registrations_list = list(registrations)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(registrations_list)
+
+    # Create a custom header
+    custom = pd.DataFrame({
+        'Username': df['username'] if len(registrations_list) > 0 else [''],
+        'Nama': df['name'] if len(registrations_list) > 0 else [''],
+        'NIK': df['nik'] if len(registrations_list) > 0 else [''],
+        'Tanggal Lahir': df['tgl_lahir'] if len(registrations_list) > 0 else [''],
+        'Jenis Kelamin': df['gender'] if len(registrations_list) > 0 else [''],
+        'Agama': df['agama'] if len(registrations_list) > 0 else [''],
+        'Status Pernikahan': df['status_pernikahan'] if len(registrations_list) > 0 else [''],
+        'Alamat': df['alamat'] if len(registrations_list) > 0 else [''],
+        'No Telp': df['no_telp'] if len(registrations_list) > 0 else [''],
+        'Tanggal Periksa': df['tanggal'] if len(registrations_list) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(registrations_list) > 0 else [''],
+        'Poli': df['poli'] if len(registrations_list) > 0 else [''],
+        'Status Pendaftaran': df['status'] if len(registrations_list) > 0 else [''],
+        'No Antrian': df['antrian'] if len(registrations_list) > 0 else ['']
+    })
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    custom.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"pendaftaran-{username}-{startdate_str}-{enddate_str}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+
+
+
 # Return Atrian Hari Ini
 @app.route('/api/antrian/today')
 def get_antrian():
@@ -1303,6 +1385,78 @@ def edit_checkup(decoded_token, nik, id):
     return jsonify(response.__dict__)
 
 
+@app.route('/api/checkup/export')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+def export_checkup(decoded_token):
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+    # Get startdate and enddate from query parameters
+    startdate_str = request.args.get('startdate')
+    enddate_str = request.args.get('enddate')
+
+    if not startdate_str:
+        raise HttpException(False, 400, "failed",
+                            "startdate tidak boleh kosong") 
+    
+    if not enddate_str:
+        raise HttpException(False, 400, "failed",
+                            "enddate tidak boleh kosong") 
+
+    if startdate_str and not is_valid_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    if enddate_str and not is_valid_date(enddate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    
+    if parse_date(enddate_str) < parse_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "startdate harus lebih kecil dibanding enddate")
+
+    # Parse startdate and enddate to datetime objects
+    startdate_iso = {'$dateFromString': {'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {'dateString': enddate_str, 'format': '%d-%m-%Y'}}
+
+
+    # Query registrations within the specified date range
+    checkup = db.list_checkup_user.find({
+        "$expr": {
+            "$and": [
+                {"$gte": [{"$dateFromString": {"dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {"dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, enddate_iso]}
+            ]
+        }
+    }, {"_id": False})
+
+    # Convert MongoDB cursor to a list of dictionaries
+    checkup_list = list(checkup)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(checkup_list)
+
+    # Create a custom header
+    custom = pd.DataFrame({
+        'Nama': df['nama'] if len(checkup_list) > 0 else [''],
+        'NIK': df['nik'] if len(checkup_list) > 0 else [''],
+        'Tanggal Periksa': df['tgl_periksa'] if len(checkup_list) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(checkup_list) > 0 else [''],
+        'Poli': df['poli'] if len(checkup_list) > 0 else [''],
+        'Dokter': df['dokter'] if len(checkup_list) > 0 else [''],
+        'Hasil Anamnesa': df['hasil_anamnesa'] if len(checkup_list) > 0 else ['']
+    })
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    custom.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"checkup-{username}-{startdate_str}-{enddate_str}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+
+
 # Return Profile User
 @app.route("/api/profile")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
@@ -1609,6 +1763,59 @@ def api_detail_rekam_medis(decoded_token, nik):
                             "Data berhasil diambil", data)
     return jsonify(response.__dict__)
 
+
+@app.route('/api/rekam_medis/export/<nik>')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+def export_rekam_medis(decoded_token, nik):
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+
+    # Query registrations within the specified date range
+    checkup_user = db.list_checkup_user.find({"nik": nik}, {"_id": False})
+    rekam_medis = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
+
+    if not rekam_medis:
+        raise HttpException(False, 400, "failed",
+                            f"Rekam medis dengan NIK {nik} tidak ditemukan.")
+
+    # Convert MongoDB cursor to a list of dictionaries
+    list_checkup_user = list(checkup_user)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(list_checkup_user)
+
+    custom_row = pd.DataFrame({
+        'No Kartu': [rekam_medis['no_kartu']],
+        'Username': [rekam_medis['username']],
+        'Nama': [rekam_medis['nama']],
+        'NIK': [rekam_medis['nik']],
+        'Umur': [rekam_medis['umur']],
+        'Alamat': [rekam_medis['alamat']],
+        'No Telp': [rekam_medis['no_telp']],
+    })
+
+    # Create second header DataFrame (corresponding to registration data fields)
+    second_header = pd.DataFrame({
+        'Nama Dokter': df['dokter'] if len(list_checkup_user) > 0 else [''],
+        'Tanggal Periksa': df['tgl_periksa'] if len(list_checkup_user) > 0 else [''],
+        'Poli': df['poli'] if len(list_checkup_user) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(list_checkup_user) > 0 else [''],
+        'Hasil Anamnesa': df['hasil_anamnesa'] if len(list_checkup_user) > 0 else ['']
+    })
+
+    # Concatenate DataFrames
+    final_df = pd.concat([custom_row, second_header], axis=1, ignore_index=True,)
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    final_df.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"rekam-medis-{username}-{nik}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
 
 @app.route('/api/users/pasien')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)

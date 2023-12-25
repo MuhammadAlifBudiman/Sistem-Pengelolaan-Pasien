@@ -146,3 +146,6 @@ def is_valid_phone_number(phone_number):
 def is_valid_no_kartu(no_kartu):
     return len(no_kartu) == 8 and no_kartu[2] == '-' and no_kartu[5] == '-' and no_kartu[:2].isdigit() and no_kartu[3:5].isdigit() and no_kartu[6:].isdigit()
 
+# Function to parse dates in "dd-mm-yyyy" format
+def parse_date(date_str):
+    return datetime.strptime(date_str, '%d-%m-%Y')

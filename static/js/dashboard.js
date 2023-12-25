@@ -1,10 +1,16 @@
 // Jadwal Table
 $(document).ready(function () {
+  $("#pendaftaran .card-header").prepend(
+    '<button type="button" class="btn text-light" onclick="exportPendaftaran()" style="background-color: #06a3da; width: auto" id="btn-tambah">Export</button>'
+  );
   $("#pendaftaran .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#daftarFilterModal" style="color: #091e3e; cursor: pointer"></i>'
   );
   $("#checkup .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#checkupFilterModal" style="color: #091e3e; cursor: pointer"></i>'
+  );
+  $("#checkup .card-header").prepend(
+    '<button type="button" class="btn text-light" onclick="exportCheckup()" style="background-color: #06a3da; width: auto" id="btn-tambah">Export</button>'
   );
   $("#rekam-medis .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#rekamFilterModal" style="color: #091e3e; cursor: pointer"></i>'
@@ -542,4 +548,36 @@ function clearFilterRekam() {
   let listName = $("#name-rekam");
   listNik.val(null).trigger("change");
   listName.val(null).trigger("change");
+}
+
+function exportPendaftaran(){
+  let endDate = new Date();
+  let startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  startDate = formatDate(startDate)
+  endDate = formatDate(endDate)
+  let url = `/api/pendaftaran/export?startdate=${startDate}&enddate=${endDate}`;
+  window.location.href = url;
+}
+
+function exportCheckup(){
+  let endDate = new Date();
+  let startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  startDate = formatDate(startDate)
+  endDate = formatDate(endDate)
+  let url = `/api/checkup/export?startdate=${startDate}&enddate=${endDate}`;
+  window.location.href = url;
+}
+
+function formatDate(date) {
+  let d = new Date(date);
+  let month = '' + (d.getMonth() + 1);
+  let day = '' + d.getDate();
+  let year = d.getFullYear();
+
+  if (month.length < 2) month = '0' + month;
+  if (day.length < 2) day = '0' + day;
+
+  return [day, month, year].join('-');
 }
