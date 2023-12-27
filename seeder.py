@@ -1,3 +1,4 @@
+from attr import has
 from flask import Flask
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
@@ -34,6 +35,9 @@ client = MongoClient(MONGODB_CONNECTION_STRING)
 # Recreate database
 # python3 seeder.py --user --jadwal --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user --reload
 
+# Seed registrations_pasien collection
+# python3 seeder.py --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user
+
 # Seed users collection
 # python3 seeder.py --user
 
@@ -41,7 +45,7 @@ client = MongoClient(MONGODB_CONNECTION_STRING)
 # python3 seeder.py --jadwal
 
 # Seed registrations_pasien collection
-# python3 seeder.py --registration
+# python3 seeder.py --registration 
 
 # Seed rekam_medis collection
 # python3 seeder.py --rekam-medis
@@ -151,40 +155,42 @@ def seed_registrations_pasien(num_registration=3):
         status_choices = ['done', 'rejected', 'canceled', 'expired']
 
         for user in db.users.find({'role': 'pasien'}):
-            registration_data = {
-                'username': user['username'],
-                'name': user['name'],
-                'nik': user['nik'],
-                'tgl_lahir': user['tgl_lahir'],
-                'gender': user['gender'],
-                'agama': user['agama'],
-                'status_pernikahan': user['status'],
-                'alamat': user['alamat'],
-                'no_telp': user['no_telp'],
-                'tanggal': (datetime.now()).strftime('%d-%m-%Y'),
-                'keluhan': fake.sentence(),
-                'status': fake.random_element(elements=['approved', 'pending'])
-            }
+            has_pending_or_approved = db.registrations.find_one({'username': user['username'], 'status': {'$in': ['pending', 'approved']}})
+            if not has_pending_or_approved:
+                registration_data = {
+                    'username': user['username'],
+                    'name': user['name'],
+                    'nik': user['nik'],
+                    'tgl_lahir': user['tgl_lahir'],
+                    'gender': user['gender'],
+                    'agama': user['agama'],
+                    'status_pernikahan': user['status'],
+                    'alamat': user['alamat'],
+                    'no_telp': user['no_telp'],
+                    'tanggal': (datetime.now()).strftime('%d-%m-%Y'),
+                    'keluhan': fake.sentence(),
+                    'status': fake.random_element(elements=['approved', 'pending'])
+                }
 
-            # Choose poli randomly from jadwal collection
-            jadwal_poli = db.jadwal.aggregate([
-                {'$sample': {'size': 1}},
-                {'$project': {'_id': 0, 'poli': 1}}
-            ]).next()
+                # Choose poli randomly from jadwal collection
+                jadwal_poli = db.jadwal.aggregate([
+                    {'$sample': {'size': 1}},
+                    {'$project': {'_id': 0, 'poli': 1}}
+                ]).next()
 
-            registration_data['poli'] = jadwal_poli['poli']
+                registration_data['poli'] = jadwal_poli['poli']
 
-            if registration_data['status'] in ['approved']:
-                # Calculate the antrian based on the number of registrations for the same date and poli
-                count_same_date_poli = db.registrations.count_documents({
-                    'tanggal': registration_data['tanggal'],
-                    'poli': registration_data['poli'],
-                    'status': {'$in': ['approved', 'done']}
-                })
+                if registration_data['status'] in ['approved']:
+                    # Calculate the antrian based on the number of registrations for the same date and poli
+                    count_same_date_poli = db.registrations.count_documents({
+                        'tanggal': registration_data['tanggal'],
+                        'poli': registration_data['poli'],
+                        'status': {'$in': ['approved', 'done']}
+                    })
 
-                registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
+                    registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
 
-            db.registrations.insert_one(registration_data)
+                db.registrations.insert_one(registration_data)
 
             # Create more registrations for the same user
             for _ in range(random.randint(1, num_registration)):
@@ -198,7 +204,7 @@ def seed_registrations_pasien(num_registration=3):
                     'status_pernikahan': user['status'],
                     'alamat': user['alamat'],
                     'no_telp': user['no_telp'],
-                    'tanggal': (datetime.now() - timedelta(days=random.randint(0, 3))).strftime('%d-%m-%Y'),
+                    'tanggal': (datetime.now() - timedelta(days=random.randint(0, 30))).strftime('%d-%m-%Y'),
                     'keluhan': fake.sentence(),
                     'status': fake.random_element(elements=status_choices)
                 }
@@ -238,7 +244,15 @@ def seed_registrations_pasien(num_registration=3):
                         continue  # Skip this registration if the "done" count is greater or equal to "approved"
                 if registration_data['status'] == 'expired':
                     # Set expired registration to random date in the past
-                    registration_data['tanggal'] = (datetime.now() - timedelta(days=random.randint(1, 3))).strftime('%d-%m-%Y')
+                    registration_data['tanggal'] = (datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%d-%m-%Y')
+                    # Calculate the antrian based on the number of registrations for the same date and poli
+                    count_same_date_poli = db.registrations.count_documents({
+                        'tanggal': registration_data['tanggal'],
+                        'poli': registration_data['poli'],
+                        'status': {'$in': ['approved', 'done']}
+                    })
+
+                    registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
 
                 db.registrations.insert_one(registration_data)
 
@@ -342,7 +356,13 @@ def seed_list_checkup_user():
 
         # Iterate through the registrations_pasien collection with status 'done'
         for registration in db.registrations.find({'status': 'done'}):
-
+            has_checkup = db.list_checkup_user.find_one(
+                {'nik': registration['nik'], 'tgl_periksa': registration['tanggal'], 'poli': registration['poli'], 'dokter': {'$exists': True}, 'hasil_anamnesa': {'$exists': True}, 'keluhan': registration['keluhan'], 'nama': registration['name']})
+            
+            
+            if has_checkup:
+                continue
+            
             # Get dokter name from jadwal
             dokter_name = db.jadwal.aggregate([
                 {'$match': {'poli': registration['poli']}},
@@ -355,7 +375,7 @@ def seed_list_checkup_user():
                 'nik': registration['nik'],
                 'dokter': dokter_name,
                 'hasil_anamnesa': fake.text(),
-                'keluhan': fake.sentence(),
+                'keluhan': registration['keluhan'],
                 'nama': registration['name'],
                 'poli': registration['poli'],
                 'tgl_periksa': registration['tanggal'],
@@ -404,13 +424,13 @@ if __name__ == '__main__':
         recreate_database()
 
     if args.user:
-        seed_users(num_pasien=50, num_pegawai=0)
+        seed_users(num_pasien=100, num_pegawai=1)
 
     if args.jadwal:
-        seed_jadwal(num_jadwal=30)
+        seed_jadwal(num_jadwal=20)
 
     if args.registration:
-        seed_registrations_pasien(num_registration=5)
+        seed_registrations_pasien(num_registration=1)
 
     if args.rekam_medis:
         seed_rekam_medis()
