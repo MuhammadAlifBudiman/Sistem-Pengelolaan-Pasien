@@ -699,7 +699,7 @@ def riwayat_pendaftaran_api(decoded_token):
     if not user_data:
         raise HttpException(False, 400, "failed",
                             "Data pengguna tidak ditemukan")
-    
+
     # Get parameters for your own pagination
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 10))
@@ -709,12 +709,12 @@ def riwayat_pendaftaran_api(decoded_token):
 
     # Decide whether to use DataTables pagination or your own pagination
     if not draw:
-        start = page -1
+        start = page - 1
         length = limit
         search_value = search
         sort_column = order
         order_direction = sort
-    
+
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
     collation = {'locale': 'en', 'strength': 2}
 
@@ -729,10 +729,9 @@ def riwayat_pendaftaran_api(decoded_token):
             {"status": {"$regex": search_value, "$options": "i"}},
         ]
 
-    
     if sort_column:
         data = list(db.registrations.find(query).sort(
-        sort_column, sort_direction).collation(collation).skip(start).limit(length))
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
     else:
         data = list(db.registrations.find(query).collation(
             collation).skip(start).limit(length))
@@ -752,7 +751,8 @@ def riwayat_pendaftaran_api(decoded_token):
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
     # Create datatables pagination object
-    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
 
     response = api_response(True, 200, "success", "Data berhasil diambil", data,
                             pagination.__dict__, datatables_pagination.__dict__)
@@ -769,11 +769,12 @@ def approve_pendaftaran(decoded_token, id):
 
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
     if not data_pendaftaran:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran tidak ditemukan")
     if data_pendaftaran.get('status') == 'approved':
         raise HttpException(False, 400, "failed",
                             "Pendaftaran sudah disetujui")
@@ -783,12 +784,13 @@ def approve_pendaftaran(decoded_token, id):
 
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
-    
+
     if data_pendaftaran.get('status') == 'expired':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
-    
+
     if data_pendaftaran.get('status') == 'canceled':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah dibatalkan")
 
     # Calculate the antrian based on the number of registrations for the same date and poli
     antrian = db.registrations.count_documents({
@@ -821,12 +823,13 @@ def reject_pendaftaran(decoded_token, id):
 
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
-    
+
     if not data_pendaftaran:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'approved':
         raise HttpException(False, 400, "failed",
@@ -837,12 +840,13 @@ def reject_pendaftaran(decoded_token, id):
 
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
-    
+
     if data_pendaftaran.get('status') == 'expired':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
 
     if data_pendaftaran.get('status') == 'canceled':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah dibatalkan")
 
     # Logika untuk menolak pendaftaran (mengubah status menjadi rejected)
     db.registrations.update_one(
@@ -865,12 +869,13 @@ def done_pendaftaran(decoded_token, id):
 
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
 
     if not data_pendaftaran:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'pending':
         raise HttpException(False, 400, "failed", "Pendaftaran masih diproses")
@@ -880,12 +885,13 @@ def done_pendaftaran(decoded_token, id):
 
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
-    
+
     if data_pendaftaran.get('status') == 'expired':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
-    
+
     if data_pendaftaran.get('status') == 'canceled':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah dibatalkan")
 
     # Logika untuk menyelesaikan pendaftaran (mengubah status menjadi done)
     db.registrations.update_one(
@@ -917,24 +923,26 @@ def cancel_pendaftaran(decoded_token, id):
 
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
 
     if not data_pendaftaran:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'done':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
 
     if data_pendaftaran.get('status') == 'rejected':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah ditolak")
-    
+
     if data_pendaftaran.get('status') == 'expired':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
-    
+
     if data_pendaftaran.get('status') == 'canceled':
-        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
+        raise HttpException(False, 400, "failed",
+                            "Pendaftaran sudah dibatalkan")
 
     # Logika untuk membatalkan pendaftaran (mengubah status menjadi canceled)
     db.registrations.update_one(
@@ -955,27 +963,31 @@ def cancel_pendaftaran(decoded_token, id):
 @swag_from('swagger_doc/pendaftaran_expire.yml')
 def expire_pendaftaran():
     now = datetime.now()
-    today = {'$dateFromString': {'dateString': now.strftime("%d-%m-%Y"), 'format': '%d-%m-%Y'}}
+    today = {'$dateFromString': {
+        'dateString': now.strftime("%d-%m-%Y"), 'format': '%d-%m-%Y'}}
     # check if now is midnight
     if now.hour != 0 and now.minute != 0 and now.second != 0:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak berhasil diubah, ini bukan waktu tengah malam")
+        raise HttpException(
+            False, 400, "failed", "Pendaftaran tidak berhasil diubah, ini bukan waktu tengah malam")
 
     db.registrations.update_many(
         {
             "$and": [
                 {"status": {"$in": ["pending", "approved"]}},
-                {"$expr": {"$lt": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, today]}}
+                {"$expr": {"$lt": [{"$dateFromString": {
+                    "dateString": "$tanggal", "format": "%d-%m-%Y"}}, today]}}
             ]
         },
         {"$set": {"status": "expired"}}
     )
 
     socketio.emit('new_pendaftaran', {"data": "data"},
-                namespace='/pendaftaran')
+                  namespace='/pendaftaran')
 
-    response = api_response(True, 200, "success", "Pendaftaran berhasil diubah")
+    response = api_response(True, 200, "success",
+                            "Pendaftaran berhasil diubah")
     return jsonify(response.__dict__)
-    
+
 
 @app.route('/api/pendaftaran/export')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
@@ -990,11 +1002,11 @@ def export_pendaftaran(decoded_token):
 
     if not startdate_str:
         raise HttpException(False, 400, "failed",
-                            "startdate tidak boleh kosong") 
-    
+                            "startdate tidak boleh kosong")
+
     if not enddate_str:
         raise HttpException(False, 400, "failed",
-                            "enddate tidak boleh kosong") 
+                            "enddate tidak boleh kosong")
 
     if not is_valid_date(startdate_str):
         raise HttpException(False, 400, "failed",
@@ -1002,22 +1014,25 @@ def export_pendaftaran(decoded_token):
     if not is_valid_date(enddate_str):
         raise HttpException(False, 400, "failed",
                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-    
+
     if parse_date(enddate_str) < parse_date(startdate_str):
         raise HttpException(False, 400, "failed",
                             "startdate harus lebih kecil dibanding enddate")
-    
-    # Parse startdate and enddate to datetime objects
-    startdate_iso = {'$dateFromString': {'dateString': startdate_str, 'format': '%d-%m-%Y'}}
-    enddate_iso = {'$dateFromString': {'dateString': enddate_str, 'format': '%d-%m-%Y'}}
 
+    # Parse startdate and enddate to datetime objects
+    startdate_iso = {'$dateFromString': {
+        'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {
+        'dateString': enddate_str, 'format': '%d-%m-%Y'}}
 
     # Query registrations within the specified date range
     registrations = db.registrations.find({
         "$expr": {
             "$and": [
-                {"$gte": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, startdate_iso]},
-                {"$lte": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, enddate_iso]}
+                {"$gte": [{"$dateFromString": {
+                    "dateString": "$tanggal", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {
+                    "dateString": "$tanggal", "format": "%d-%m-%Y"}}, enddate_iso]}
             ]
         }
     }, {"_id": False})
@@ -1055,7 +1070,6 @@ def export_pendaftaran(decoded_token):
 
     # Return CSV file as a response with a dynamic file name
     return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
-
 
 
 # Return Atrian Hari Ini
@@ -1161,12 +1175,12 @@ def api_riwayat_checkup(decoded_token):
 
     # Decide whether to use DataTables pagination or your own pagination
     if not draw:
-        start = page -1
+        start = page - 1
         length = limit
         search_value = search
         sort_column = order
         order_direction = sort
-    
+
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
     collation = {'locale': 'en', 'strength': 2}
 
@@ -1181,10 +1195,9 @@ def api_riwayat_checkup(decoded_token):
             {"hasil_anamnesa": {"$regex": search_value, "$options": "i"}},
         ]
 
-    
     if sort_column:
         data = list(db.list_checkup_user.find(query).sort(
-        sort_column, sort_direction).collation(collation).skip(start).limit(length))
+            sort_column, sort_direction).collation(collation).skip(start).limit(length))
     else:
         data = list(db.list_checkup_user.find(query).collation(
             collation).skip(start).limit(length))
@@ -1204,7 +1217,8 @@ def api_riwayat_checkup(decoded_token):
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
     # Create datatables pagination object
-    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
 
     response = api_response(True, 200, "success", "Data berhasil diambil", data,
                             pagination.__dict__, datatables_pagination.__dict__)
@@ -1452,10 +1466,11 @@ def edit_checkup(decoded_token, nik, id):
         raise HttpException(False, 400, "failed", "NIK tidak valid")
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     body = request.is_json
     if body:
-        raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
+        raise HttpException(False, 415, "failed",
+                            "Data harus dalam bentuk form data")
     data = db.list_checkup_user.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
@@ -1492,11 +1507,11 @@ def export_checkup(decoded_token):
 
     if not startdate_str:
         raise HttpException(False, 400, "failed",
-                            "startdate tidak boleh kosong") 
-    
+                            "startdate tidak boleh kosong")
+
     if not enddate_str:
         raise HttpException(False, 400, "failed",
-                            "enddate tidak boleh kosong") 
+                            "enddate tidak boleh kosong")
 
     if startdate_str and not is_valid_date(startdate_str):
         raise HttpException(False, 400, "failed",
@@ -1504,22 +1519,25 @@ def export_checkup(decoded_token):
     if enddate_str and not is_valid_date(enddate_str):
         raise HttpException(False, 400, "failed",
                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-    
+
     if parse_date(enddate_str) < parse_date(startdate_str):
         raise HttpException(False, 400, "failed",
                             "startdate harus lebih kecil dibanding enddate")
 
     # Parse startdate and enddate to datetime objects
-    startdate_iso = {'$dateFromString': {'dateString': startdate_str, 'format': '%d-%m-%Y'}}
-    enddate_iso = {'$dateFromString': {'dateString': enddate_str, 'format': '%d-%m-%Y'}}
-
+    startdate_iso = {'$dateFromString': {
+        'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {
+        'dateString': enddate_str, 'format': '%d-%m-%Y'}}
 
     # Query registrations within the specified date range
     checkup = db.list_checkup_user.find({
         "$expr": {
             "$and": [
-                {"$gte": [{"$dateFromString": {"dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, startdate_iso]},
-                {"$lte": [{"$dateFromString": {"dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, enddate_iso]}
+                {"$gte": [{"$dateFromString": {
+                    "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {
+                    "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, enddate_iso]}
             ]
         }
     }, {"_id": False})
@@ -1878,7 +1896,7 @@ def export_rekam_medis(decoded_token, nik):
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
     if not is_valid_nik(nik):
         raise HttpException(False, 400, "failed", "NIK tidak valid")
-    
+
     user_id = ObjectId(decoded_token.get("uid"))
     username = db.users.find_one({"_id": user_id}).get('username')
 
@@ -1916,7 +1934,8 @@ def export_rekam_medis(decoded_token, nik):
     })
 
     # Concatenate DataFrames
-    final_df = pd.concat([custom_row, second_header], axis=0, ignore_index=True,)
+    final_df = pd.concat([custom_row, second_header],
+                         axis=0, ignore_index=True,)
 
     # Convert DataFrame to CSV format
     output = BytesIO()
@@ -1927,6 +1946,7 @@ def export_rekam_medis(decoded_token, nik):
 
     # Return CSV file as a response with a dynamic file name
     return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+
 
 @app.route('/api/users/pasien')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
@@ -1972,7 +1992,7 @@ def api_users_pasien(decoded_token):
 
     if name == 'name':
         list_nama = list(db.registrations.distinct(
-        "name", {"status": "done"}))
+            "name", {"status": "done"}))
 
         sorted_list_nama = sorted(list_nama, key=lambda x: x.lower())
 
@@ -1981,14 +2001,14 @@ def api_users_pasien(decoded_token):
         return jsonify(response.__dict__)
     if nik == 'nik':
         list_nik = list(db.registrations.distinct(
-        "nik", {"status": "done"}))
+            "nik", {"status": "done"}))
 
         sorted_list_nik = sorted(list_nik)
 
         response = api_response(True, 200, "success",
                                 "Data berhasil diambil", sorted_list_nik)
         return jsonify(response.__dict__)
-    
+
     # Adjust the query for sorting
     sort_column = ["_id", "name", "nik", "_id"][order_column_index]
 
@@ -2000,7 +2020,6 @@ def api_users_pasien(decoded_token):
         sort_column = order
         order_direction = sort
 
-    
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
     collation = {'locale': 'en', 'strength': 2}
 
@@ -2094,11 +2113,10 @@ def api_jadwal():
     # Adjust the query for sorting
     sort_column = ["nama", "poli", "hari",
                    "jam_buka", "jam_tutup"][order_column_index]
-    
 
     # Decide whether to use DataTables pagination or your own pagination
     if not draw:
-        start = page -1
+        start = page - 1
         length = limit
         search_value = search
         sort_column = order
@@ -2106,7 +2124,6 @@ def api_jadwal():
 
     sort_direction = ASCENDING if order_direction == 'asc' else DESCENDING
     collation = {'locale': 'en', 'strength': 2}
-
 
     if nama == 'nama':
         list_nama = list(db.jadwal.distinct('nama'))
@@ -2140,13 +2157,12 @@ def api_jadwal():
             {"jam_tutup": {"$regex": search_value, "$options": "i"}},
         ]
 
-
     if sort_column:
         data = list(db.jadwal.find(query).sort(sort_column, sort_direction).collation(
-        collation).skip(start).limit(length))
+            collation).skip(start).limit(length))
     else:
         data = list(db.jadwal.find(query).collation(
-        collation).skip(start).limit(length))
+            collation).skip(start).limit(length))
 
     for d in data:
         d['_id'] = str(d['_id'])
@@ -2163,7 +2179,8 @@ def api_jadwal():
     pagination = Pagination(start+1, length, total_pages, filtered_records)
 
     # Create datatables pagination object
-    datatables_pagination = DatatablesPagination(total_records, filtered_records, draw, start, length)
+    datatables_pagination = DatatablesPagination(
+        total_records, filtered_records, draw, start, length)
 
     response = api_response(True, 200, "success", "Data berhasil diambil", data,
                             pagination.__dict__, datatables_pagination.__dict__)
@@ -2180,7 +2197,8 @@ def api_jadwal_post(decoded_token):
     if body:
         raise HttpException(False, 415, "failed",
                             "Data harus dalam bentuk form data")
-    list_hari = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']
+    list_hari = ['senin', 'selasa', 'rabu',
+                 'kamis', 'jumat', 'sabtu', 'minggu']
     nama = request.form.get('nama')
     if not nama:
         raise HttpException(False, 400, "failed", "Nama tidak boleh kosong")
@@ -2240,7 +2258,7 @@ def api_detail_jadwal(decoded_token, id):
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
@@ -2258,11 +2276,11 @@ def api_jadwal_put(decoded_token, id):
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data = db.jadwal.find_one({"_id": ObjectId(id)})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
-    
+
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed",
@@ -2320,7 +2338,7 @@ def api_jadwal_delete(decoded_token, id):
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
     if not ObjectId.is_valid(id):
         raise HttpException(False, 400, "failed", "ID tidak valid")
-    
+
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
