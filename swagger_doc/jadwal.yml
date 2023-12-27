@@ -1,0 +1,66 @@
+Jadwal Endpoint
+API yang digunakan untuk mendapatkan semua data jadwal praktik dokter
+API ini bisa digunakan untuk datatables server side
+---
+tags:
+  - Jadwal Praktik
+summary: Jadwal Endpoint
+description: Jadwal Dokter
+operationId: get all jadwal
+parameters:
+  - name: page
+    in: query
+    type: integer
+    default: 1
+    description: Nomor halaman
+  - name: limit
+    in: query
+    type: integer
+    default: 10
+    description: Jumlah data per halaman
+  - name: search
+    in: query
+    type: string
+    description: Pencarian data
+  - name: order
+    in: query
+    type: string
+    description: Urutan data berdasarkan kolom
+  - name: sort
+    in: query
+    type: string
+    description: Jenis urutan data, asc atau desc
+definitions:
+  Jadwal:
+    type: object
+    properties:
+      _id:
+        type: string
+        format: 24-hex-string
+        example: "5f9b0b3b1c9d440000d1f1b1"
+        description: ID Checkup
+      nama:
+        type: string
+        example: "User 1"
+        description: "User's full name"
+      poli:
+        type: string
+        example: "Umum"
+        description: "Poli yang dituju"
+      hari:
+        type: string
+        enum: ["senin", "selasa", "rabu", "kamis", "jumat", "sabtu", "minggu"]
+        description: "Hari praktik"
+      jam_buka:
+        type: string
+        example: "08:00"
+        description: "Jam buka praktik"
+      jam_tutup:
+        type: string
+        example: "16:00"
+        description: "Jam tutup praktik"
+responses:
+  200:
+    description: Data jadwal retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.

@@ -1,0 +1,63 @@
+Profile Endpoint
+API yang digunakan untuk mendapatkan data profile user
+---
+tags:
+  - Profile
+summary: Profile Endpoint
+description: Profile User
+operationId: edit profile
+security:
+  - BearerAuth: []
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+parameters:
+  - name: profile_pic
+    in: formData
+    type: file
+    description: Foto profile
+  - name: name
+    in: formData
+    type: string
+    description: Nama lengkap
+  - name: nik
+    in: formData
+    type: string
+    description: Nomor Induk Kependudukan
+  - name: tgl_lahir
+    in: formData
+    type: string
+    description: Tanggal lahir
+  - name: gender
+    in: formData
+    type: string
+    description: Jenis kelamin
+  - name: agama
+    in: formData
+    type: string
+    description: Agama
+  - name: status
+    in: formData
+    type: string
+    description: Status pernikahan
+  - name: alamat
+    in: formData
+    type: string
+    description: Alamat
+  - name: no_tlp
+    in: formData
+    type: string
+    description: Nomor telepon
+responses:
+  200:
+    description: Data profile udpated successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

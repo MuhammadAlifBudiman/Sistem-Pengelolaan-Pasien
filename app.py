@@ -20,6 +20,7 @@ from flask import make_response
 from flask_socketio import SocketIO, Namespace
 import pandas as pd
 from io import BytesIO
+from flasgger import Swagger, swag_from
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -29,6 +30,14 @@ app = Flask(__name__)
 app.errorhandler(HttpException)(handle_http_exception)
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app)
+app.config['SWAGGER'] = {
+    'title': 'Klinik Google',
+    'description': 'API documentation for klinik google, API ini menggunakan JWT untuk autentikasi dan otorisasi',
+    'version': '1.0.0',
+}
+Swagger(app)
+
+# Swagger Configuration
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -234,6 +243,7 @@ def kelola_praktik(decoded_token):
 
 # Handle Register
 @app.route("/api/register", methods=["POST"])
+@swag_from('swagger_doc/register.yml')
 def api_register():
     body = request.is_json
     if not body:
@@ -268,7 +278,7 @@ def api_register():
     # Cek apakah nik memiliki 16 digit angka
     if not is_valid_nik(nik):
         raise HttpException(False, 400, "failed",
-                            "NIK harusterdiri dari 16 digit angka")
+                            "NIK harus terdiri dari 16 digit angka")
 
     existing_nik = db.users.find_one({'nik': nik})
     if existing_nik:
@@ -341,11 +351,12 @@ def api_register():
     result = db.users.insert_one(user_data)
     response = api_response(True, 201, "success", "Pendaftaran akun berhasil", {
                             'user_id': str(result.inserted_id), 'username': username})
-    return jsonify(response.__dict__)
+    return jsonify(response.__dict__), 201
 
 
 # Handle Login
 @app.route("/api/login", methods=["POST"])
+@swag_from('swagger_doc/login.yml')
 def sign_in():
     body = request.is_json
     if body:
@@ -393,6 +404,7 @@ def sign_in():
 # Handle Logout
 @app.route("/api/logout", methods=["POST"])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@swag_from('swagger_doc/logout.yml')
 def logout(decoded_token):
     user_id = ObjectId(decoded_token["uid"])
     session_id = ObjectId(decoded_token["sid"])
@@ -408,6 +420,7 @@ def logout(decoded_token):
 @app.route('/api/pendaftaran')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran.yml')
 def api_pendaftaran(decoded_token):
     name = request.args.get('name')
     poli = request.args.get('poli')
@@ -579,6 +592,7 @@ def api_pendaftaran(decoded_token):
 @app.route('/api/pendaftaran', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/pendaftaran_post.yml')
 def pendaftaran_post(decoded_token):
     body = request.is_json
     if body:
@@ -651,13 +665,14 @@ def pendaftaran_post(decoded_token):
                   namespace='/pendaftaran')
     response = api_response(
         True, 201, "success", "Formulir telah diproses. Silakan tunggu.", data_pendaftaran)
-    return jsonify(response.__dict__)
+    return jsonify(response.__dict__), 201
 
 
 # Return Riwayat Pendaftaran Pasien
 @app.route('/api/pendaftaran/me')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/pendaftaran_me.yml')
 def riwayat_pendaftaran_api(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -747,9 +762,18 @@ def riwayat_pendaftaran_api(decoded_token):
 @app.route('/api/pendaftaran/<id>/approve', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran_approve.yml')
 def approve_pendaftaran(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
+    if not data_pendaftaran:
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
     if data_pendaftaran.get('status') == 'approved':
         raise HttpException(False, 400, "failed",
                             "Pendaftaran sudah disetujui")
@@ -790,9 +814,19 @@ def approve_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/reject', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran_reject.yml')
 def reject_pendaftaran(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
+    
+    if not data_pendaftaran:
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'approved':
         raise HttpException(False, 400, "failed",
@@ -824,9 +858,19 @@ def reject_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/done', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran_done.yml')
 def done_pendaftaran(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
+
+    if not data_pendaftaran:
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'pending':
         raise HttpException(False, 400, "failed", "Pendaftaran masih diproses")
@@ -866,9 +910,19 @@ def done_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/cancel', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/pendaftaran_cancel.yml')
 def cancel_pendaftaran(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data_pendaftaran = db.registrations.find_one(
         {"_id": ObjectId(id)})
+
+    if not data_pendaftaran:
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak ditemukan")
 
     if data_pendaftaran.get('status') == 'done':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah selesai")
@@ -878,6 +932,9 @@ def cancel_pendaftaran(decoded_token, id):
     
     if data_pendaftaran.get('status') == 'expired':
         raise HttpException(False, 400, "failed", "Pendaftaran sudah expired")
+    
+    if data_pendaftaran.get('status') == 'canceled':
+        raise HttpException(False, 400, "failed", "Pendaftaran sudah dibatalkan")
 
     # Logika untuk membatalkan pendaftaran (mengubah status menjadi canceled)
     db.registrations.update_one(
@@ -895,14 +952,21 @@ def cancel_pendaftaran(decoded_token, id):
 
 
 @app.route('/api/pendaftaran/expire', methods=['POST'])
+@swag_from('swagger_doc/pendaftaran_expire.yml')
 def expire_pendaftaran():
     now = datetime.now()
+    today = {'$dateFromString': {'dateString': now.strftime("%d-%m-%Y"), 'format': '%d-%m-%Y'}}
     # check if now is midnight
     if now.hour != 0 and now.minute != 0 and now.second != 0:
-        raise HttpException(False, 400, "failed", "Pendaftaran tidak berhasil diubah")
+        raise HttpException(False, 400, "failed", "Pendaftaran tidak berhasil diubah, ini bukan waktu tengah malam")
 
     db.registrations.update_many(
-        {"status": {"$in": ["pending", "approved"]}, "tanggal": {"$lt": now.strftime("%d-%m-%Y")}},
+        {
+            "$and": [
+                {"status": {"$in": ["pending", "approved"]}},
+                {"$expr": {"$lt": [{"$dateFromString": {"dateString": "$tanggal", "format": "%d-%m-%Y"}}, today]}}
+            ]
+        },
         {"$set": {"status": "expired"}}
     )
 
@@ -916,6 +980,7 @@ def expire_pendaftaran():
 @app.route('/api/pendaftaran/export')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran_export.yml')
 def export_pendaftaran(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     username = db.users.find_one({"_id": user_id}).get('username')
@@ -995,6 +1060,7 @@ def export_pendaftaran(decoded_token):
 
 # Return Atrian Hari Ini
 @app.route('/api/antrian/today')
+@swag_from('swagger_doc/antrian_today.yml')
 def get_antrian():
     antrian_data = get_antrian_today(db)
     response = api_response(True, 200, "success",
@@ -1006,6 +1072,7 @@ def get_antrian():
 @app.route('/api/antrian/me')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/antrian_me.yml')
 def get_antrian_data(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1032,6 +1099,7 @@ def get_antrian_data(decoded_token):
 @app.route('/api/antrian/check')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/antrian_check.yml')
 def check_antrian(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1054,6 +1122,7 @@ def check_antrian(decoded_token):
 @app.route("/api/checkup/me")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
+@swag_from('swagger_doc/checkup_me.yml')
 def api_riwayat_checkup(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1145,6 +1214,7 @@ def api_riwayat_checkup(decoded_token):
 @app.route("/api/checkup")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup.yml')
 def api_riwayat_checkup_pegawai(decoded_token):
     name = request.args.get('name')
     dokter = request.args.get('dokter')
@@ -1265,7 +1335,12 @@ def api_riwayat_checkup_pegawai(decoded_token):
 @app.route("/api/checkup/<nik>")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup_nik.yml')
 def api_pasien_checkup(decoded_token, nik):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
     # Get parameters from DataTables request
     draw = request.args.get('draw')
     if draw:
@@ -1346,7 +1421,16 @@ def api_pasien_checkup(decoded_token, nik):
 @app.route('/api/checkup/<nik>/<id>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup_detail.yml')
 def api_detail_checkup(decoded_token, nik, id):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
     data = db.list_checkup_user.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
@@ -1358,7 +1442,17 @@ def api_detail_checkup(decoded_token, nik, id):
 @app.route('/api/checkup/<nik>/<id>', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup_edit.yml')
 def edit_checkup(decoded_token, nik, id):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed", "Data harus dalam bentuk form data")
@@ -1388,6 +1482,7 @@ def edit_checkup(decoded_token, nik, id):
 @app.route('/api/checkup/export')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup_export.yml')
 def export_checkup(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     username = db.users.find_one({"_id": user_id}).get('username')
@@ -1460,6 +1555,7 @@ def export_checkup(decoded_token):
 # Return Profile User
 @app.route("/api/profile")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@swag_from('swagger_doc/profile.yml')
 def api_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1472,6 +1568,7 @@ def api_profile(decoded_token):
 # Handle Edit Profile
 @app.route('/api/profile/edit', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@swag_from('swagger_doc/profile_edit.yml')
 def edit_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1582,6 +1679,7 @@ def edit_profile(decoded_token):
 @app.route('/api/rekam_medis')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/rekam_medis.yml')
 def api_rekam_medis(decoded_token):
     nik = request.args.get('nik')
     name = request.args.get('name')
@@ -1677,6 +1775,7 @@ def api_rekam_medis(decoded_token):
 @app.route('/api/rekam_medis', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/rekam_medis_post.yml')
 def api_rekam_medis_post(decoded_token):
     body = request.is_json
     if body:
@@ -1703,7 +1802,7 @@ def api_rekam_medis_post(decoded_token):
         raise HttpException(
             False, 400, "failed", f"Dokter {dokter} tidak tersedia, pilih dari {dokter_list}")
     hasil_anamnesa = request.form.get('hasil_anamnesa')
-    print(hasil_anamnesa)
+
     if not hasil_anamnesa:
         raise HttpException(False, 400, "failed",
                             "Hasil anamnesa tidak boleh kosong")
@@ -1749,13 +1848,19 @@ def api_rekam_medis_post(decoded_token):
 
     response = api_response(True, 200, "success",
                             "Rekam medis berhasil dibuat")
-    return jsonify(response.__dict__)
+    return jsonify(response.__dict__), 201
 
 
 @app.route('/api/rekam_medis/<nik>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/rekam_medis_nik.yml')
 def api_detail_rekam_medis(decoded_token, nik):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
+
     data = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
@@ -1767,7 +1872,13 @@ def api_detail_rekam_medis(decoded_token, nik):
 @app.route('/api/rekam_medis/export/<nik>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/rekam_medis_export.yml')
 def export_rekam_medis(decoded_token, nik):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
+    
     user_id = ObjectId(decoded_token.get("uid"))
     username = db.users.find_one({"_id": user_id}).get('username')
 
@@ -1805,7 +1916,7 @@ def export_rekam_medis(decoded_token, nik):
     })
 
     # Concatenate DataFrames
-    final_df = pd.concat([custom_row, second_header], axis=1, ignore_index=True,)
+    final_df = pd.concat([custom_row, second_header], axis=0, ignore_index=True,)
 
     # Convert DataFrame to CSV format
     output = BytesIO()
@@ -1820,6 +1931,7 @@ def export_rekam_medis(decoded_token, nik):
 @app.route('/api/users/pasien')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/users_pasien.yml')
 def api_users_pasien(decoded_token):
     name = request.args.get('name')
     nik = request.args.get('nik')
@@ -1952,6 +2064,7 @@ def api_users_pasien(decoded_token):
 
 
 @app.route('/api/jadwal')
+@swag_from('swagger_doc/jadwal.yml')
 def api_jadwal():
     nama = request.args.get('nama')
     poli = request.args.get('poli')
@@ -2061,12 +2174,13 @@ def api_jadwal():
 @app.route('/api/jadwal', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/jadwal_post.yml')
 def api_jadwal_post(decoded_token):
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed",
                             "Data harus dalam bentuk form data")
-
+    list_hari = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']
     nama = request.form.get('nama')
     if not nama:
         raise HttpException(False, 400, "failed", "Nama tidak boleh kosong")
@@ -2087,8 +2201,10 @@ def api_jadwal_post(decoded_token):
                             "Jam tutup tidak boleh kosong")
     if not isinstance(hari, list):
         raise HttpException(False, 400, "failed", "Hari harus merupakan list")
-    if any(x for x in hari if x.lower() not in ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']):
+    if any(x for x in hari if x.lower() not in list_hari):
         raise HttpException(False, 400, "failed", "Hari tidak valid")
+    hari = [x.lower() for x in hari]
+    hari = sorted(hari, key=list_hari.index)
     if not is_valid_time(jam_buka):
         raise HttpException(False, 400, "failed",
                             "Format jam buka tidak valid")
@@ -2112,13 +2228,19 @@ def api_jadwal_post(decoded_token):
 
     response = api_response(True, 200, "success",
                             "Jadwal berhasil ditambahkan", jadwal_data)
-    return jsonify(response.__dict__)
+    return jsonify(response.__dict__), 201
 
 
 @app.route('/api/jadwal/<id>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/jadwal_detail.yml')
 def api_detail_jadwal(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")
@@ -2130,7 +2252,17 @@ def api_detail_jadwal(decoded_token, id):
 @app.route('/api/jadwal/<id>', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/jadwal_edit.yml')
 def api_jadwal_put(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
+    data = db.jadwal.find_one({"_id": ObjectId(id)})
+    if not data:
+        raise HttpException(False, 400, "failed", "Data tidak ditemukan")
+    
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed",
@@ -2182,7 +2314,13 @@ def api_jadwal_put(decoded_token, id):
 @app.route('/api/jadwal/<id>', methods=['DELETE'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/jadwal_delete.yml')
 def api_jadwal_delete(decoded_token, id):
+    if id == 'undefined':
+        raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
+    if not ObjectId.is_valid(id):
+        raise HttpException(False, 400, "failed", "ID tidak valid")
+    
     data = db.jadwal.find_one({"_id": ObjectId(id)}, {"_id": False})
     if not data:
         raise HttpException(False, 400, "failed", "Data tidak ditemukan")

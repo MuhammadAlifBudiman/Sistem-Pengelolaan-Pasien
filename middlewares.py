@@ -62,7 +62,7 @@ def authorized_roles_api(roles):
             if has_required_role:
                 return func(decoded_token, *args, **kwargs)
             else:
-                raise HttpException(False, 403, "Failed", "Unauthorized Access")
+                raise HttpException(False, 403, "Failed", f"Unauthorized Access, required roles: {roles}")
 
         return wrapper
     return decorator

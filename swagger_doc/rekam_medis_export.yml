@@ -1,0 +1,31 @@
+Rekam Medis Endpoint
+API yang digunakan untuk export data rekam medis pasien
+---
+tags:
+  - Rekam Medis Pasien
+summary: Rekam Medis Endpoint
+description: Rekam Medis Pasien
+operationId: export rekam medis
+security:
+  - BearerAuth: []
+parameters:
+  - name: nik
+    in: path
+    type: string
+    required: true
+    format: 16 digit number
+    description: Nomor Induk Kependudukan
+responses:
+  200:
+    description: Data rekam medis retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

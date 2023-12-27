@@ -1,0 +1,22 @@
+User Logout Endpoint
+API yang digunakan untuk melakukan logout user
+---
+tags:
+  - Authentication
+summary: User Logout Endpoint
+description: Logout User
+operationId: logout
+security:
+  - BearerAuth: []
+responses:
+  200:
+    description: User Logout successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

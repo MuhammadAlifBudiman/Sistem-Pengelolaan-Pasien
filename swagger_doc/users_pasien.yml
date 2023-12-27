@@ -1,0 +1,48 @@
+User Pasien Endpoint
+API yang digunakan untuk mendapatkan semua data pasien
+API ini bisa digunakan untuk datatables server side
+---
+tags:
+  - Users
+summary: User Pasien Endpoint
+description: User Pasien Pasien
+operationId: get all pasien
+security:
+  - BearerAuth: []
+parameters:
+  - name: page
+    in: query
+    type: integer
+    default: 1
+    description: Nomor halaman
+  - name: limit
+    in: query
+    type: integer
+    default: 10
+    description: Jumlah data per halaman
+  - name: search
+    in: query
+    type: string
+    description: Pencarian data
+  - name: order
+    in: query
+    type: string
+    description: Urutan data berdasarkan kolom
+  - name: sort
+    in: query
+    type: string
+    description: Jenis urutan data, asc atau desc
+responses:
+  200:
+    description: Data pasien retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

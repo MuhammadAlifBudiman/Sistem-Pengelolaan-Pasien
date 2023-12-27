@@ -1,0 +1,48 @@
+Rekam Medis Endpoint
+API yang digunakan untuk membuat rekam medis pasien
+API ini akan membuat rekam medis sekaligus membuat data checkup pasien
+---
+tags:
+  - Rekam Medis Pasien
+summary: Rekam Medis Endpoint
+description: Rekam Medis Pasien
+operationId: create rekam medis
+security:
+  - BearerAuth: []
+parameters:
+  - name: 'no'
+    in: formData
+    type: string
+    format: xx-xx-xx
+    required: true
+    description: Nomor kartu pasien
+  - name: dokter
+    in: formData
+    type: string
+    required: true
+    description: Nama dokter
+  - name: hasil_anamnesa
+    in: formData
+    type: string
+    required: true
+    description: Hasil anamnesa
+  - name: nik
+    in: formData
+    type: string
+    required: true
+    format: 16 digit number
+    description: Nomor Induk Kependudukan
+responses:
+  201:
+    description: Data rekam medis created successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

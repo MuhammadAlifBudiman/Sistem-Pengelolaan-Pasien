@@ -1,0 +1,24 @@
+Antrian Endpoint
+API yang digunakan untuk mengecek apakah pasien sudah memiliki pendaftaran dengan status pending atau approved
+---
+tags:
+  - Antrian
+summary: Antrian Endpoint
+description: Antrian Pasien
+operationId: check antrian
+security:
+  - BearerAuth: []
+responses:
+  200:
+    description: Antrian retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

@@ -1,0 +1,117 @@
+Pendaftaran Endpoint
+API yang digunakan untuk melakukan pendaftaran pasien
+---
+tags:
+  - Pendaftaran Pasien
+summary: Pendaftaran Endpoint
+description: Pendaftaran Pasien
+operationId: daftar
+security:
+  - BearerAuth: []
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+parameters:
+  - name: poli
+    in: formData
+    type: string
+    default: Umum
+    required: true
+    description: Poli yang dituju
+  - name: tanggal
+    in: formData
+    type: string
+    default: 01-01-2024
+    required: true
+    description: Tanggal pendaftaran (dd-mm-yyyy)
+  - name: keluhan
+    in: formData
+    type: string
+    format: textarea
+    default: Sakit kepala
+    required: true
+    description: Keluhan pasien
+definitions:
+  Registrations:
+    type: object
+    properties:
+      _id:
+        type: string
+        format: 24-hex-string
+        example: "5f9b0b3b1c9d440000d1f1b1"
+        description: ID Checkup
+      username:
+        type: string
+        example: "user1"
+        descripton: "Username must be unique"
+      name:
+        type: string
+        example: "User 1"
+        description: "User's full name"
+      nik:
+        type: string
+        example: "1234123412341234"
+        format: 16 digit number
+        description: "User's NIK"
+      tgl_lahir:
+        type: string
+        example: "12-12-2002"
+        format: dd-mm-yyyy
+        description: "User's date of birth"
+      gender:
+        type: string
+        enum: [laki-laki, perempuan]
+        description: The gender of the user.
+      agama:
+        type: string
+        example: "Islam"
+        description: The religion of the user.
+      status_pernikahan:
+        type: string
+        example: "Belum Menikah"
+        description: The marital status of the user.
+      alamat:
+        type: string
+        example: "Jl. Jalan"
+        description: The address of the user.
+      no_telp:
+        type: string
+        example: "081234567890"
+        format: 10 - 13 digits
+        description: The phone number of the user.
+      poli:
+        type: string
+        example: Umum
+        description: Poli yang dituju
+      tanggal:
+        type: string
+        example: 01-01-2024
+        format: dd-mm-yyyy
+        description: Tanggal periksa
+      keluhan:
+        type: string
+        example: Sakit kepala
+        description: Keluhan pasien
+      status:
+        type: string
+        enum: [pending, approved, rejected, done, canceled, expired]
+        description: Status pendaftaran
+      antrian:
+        type: string
+        example: '025'
+        description: Nomor antrian
+responses:
+  201:
+    description: Pendaftaran pasien successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

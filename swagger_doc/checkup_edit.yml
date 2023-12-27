@@ -1,0 +1,84 @@
+Checkup Endpoint
+API yang digunakan untuk mengedit detail data checkup pasien
+---
+tags:
+  - Checkup Pasien
+summary: Checkup Endpoint
+description: Checkup Pasien
+operationId: edit checkup detail
+security:
+  - BearerAuth: []
+parameters:
+  - name: nik
+    in: path
+    type: string
+    format: 16 digit number
+    required: true
+    description: Nomor Induk Kependudukan
+  - name: id
+    in: path
+    type: string
+    format: 24-hex-string
+    required: true
+    description: ID Checkup
+  - name: dokter
+    in: formData
+    type: string
+    description: Nama Dokter
+  - name: hasil_ananmnesa
+    in: formData
+    type: string
+    description: Hasil Anamnesa Pasien
+definitions:
+  Checkup:
+    type: object
+    properties:
+      _id:
+        type: string
+        format: 24-hex-string
+        example: "5f9b0b3b1c9d440000d1f1b1"
+        description: ID Checkup
+      nik:
+        type: string
+        example: "1234123412341234"
+        format: 16 digit number
+        description: Nomor Induk Kependudukan
+      dokter:
+        type: string
+        example: "Dr. Dokter"
+        description: Nama Dokter
+      hasil_anamnesa:
+        type: string
+        example: "Sakit kepala"
+        description: Hasil Anamnesa Pasien
+      keluhan:
+        type: string
+        example: "Sakit kepala"
+        description: Keluhan Pasien
+      nama:
+        type: string
+        example: "User 1"
+        description: Nama Pasien
+      poli:
+        type: string
+        example: "Umum"
+        description: Poli yang dituju
+      tgl_periksa:
+        type: string
+        example: "01-01-2024"
+        format: dd-mm-yyyy
+        description: Tanggal periksa
+responses:
+  200:
+    description: Data checkup updated successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

@@ -1,0 +1,37 @@
+Pendaftaran Endpoint
+API yang digunakan untuk export pendaftaran pasien ke csv
+---
+tags:
+  - Pendaftaran Pasien
+summary: Pendaftaran Endpoint
+description: Export Pendaftaran Pasien
+operationId: export pendaftaran
+security:
+  - BearerAuth: []
+parameters:
+  - name: startdate
+    in: query
+    type: string
+    required: true
+    format: dd-mm-yyyy
+    description: start date
+  - name: enddate
+    in: query
+    type: string
+    required: true
+    format: dd-mm-yyyy
+    description: end date
+responses:
+  200:
+    description: Export pendaftaran pasien successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

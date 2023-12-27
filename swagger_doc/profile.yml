@@ -1,0 +1,22 @@
+Profile Endpoint
+API yang digunakan untuk mendapatkan data profile user
+---
+tags:
+  - Profile
+summary: Profile Endpoint
+description: Profile User
+operationId: get my profile
+security:
+  - BearerAuth: []
+responses:
+  200:
+    description: Data profile retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

@@ -1,0 +1,51 @@
+Jadwal Endpoint
+API yang digunakan untuk menambahkan data jadwal praktik dokter
+---
+tags:
+  - Jadwal Praktik
+summary: Jadwal Endpoint
+description: Jadwal Dokter
+operationId: create jadwal
+parameters:
+  - name: nama
+    in: formData
+    type: string
+    default: "Dr. John Doe"
+    required: true
+    description: Nama dokter
+  - name: poli
+    in: formData
+    type: string
+    default: Umum
+    required: true
+    description: Poli
+  - name: hari
+    in: formData
+    type: array
+    items:
+      type: string
+      enum: ["senin", "selasa", "rabu", "kamis", "jumat", "sabtu", "minggu"]
+    required: true
+    collectionFormat: multi
+    description: Hari praktik
+  - name: jam_buka
+    in: formData
+    type: string
+    default: '08:00'
+    required: true
+    description: Jam buka praktik
+  - name: jam_tutup
+    in: formData
+    type: string
+    default: '16:00'
+    required: true
+    description: Jam tutup praktik
+responses:
+  201:
+    description: Data jadwal created successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.

@@ -1,0 +1,31 @@
+Pendaftaran Endpoint
+API yang digunakan untuk menyelesaikan pendaftaran pasien
+---
+tags:
+  - Pendaftaran Pasien
+summary: Pendaftaran Endpoint
+description: Done Pendaftaran Pasien
+operationId: done pendaftaran
+security:
+  - BearerAuth: []
+parameters:
+  - name: id
+    in: path
+    type: string
+    required: true
+    format: 24-hex-string
+    description: ID Pendaftaran
+responses:
+  200:
+    description: Done pendaftaran pasien successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

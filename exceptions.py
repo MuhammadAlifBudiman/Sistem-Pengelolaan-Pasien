@@ -12,5 +12,5 @@ class HttpException(Exception):
         self.errors = errors if errors is not None else {}
 
 def handle_http_exception(error):
-    response = jsonify({"success": error.success, "status": error.status, "result": error.result, "message": error.message, "errors": error.errors})
+    response = jsonify({"success": error.success, "status": error.status, "result": error.result, "message": error.message, "errors": error.errors}), error.status
     return response

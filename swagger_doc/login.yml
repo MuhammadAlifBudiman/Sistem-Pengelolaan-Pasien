@@ -1,0 +1,26 @@
+User Login Endpoint
+API yang digunakan untuk melakukan login user
+---
+tags:
+  - Authentication
+summary: User Login Endpoint
+description: Login User
+operationId: login
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+parameters:
+  - name: username
+    in: formData
+    required: true
+    type: string
+  - name: password
+    in: formData
+    required: true
+    type: string
+responses:
+  200:
+    description: User login successful.
+  400:
+    description: Bad request. Check the error message for details.

@@ -1,0 +1,18 @@
+Antrian Endpoint
+API yang digunakan untuk mendapatkan data antrian hari ini
+Data yang diambil adalah poli, jumlah_pendaftar, dalam_antrian
+jumlah_pendaftar adalah jumlah pasien yang mendaftar pada hari ini dan sudah di approve
+dalam_antrian adalah jumlah pasien yang sudah datang ke klinik dan status pendaftarannya done
+---
+tags:
+  - Antrian
+summary: Antrian Endpoint
+description: Antrian Pasien
+operationId: antrian hari ini
+responses:
+  200:
+    description: Antrian retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+
+

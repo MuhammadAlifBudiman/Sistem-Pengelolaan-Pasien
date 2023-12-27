@@ -1,0 +1,88 @@
+Rekam Medis Endpoint
+API yang digunakan untuk mendapatkan semua data rekam medis pasien
+API ini bisa digunakan untuk datatables server side
+---
+tags:
+  - Rekam Medis Pasien
+summary: Rekam Medis Endpoint
+description: Rekam Medis Pasien
+operationId: get all rekam medis
+security:
+  - BearerAuth: []
+parameters:
+  - name: page
+    in: query
+    type: integer
+    default: 1
+    description: Nomor halaman
+  - name: limit
+    in: query
+    type: integer
+    default: 10
+    description: Jumlah data per halaman
+  - name: search
+    in: query
+    type: string
+    description: Pencarian data
+  - name: order
+    in: query
+    type: string
+    description: Urutan data berdasarkan kolom
+  - name: sort
+    in: query
+    type: string
+    description: Jenis urutan data, asc atau desc
+definitions:
+  RekamMedis:
+    type: object
+    properties:
+      _id:
+        type: string
+        format: 24-hex-string
+        example: "5f9b0b3b1c9d440000d1f1b1"
+        description: ID Checkup
+      no_kartu:
+        type: string
+        example: "00-00-00"
+        format: xx-xx-xx
+        description: Nomor kartu pasien
+      username:
+        type: string
+        example: "user1"
+        descripton: "Username must be unique"
+      nama:
+        type: string
+        example: "User 1"
+        description: "User's full name"
+      nik:
+        type: string
+        example: "1234123412341234"
+        format: 16 digit number
+        description: "User's NIK"
+      umur:
+        type: string
+        example: "18"
+        description: "User's age"
+      alamat:
+        type: string
+        example: "Jl. Jalan"
+        description: The address of the user.
+      no_telp:
+        type: string
+        example: "081234567890"
+        format: 10 - 13 digits
+        description: The phone number of the user. format (10 - 13 digits)
+responses:
+  200:
+    description: Data rekam medis retrieved successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
+securityDefinitions:
+  BearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT

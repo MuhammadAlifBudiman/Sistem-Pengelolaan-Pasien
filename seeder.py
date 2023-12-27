@@ -62,7 +62,7 @@ def generate_fake_user(role):
         existing_user = db.users.find_one(
             {'$or': [{'username': username}, {'nik': nik}]})
 
-        if existing_user is None:
+        if existing_user is None and len(nik) == 16:
             break
     password = "$2b$10$xm2V57w6d8/Q4RzMYp9GDeiahaWW5HLmD1TxaS2TLurYXscUAATHS"  # Password.12
     salt = "6da84944bc8be809e39d6e63257cb840"

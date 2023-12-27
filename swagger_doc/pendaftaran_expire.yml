@@ -1,0 +1,17 @@
+Pendaftaran Endpoint
+API yang digunakan untuk membuat pendaftaran pasien kedaluwarsa
+---
+tags:
+  - Pendaftaran Pasien
+summary: Pendaftaran Endpoint
+description: Expire Pendaftaran Pasien
+operationId: expire pendaftaran
+responses:
+  200:
+    description: Expire pendaftaran pasien successful.
+  400:
+    description: Bad request. Check the error message for details.
+  401:
+    description: Unauthorized. Check the error message for details.
+  403:
+    description: Forbidden. Check the error message for details.
