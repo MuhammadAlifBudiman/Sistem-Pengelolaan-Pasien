@@ -124,10 +124,6 @@ async function registerUser(data) {
     body: JSON.stringify(data),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to register user");
-  }
-
   return response.json();
 }
 

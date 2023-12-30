@@ -1,7 +1,6 @@
 import re
-from flask import render_template, jsonify, request, redirect, send_file, url_for
 import secrets
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, make_response
 from pymongo import MongoClient, ASCENDING, DESCENDING
 import os
 from os.path import join, dirname
@@ -16,7 +15,6 @@ from exceptions import HttpException, handle_http_exception
 from apiresponse import api_response
 from utils import *
 from middlewares import *
-from flask import make_response
 from flask_socketio import SocketIO, Namespace
 import pandas as pd
 from io import BytesIO
@@ -30,6 +28,7 @@ app = Flask(__name__)
 app.errorhandler(HttpException)(handle_http_exception)
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app)
+# Swagger Configuration
 app.config['SWAGGER'] = {
     'title': 'Klinik Google',
     'description': 'API documentation for klinik google, API ini menggunakan JWT untuk autentikasi dan otorisasi',
@@ -37,7 +36,7 @@ app.config['SWAGGER'] = {
 }
 Swagger(app)
 
-# Swagger Configuration
+
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -58,6 +57,21 @@ if not SECRET_KEY:
 
 
 class PendaftaranNamespace(Namespace):
+    """
+    A namespace for handling pendaftaran events.
+
+    This class extends the `Namespace` class and provides methods for handling
+    client connection, disconnection, and new pendaftaran events.
+
+    Attributes:
+        None
+
+    Methods:
+        on_connect: Called when a client connects to the namespace.
+        on_disconnect: Called when a client disconnects from the namespace.
+        on_new_pendaftaran: Called when a new pendaftaran event is received.
+
+    """
     def on_connect(self):
         print('Client connected')
 
@@ -69,6 +83,22 @@ class PendaftaranNamespace(Namespace):
 
 
 class AntrianNamespace(Namespace):
+    """
+    A namespace class for handling antrian events.
+
+    This class extends the `Namespace` class from the `socketio` library.
+    It provides methods for handling client connections, disconnections,
+    and new antrian events.
+
+    Attributes:
+        None
+
+    Methods:
+        on_connect: Handles the client connection event.
+        on_disconnect: Handles the client disconnection event.
+        on_new_antrian: Handles the new antrian event.
+
+    """
     def on_connect(self):
         print('Client connected')
 
@@ -80,6 +110,22 @@ class AntrianNamespace(Namespace):
 
 
 class JadwalNamespace(Namespace):
+    """
+    A namespace class for handling Jadwal events.
+
+    This class extends the `Namespace` class and provides methods for handling
+    client connections, disconnections, and new Jadwal events.
+
+    Attributes:
+        None
+
+    Methods:
+        on_connect: Called when a client connects to the namespace.
+        on_disconnect: Called when a client disconnects from the namespace.
+        on_new_jadwal: Called when a new Jadwal event is received.
+
+    """
+
     def on_connect(self):
         print('Client connected')
 
@@ -102,6 +148,16 @@ socketio.on_namespace(JadwalNamespace('/jadwal'))
 @app.route('/')
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db, allow_guest=True)
 def home(decoded_token):
+    """
+    Renders the home page.
+
+    Args:
+        decoded_token (dict): The decoded token containing user information.
+
+    Returns:
+        str: The rendered HTML page.
+
+    """
     msg = request.args.get('msg')
     scripts = ['js/index.js']
     css = ['css/index.css']
@@ -117,6 +173,15 @@ def home(decoded_token):
 # Return Login Page
 @app.route('/login')
 def login():
+    """
+    Renders the login page with optional message, JavaScript scripts, and CSS styles.
+
+    Args:
+        msg (str): Optional message to display on the login page.
+    
+    Returns:
+        str: Rendered HTML template of the login page.
+    """
     msg = request.args.get('msg')
     scripts = ['js/login.js']
     css = ['css/login.css']
@@ -126,6 +191,12 @@ def login():
 # Return Register Page
 @app.route("/register")
 def register():
+    """
+    Renders the register.html template with the necessary scripts and CSS files.
+
+    Returns:
+        The rendered register.html template with the scripts and CSS files.
+    """
     scripts = ['js/register.js']
     css = ['css/register.css']
     return render_template("pages/register.html", scripts=scripts, css=css)
@@ -136,6 +207,15 @@ def register():
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pasien"])
 def pendaftaran_get(decoded_token):
+    """
+    Handle GET request for '/pendaftaran' route.
+
+    Args:
+        decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+        Response: Rendered template 'pages/pendaftaran.html' with user_info and scripts.
+    """
     scripts = ['js/pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -148,6 +228,15 @@ def pendaftaran_get(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pasien"])
 def riwayat_pendaftaran(decoded_token):
+    """
+    This function handles the route '/riwayat_pendaftaran' and is accessible only to authorized 'pasien' role users.
+    
+    Parameters:
+        decoded_token (dict): The decoded token containing user information.
+        
+    Returns:
+        render_template: The rendered HTML template 'pages/riwayat_pendaftaran.html' with user_info and scripts as parameters.
+    """
     scripts = ['js/riwayat_pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -160,6 +249,12 @@ def riwayat_pendaftaran(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pasien"])
 def riwayat_checkup(decoded_token):
+    """
+    This function handles the '/riwayat_checkup' route.
+    It requires a valid token with 'pasien' role to access.
+    It retrieves the user's information from the database based on the decoded token.
+    Then, it renders the 'riwayat_checkup.html' template with the user's information and necessary scripts.
+    """
     scripts = ['js/riwayat_checkup.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -171,6 +266,15 @@ def riwayat_checkup(decoded_token):
 @app.route("/profile")
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 def profile(decoded_token):
+    """
+    Renders the profile page with user information.
+
+    Args:
+        decoded_token (dict): Decoded user token.
+
+    Returns:
+        render_template: Rendered profile page with user information.
+    """
     scripts = ['js/profile.js']
     css = ['css/profile.css']
     user_id = ObjectId(decoded_token.get("uid"))
@@ -179,7 +283,6 @@ def profile(decoded_token):
     if is_valid_date(user_info.get('tgl_lahir')):
         user_info['tgl_lahir'] = datetime.strptime(
             user_info.get('tgl_lahir'), '%d-%m-%Y').strftime('%Y-%m-%d')
-    print(user_info)
     return render_template('pages/profile.html', user_info=user_info, active_page='profile', scripts=scripts, css=css)
 
 
@@ -188,18 +291,21 @@ def profile(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pegawai"])
 def kelola_pendaftaran(decoded_token):
+    """
+    Renders the 'kelola_pendaftaran.html' template and passes the user_info and scripts to it.
+
+    Args:
+        decoded_token (dict): The decoded token containing user information.
+
+    Returns:
+        render_template: The rendered template with user_info and scripts passed as parameters.
+    """
     scripts = ['js/kelola_pendaftaran.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
         '_id': False, 'password': False})
-    # Ambil data dari MongoDB sesuai dengan kebutuhan Anda
-    data = list(db.registrations.find(
-        {"status": {"$in": ["pending", "approved", "done"]}},
-        {"name": True, "poli": True, "tanggal": True,
-            "keluhan": True, "status": True, "_id": True, "antrian": True}
-    ))
 
-    return render_template('pages/kelola_pendaftaran.html', data=data, user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
+    return render_template('pages/kelola_pendaftaran.html', user_info=user_info, active_page='kelola_pendaftaran', scripts=scripts)
 
 
 # Return Dashboard Page
@@ -207,6 +313,15 @@ def kelola_pendaftaran(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pegawai"])
 def dashboard(decoded_token):
+    """
+    Renders the dashboard page with user information.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - rendered template: The rendered template of the dashboard page.
+    """
     scripts = ['js/dashboard.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -219,6 +334,15 @@ def dashboard(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pegawai"])
 def get_rekam_medis(decoded_token):
+    """
+    Retrieves the medical records for a user.
+
+    Parameters:
+    - decoded_token (dict): The decoded token containing user information.
+
+    Returns:
+    - render_template: The rendered HTML template for displaying the medical records page.
+    """
     scripts = ['js/rekam_medis.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -232,6 +356,15 @@ def get_rekam_medis(decoded_token):
 @validate_token_template(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_template(["pegawai"])
 def kelola_praktik(decoded_token):
+    """
+    Renders the 'kelola_praktik' page with user information and necessary scripts.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - render_template: Rendered HTML template with user information and scripts.
+    """
     scripts = ['js/praktik.js']
     user_id = ObjectId(decoded_token.get("uid"))
     user_info = db.users.find_one({"_id": user_id}, {
@@ -245,6 +378,22 @@ def kelola_praktik(decoded_token):
 @app.route("/api/register", methods=["POST"])
 @swag_from('swagger_doc/register.yml')
 def api_register():
+    """
+    Handle user registration through the API.
+
+    This endpoint expects a POST request with a JSON payload containing user registration data.
+    The data is validated for completeness, uniqueness, and format before storing it in the database.
+
+    Parameters:
+        None
+
+    Returns:
+        tuple: A tuple containing JSON response and HTTP status code.
+
+    Raises:
+        HttpException: If any validation check fails, an HttpException with appropriate
+                       status code and error message is raised.
+    """
     body = request.is_json
     if not body:
         raise HttpException(False, 415, "failed",
@@ -358,6 +507,19 @@ def api_register():
 @app.route("/api/login", methods=["POST"])
 @swag_from('swagger_doc/login.yml')
 def sign_in():
+    """
+    Endpoint for user authentication.
+
+    This endpoint handles user login through a POST request to '/api/login'.
+    The request should include a JSON body with 'username' and 'password' fields.
+
+    :raises HttpException 415: If the request data is not in JSON format.
+    :raises HttpException 400: If 'username' or 'password' is missing, or if the provided
+                              credentials are incorrect.
+
+    :return: A JSON response with a success message and a JWT token upon successful login.
+    :rtype: Response
+    """
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed",
@@ -406,7 +568,18 @@ def sign_in():
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @swag_from('swagger_doc/logout.yml')
 def logout(decoded_token):
-    user_id = ObjectId(decoded_token["uid"])
+    """
+    Logs out a user by invalidating the session identified by the decoded token.
+
+    This endpoint is accessible via a POST request to "/api/logout" and requires a valid access token.
+    
+    Args:
+        decoded_token (dict): The decoded JWT token containing user information.
+
+    Returns:
+        flask.Response: A JSON response indicating the success of the logout operation.
+            The response includes a message, status code, and relevant data.
+    """
     session_id = ObjectId(decoded_token["sid"])
     logout_user_session(session_id, db)
     response = api_response(True, 200, "success", "Logout berhasil")
@@ -422,6 +595,39 @@ def logout(decoded_token):
 @authorized_roles_api(["pegawai"])
 @swag_from('swagger_doc/pendaftaran.yml')
 def api_pendaftaran(decoded_token):
+    """
+    Handle API requests for registration data.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - Flask Response: JSON response containing registration data or error message.
+
+    This function is a Flask route handling API requests for registration data. It expects
+    the following query parameters:
+    - 'name': Filter registrations by name.
+    - 'poli': Filter registrations by poli.
+    - 'tanggal': Filter registrations by tanggal.
+    - 'status_filter': Filter registrations by status.
+
+    The function supports DataTables pagination parameters:
+    - 'draw': Sequence number for the DataTables request.
+    - 'start': Starting index for paginated results.
+    - 'length': Number of records to fetch for paginated results.
+
+    Additionally, the function supports searching, sorting, and filtering based on the DataTables request.
+
+    The API response includes a JSON object with the following fields:
+    - 'success' (bool): Indicates whether the request was successful.
+    - 'code' (int): HTTP status code.
+    - 'message' (str): Description of the response.
+    - 'data' (list): List of registration data.
+    - 'pagination' (dict): Meta pagination information.
+    - 'datatables_pagination' (dict): DataTables pagination information.
+
+    The function is decorated with route, token validation, role authorization, and Swagger documentation.
+    """
     name = request.args.get('name')
     poli = request.args.get('poli')
     tanggal = request.args.get('tanggal')
@@ -594,6 +800,23 @@ def api_pendaftaran(decoded_token):
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/pendaftaran_post.yml')
 def pendaftaran_post(decoded_token):
+    """
+    Handle the POST request for patient registration.
+
+    This endpoint allows authorized users with the role "pasien" to submit
+    a registration form for a medical appointment. The function validates the
+    incoming request, checks the user's information, and ensures that the
+    registration data meets the required criteria before storing it in MongoDB.
+
+    Args:
+        decoded_token (dict): Decoded user token containing user information.
+
+    Returns:
+        tuple: A tuple containing a JSON response and HTTP status code.
+
+    Raises:
+        HttpException: An exception with specific details in case of validation errors.
+    """
     body = request.is_json
     if body:
         raise HttpException(False, 415, "failed",
@@ -674,6 +897,20 @@ def pendaftaran_post(decoded_token):
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/pendaftaran_me.yml')
 def riwayat_pendaftaran_api(decoded_token):
+    """
+    API endpoint to retrieve registration history for a user.
+
+    This endpoint requires authentication using a valid token and specific roles.
+
+    Parameters:
+    - decoded_token (dict): The decoded user token containing user information.
+
+    Returns:
+    - Flask Response: JSON response containing registration history data.
+
+    Raises:
+    - HttpException: If user data is not found or there is an issue with the request.
+    """
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
         '_id': False, 'password': False})
@@ -764,6 +1001,20 @@ def riwayat_pendaftaran_api(decoded_token):
 @authorized_roles_api(["pegawai"])
 @swag_from('swagger_doc/pendaftaran_approve.yml')
 def approve_pendaftaran(decoded_token, id):
+    """
+    Approve a registration based on the provided ID.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+    - id (str): The ID of the registration to be approved.
+
+    Raises:
+    - HttpException: If the ID is undefined, not valid, or if the registration is not found,
+      already approved, done, rejected, expired, or canceled.
+
+    Returns:
+    - jsonify: JSON response indicating the success of the approval process.
+    """
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
 
@@ -818,6 +1069,20 @@ def approve_pendaftaran(decoded_token, id):
 @authorized_roles_api(["pegawai"])
 @swag_from('swagger_doc/pendaftaran_reject.yml')
 def reject_pendaftaran(decoded_token, id):
+    """
+    Rejects a registration based on the provided ID.
+
+    Parameters:
+    - decoded_token (dict): Decoded API token containing user information.
+    - id (str): Registration ID to be rejected.
+
+    Returns:
+    - Flask Response: JSON response indicating the success or failure of the rejection.
+
+    Raises:
+    - HttpException: If validation or rejection fails, an HTTP exception is raised with
+      the appropriate status code and error message.
+    """
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
 
@@ -864,6 +1129,26 @@ def reject_pendaftaran(decoded_token, id):
 @authorized_roles_api(["pegawai"])
 @swag_from('swagger_doc/pendaftaran_done.yml')
 def done_pendaftaran(decoded_token, id):
+    """
+    Complete the registration process for a user with the specified ID.
+
+    This endpoint is used to finalize the registration process for a user
+    by updating the registration status to 'done'. Only authorized personnel
+    with the role 'pegawai' can access this endpoint.
+
+    Args:
+        decoded_token (dict): The decoded JWT token containing user information.
+        id (str): The unique identifier for the registration.
+
+    Raises:
+        HttpException: If the provided ID is empty ('undefined'), not valid,
+                       or if the registration is not found, pending, done,
+                       rejected, expired, or canceled.
+
+    Returns:
+        Response: A JSON response indicating the success of the registration
+                  completion process.
+    """
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
 
@@ -918,6 +1203,20 @@ def done_pendaftaran(decoded_token, id):
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/pendaftaran_cancel.yml')
 def cancel_pendaftaran(decoded_token, id):
+    """
+    Cancel a registration by changing its status to 'canceled'.
+
+    Args:
+        decoded_token (str): The decoded token of the user.
+        id (str): The ID of the registration to be canceled.
+
+    Raises:
+        HttpException: If the ID is empty, invalid, or the registration is not found,
+            already done, rejected, expired, or canceled.
+
+    Returns:
+        dict: A JSON response indicating the success of the cancellation.
+    """
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
 
@@ -962,6 +1261,14 @@ def cancel_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/expire', methods=['POST'])
 @swag_from('swagger_doc/pendaftaran_expire.yml')
 def expire_pendaftaran():
+    """
+    Expire pendaftaran by updating the status of pending and approved registrations
+    that have a tanggal (date) earlier than today's date to "expired".
+    Emit a socketio event to notify clients about the change.
+    Return a JSON response indicating the success of the operation.
+
+    :return: JSON response
+    """
     now = datetime.now()
     today = {'$dateFromString': {
         'dateString': now.strftime("%d-%m-%Y"), 'format': '%d-%m-%Y'}}
@@ -994,6 +1301,15 @@ def expire_pendaftaran():
 @authorized_roles_api(["pegawai"])
 @swag_from('swagger_doc/pendaftaran_export.yml')
 def export_pendaftaran(decoded_token):
+    """
+    Export pendaftaran data within a specified date range as a CSV file.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - Response: CSV file as a response with a dynamic file name.
+    """
     user_id = ObjectId(decoded_token.get("uid"))
     username = db.users.find_one({"_id": user_id}).get('username')
     # Get startdate and enddate from query parameters
@@ -1076,6 +1392,12 @@ def export_pendaftaran(decoded_token):
 @app.route('/api/antrian/today')
 @swag_from('swagger_doc/antrian_today.yml')
 def get_antrian():
+    """
+    Get today's queue data.
+
+    Returns:
+        JSON: The response containing the queue data.
+    """
     antrian_data = get_antrian_today(db)
     response = api_response(True, 200, "success",
                             "Antrian berhasil diambil", antrian_data)
@@ -1088,6 +1410,15 @@ def get_antrian():
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/antrian_me.yml')
 def get_antrian_data(decoded_token):
+    """
+    Get the queue data for the authenticated user.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - dict: Response containing the queue data for the user.
+    """
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
         '_id': False, 'password': False})
@@ -1115,6 +1446,15 @@ def get_antrian_data(decoded_token):
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/antrian_check.yml')
 def check_antrian(decoded_token):
+    """
+    Check the queue status for a user.
+
+    Parameters:
+    - decoded_token (dict): Decoded user token.
+
+    Returns:
+    - JSON response: Response containing the queue status for the user.
+    """
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
         '_id': False, 'password': False})
@@ -1138,6 +1478,18 @@ def check_antrian(decoded_token):
 @authorized_roles_api(["pasien"])
 @swag_from('swagger_doc/checkup_me.yml')
 def api_riwayat_checkup(decoded_token):
+    """
+    API endpoint to retrieve the checkup history of a user.
+
+    Args:
+        decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+        dict: JSON response containing the checkup history data.
+
+    Raises:
+        HttpException: If user data is not found.
+    """
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
         '_id': False, 'password': False})
@@ -1956,8 +2308,6 @@ def api_users_pasien(decoded_token):
     name = request.args.get('name')
     nik = request.args.get('nik')
     status_filter = request.args.get('status_filter')
-    if status_filter == 'True':
-        print('jalan')
 
     # Get parameters from DataTables request
     draw = request.args.get('draw')
