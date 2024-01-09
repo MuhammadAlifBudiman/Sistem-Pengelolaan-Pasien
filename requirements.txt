@@ -19,19 +19,19 @@ MarkupSafe
 mistune
 numpy
 packaging
-pandas
+# pandas
 PyJWT
 pymongo
 python-dateutil
 python-dotenv
 python-engineio
 python-socketio
-pytz
+# pytz
 PyYAML
 referencing
-rpds-py
+# rpds-py
 simple-websocket
 six
-tzdata
+# tzdata
 Werkzeug
 wsproto
