@@ -1,11 +1,11 @@
-attrs
+# attrs
 bcrypt
 bidict
 blinker
 click
 dnspython
 Faker
-flasgger
+# flasgger
 Flask
 Flask-Bcrypt
 Flask-PyMongo
@@ -13,8 +13,8 @@ Flask-SocketIO
 h11
 itsdangerous
 Jinja2
-jsonschema
-jsonschema-specifications
+# jsonschema
+# jsonschema-specifications
 MarkupSafe
 mistune
 numpy
@@ -28,7 +28,7 @@ python-engineio
 python-socketio
 # pytz
 PyYAML
-referencing
+# referencing
 # rpds-py
 simple-websocket
 six
