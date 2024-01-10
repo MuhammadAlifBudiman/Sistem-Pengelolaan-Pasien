@@ -4,6 +4,11 @@
 
 Sistem Pengelolaan Pasien ini dirancang sebagai solusi inovatif untuk meningkatkan pengalaman pasien dan mengoptimalkan pengelolaan data di fasilitas kesehatan. Dengan menggunakan Flask sebagai framework utama dan MongoDB sebagai basis data, proyek ini bertujuan meningkatkan efisiensi pendaftaran pasien, kualitas layanan kesehatan, dan pengelolaan data pasien.
 
+## Kelompok Google
+- Muhammad Alif Budiman dari Universitas Negeri Jakarta (Ketua)
+- Ahmad Iqbal Ferdinand Romadhon dari Institut Teknologi, Sains, dan Kesehatan RS.DR. Soepraoen Kesdam V/BRW
+- Dea Elsiyani Pratiwi dari Universitas Kahuripan Kediri
+
 #### API Docs:
 
 [POSTMAN](https://documenter.getpostman.com/view/24748798/2s9YkuaeTS)
