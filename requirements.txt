@@ -1,37 +1,10 @@
-# attrs
-bcrypt
-bidict
-blinker
-click
-dnspython
-Faker
-# flasgger
 Flask
+Faker
 Flask-Bcrypt
 Flask-PyMongo
 Flask-SocketIO
-h11
-itsdangerous
-Jinja2
-# jsonschema
-# jsonschema-specifications
-MarkupSafe
-mistune
-numpy
-packaging
-# pandas
 PyJWT
 pymongo
-python-dateutil
 python-dotenv
-python-engineio
-python-socketio
-# pytz
-PyYAML
-# referencing
-# rpds-py
-simple-websocket
-six
-# tzdata
-Werkzeug
-wsproto
+flasgger
+pandas

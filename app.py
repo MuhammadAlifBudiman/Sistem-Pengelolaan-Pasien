@@ -16,9 +16,9 @@ from apiresponse import api_response
 from utils import *
 from middlewares import *
 from flask_socketio import SocketIO, Namespace
-# import pandas as pd
+import pandas as pd
 from io import BytesIO
-# from flasgger import Swagger, swag_from
+from flasgger import Swagger, swag_from
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -34,7 +34,8 @@ app.config['SWAGGER'] = {
     'description': 'API documentation for klinik google, API ini menggunakan JWT untuk autentikasi dan otorisasi',
     'version': '1.0.0',
 }
-# Swagger(app)
+Swagger(app)
+
 
 
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
@@ -71,7 +72,6 @@ class PendaftaranNamespace(Namespace):
         on_new_pendaftaran: Called when a new pendaftaran event is received.
 
     """
-
     def on_connect(self):
         print('Client connected')
 
@@ -99,7 +99,6 @@ class AntrianNamespace(Namespace):
         on_new_antrian: Handles the new antrian event.
 
     """
-
     def on_connect(self):
         print('Client connected')
 
@@ -179,7 +178,7 @@ def login():
 
     Args:
         msg (str): Optional message to display on the login page.
-
+    
     Returns:
         str: Rendered HTML template of the login page.
     """
@@ -231,10 +230,10 @@ def pendaftaran_get(decoded_token):
 def riwayat_pendaftaran(decoded_token):
     """
     This function handles the route '/riwayat_pendaftaran' and is accessible only to authorized 'pasien' role users.
-
+    
     Parameters:
         decoded_token (dict): The decoded token containing user information.
-
+        
     Returns:
         render_template: The rendered HTML template 'pages/riwayat_pendaftaran.html' with user_info and scripts as parameters.
     """
@@ -377,7 +376,7 @@ def kelola_praktik(decoded_token):
 
 # Handle Register
 @app.route("/api/register", methods=["POST"])
-# @swag_from('swagger_doc/register.yml')
+@swag_from('swagger_doc/register.yml')
 def api_register():
     """
     Handle user registration through the API.
@@ -506,7 +505,7 @@ def api_register():
 
 # Handle Login
 @app.route("/api/login", methods=["POST"])
-# @swag_from('swagger_doc/login.yml')
+@swag_from('swagger_doc/login.yml')
 def sign_in():
     """
     Endpoint for user authentication.
@@ -567,13 +566,13 @@ def sign_in():
 # Handle Logout
 @app.route("/api/logout", methods=["POST"])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @swag_from('swagger_doc/logout.yml')
+@swag_from('swagger_doc/logout.yml')
 def logout(decoded_token):
     """
     Logs out a user by invalidating the session identified by the decoded token.
 
     This endpoint is accessible via a POST request to "/api/logout" and requires a valid access token.
-
+    
     Args:
         decoded_token (dict): The decoded JWT token containing user information.
 
@@ -594,7 +593,7 @@ def logout(decoded_token):
 @app.route('/api/pendaftaran')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/pendaftaran.yml')
+@swag_from('swagger_doc/pendaftaran.yml')
 def api_pendaftaran(decoded_token):
     """
     Handle API requests for registration data.
@@ -799,7 +798,7 @@ def api_pendaftaran(decoded_token):
 @app.route('/api/pendaftaran', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/pendaftaran_post.yml')
+@swag_from('swagger_doc/pendaftaran_post.yml')
 def pendaftaran_post(decoded_token):
     """
     Handle the POST request for patient registration.
@@ -896,7 +895,7 @@ def pendaftaran_post(decoded_token):
 @app.route('/api/pendaftaran/me')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/pendaftaran_me.yml')
+@swag_from('swagger_doc/pendaftaran_me.yml')
 def riwayat_pendaftaran_api(decoded_token):
     """
     API endpoint to retrieve registration history for a user.
@@ -1000,7 +999,7 @@ def riwayat_pendaftaran_api(decoded_token):
 @app.route('/api/pendaftaran/<id>/approve', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/pendaftaran_approve.yml')
+@swag_from('swagger_doc/pendaftaran_approve.yml')
 def approve_pendaftaran(decoded_token, id):
     """
     Approve a registration based on the provided ID.
@@ -1068,7 +1067,7 @@ def approve_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/reject', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/pendaftaran_reject.yml')
+@swag_from('swagger_doc/pendaftaran_reject.yml')
 def reject_pendaftaran(decoded_token, id):
     """
     Rejects a registration based on the provided ID.
@@ -1128,7 +1127,7 @@ def reject_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/done', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/pendaftaran_done.yml')
+@swag_from('swagger_doc/pendaftaran_done.yml')
 def done_pendaftaran(decoded_token, id):
     """
     Complete the registration process for a user with the specified ID.
@@ -1202,7 +1201,7 @@ def done_pendaftaran(decoded_token, id):
 @app.route('/api/pendaftaran/<id>/cancel', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/pendaftaran_cancel.yml')
+@swag_from('swagger_doc/pendaftaran_cancel.yml')
 def cancel_pendaftaran(decoded_token, id):
     """
     Cancel a registration by changing its status to 'canceled'.
@@ -1260,7 +1259,7 @@ def cancel_pendaftaran(decoded_token, id):
 
 
 @app.route('/api/pendaftaran/expire', methods=['POST'])
-# @swag_from('swagger_doc/pendaftaran_expire.yml')
+@swag_from('swagger_doc/pendaftaran_expire.yml')
 def expire_pendaftaran():
     """
     Expire pendaftaran by updating the status of pending and approved registrations
@@ -1297,85 +1296,104 @@ def expire_pendaftaran():
     return jsonify(response.__dict__)
 
 
-# @app.route('/api/pendaftaran/export')
-# @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/pendaftaran_export.yml')
-# def export_pendaftaran(decoded_token):
-#     """
-#     Export pendaftaran data within a specified date range as a CSV file.
-#     Parameters:
-#     - decoded_token (dict): Decoded token containing user information.
-#     Returns:
-#     - Response: CSV file as a response with a dynamic file name.
-#     """
-#     user_id = ObjectId(decoded_token.get("uid"))
-#     username = db.users.find_one({"_id": user_id}).get('username')
-#     # Get startdate and enddate from query parameters
-#     startdate_str = request.args.get('startdate')
-#     enddate_str = request.args.get('enddate')
-#     if not startdate_str:
-#         raise HttpException(False, 400, "failed",
-#                             "startdate tidak boleh kosong")
-#     if not enddate_str:
-#         raise HttpException(False, 400, "failed",
-#                             "enddate tidak boleh kosong")
-#     if not is_valid_date(startdate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-#     if not is_valid_date(enddate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-#     if parse_date(enddate_str) < parse_date(startdate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "startdate harus lebih kecil dibanding enddate")
-#     # Parse startdate and enddate to datetime objects
-#     startdate_iso = {'$dateFromString': {
-#         'dateString': startdate_str, 'format': '%d-%m-%Y'}}
-#     enddate_iso = {'$dateFromString': {
-#         'dateString': enddate_str, 'format': '%d-%m-%Y'}}
-#     # Query registrations within the specified date range
-#     registrations = db.registrations.find({
-#         "$expr": {
-#             "$and": [
-#                 {"$gte": [{"$dateFromString": {
-#                     "dateString": "$tanggal", "format": "%d-%m-%Y"}}, startdate_iso]},
-#                 {"$lte": [{"$dateFromString": {
-#                     "dateString": "$tanggal", "format": "%d-%m-%Y"}}, enddate_iso]}
-#             ]
-#         }
-#     }, {"_id": False})
-#     # Convert MongoDB cursor to a list of dictionaries
-#     registrations_list = list(registrations)
-#     # Create a DataFrame from the list
-#     df = pd.DataFrame(registrations_list)
-#     # Create a custom header
-#     custom = pd.DataFrame({
-#         'Username': df['username'] if len(registrations_list) > 0 else [''],
-#         'Nama': df['name'] if len(registrations_list) > 0 else [''],
-#         'NIK': df['nik'] if len(registrations_list) > 0 else [''],
-#         'Tanggal Lahir': df['tgl_lahir'] if len(registrations_list) > 0 else [''],
-#         'Jenis Kelamin': df['gender'] if len(registrations_list) > 0 else [''],
-#         'Agama': df['agama'] if len(registrations_list) > 0 else [''],
-#         'Status Pernikahan': df['status_pernikahan'] if len(registrations_list) > 0 else [''],
-#         'Alamat': df['alamat'] if len(registrations_list) > 0 else [''],
-#         'No Telp': df['no_telp'] if len(registrations_list) > 0 else [''],
-#         'Tanggal Periksa': df['tanggal'] if len(registrations_list) > 0 else [''],
-#         'Keluhan': df['keluhan'] if len(registrations_list) > 0 else [''],
-#         'Poli': df['poli'] if len(registrations_list) > 0 else [''],
-#         'Status Pendaftaran': df['status'] if len(registrations_list) > 0 else [''],
-#         'No Antrian': df['antrian'] if len(registrations_list) > 0 else ['']
-#     })
-#     # Convert DataFrame to CSV format
-#     output = BytesIO()
-#     custom.to_csv(output, index=False, encoding='utf-8')
-#     output.seek(0)
-#     filename = f"pendaftaran-{username}-{startdate_str}-{enddate_str}.csv"
-#     # Return CSV file as a response with a dynamic file name
-#     return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+@app.route('/api/pendaftaran/export')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/pendaftaran_export.yml')
+def export_pendaftaran(decoded_token):
+    """
+    Export pendaftaran data within a specified date range as a CSV file.
+
+    Parameters:
+    - decoded_token (dict): Decoded token containing user information.
+
+    Returns:
+    - Response: CSV file as a response with a dynamic file name.
+    """
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+    # Get startdate and enddate from query parameters
+    startdate_str = request.args.get('startdate')
+    enddate_str = request.args.get('enddate')
+
+    if not startdate_str:
+        raise HttpException(False, 400, "failed",
+                            "startdate tidak boleh kosong")
+
+    if not enddate_str:
+        raise HttpException(False, 400, "failed",
+                            "enddate tidak boleh kosong")
+
+    if not is_valid_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    if not is_valid_date(enddate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+
+    if parse_date(enddate_str) < parse_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "startdate harus lebih kecil dibanding enddate")
+
+    # Parse startdate and enddate to datetime objects
+    startdate_iso = {'$dateFromString': {
+        'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {
+        'dateString': enddate_str, 'format': '%d-%m-%Y'}}
+
+    # Query registrations within the specified date range
+    registrations = db.registrations.find({
+        "$expr": {
+            "$and": [
+                {"$gte": [{"$dateFromString": {
+                    "dateString": "$tanggal", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {
+                    "dateString": "$tanggal", "format": "%d-%m-%Y"}}, enddate_iso]}
+            ]
+        }
+    }, {"_id": False})
+
+    # Convert MongoDB cursor to a list of dictionaries
+    registrations_list = list(registrations)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(registrations_list)
+
+    # Create a custom header
+    custom = pd.DataFrame({
+        'Username': df['username'] if len(registrations_list) > 0 else [''],
+        'Nama': df['name'] if len(registrations_list) > 0 else [''],
+        'NIK': df['nik'] if len(registrations_list) > 0 else [''],
+        'Tanggal Lahir': df['tgl_lahir'] if len(registrations_list) > 0 else [''],
+        'Jenis Kelamin': df['gender'] if len(registrations_list) > 0 else [''],
+        'Agama': df['agama'] if len(registrations_list) > 0 else [''],
+        'Status Pernikahan': df['status_pernikahan'] if len(registrations_list) > 0 else [''],
+        'Alamat': df['alamat'] if len(registrations_list) > 0 else [''],
+        'No Telp': df['no_telp'] if len(registrations_list) > 0 else [''],
+        'Tanggal Periksa': df['tanggal'] if len(registrations_list) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(registrations_list) > 0 else [''],
+        'Poli': df['poli'] if len(registrations_list) > 0 else [''],
+        'Status Pendaftaran': df['status'] if len(registrations_list) > 0 else [''],
+        'No Antrian': df['antrian'] if len(registrations_list) > 0 else ['']
+    })
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    custom.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"pendaftaran-{username}-{startdate_str}-{enddate_str}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    response = send_file(output, mimetype='text/csv')
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    
+    return response
+
+
 # Return Atrian Hari Ini
 @app.route('/api/antrian/today')
-# @swag_from('swagger_doc/antrian_today.yml')
+@swag_from('swagger_doc/antrian_today.yml')
 def get_antrian():
     """
     Get today's queue data.
@@ -1393,7 +1411,7 @@ def get_antrian():
 @app.route('/api/antrian/me')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/antrian_me.yml')
+@swag_from('swagger_doc/antrian_me.yml')
 def get_antrian_data(decoded_token):
     """
     Get the queue data for the authenticated user.
@@ -1429,7 +1447,7 @@ def get_antrian_data(decoded_token):
 @app.route('/api/antrian/check')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/antrian_check.yml')
+@swag_from('swagger_doc/antrian_check.yml')
 def check_antrian(decoded_token):
     """
     Check the queue status for a user.
@@ -1461,7 +1479,7 @@ def check_antrian(decoded_token):
 @app.route("/api/checkup/me")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pasien"])
-# @swag_from('swagger_doc/checkup_me.yml')
+@swag_from('swagger_doc/checkup_me.yml')
 def api_riwayat_checkup(decoded_token):
     """
     API endpoint to retrieve the checkup history of a user.
@@ -1565,7 +1583,7 @@ def api_riwayat_checkup(decoded_token):
 @app.route("/api/checkup")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/checkup.yml')
+@swag_from('swagger_doc/checkup.yml')
 def api_riwayat_checkup_pegawai(decoded_token):
     name = request.args.get('name')
     dokter = request.args.get('dokter')
@@ -1686,7 +1704,7 @@ def api_riwayat_checkup_pegawai(decoded_token):
 @app.route("/api/checkup/<nik>")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/checkup_nik.yml')
+@swag_from('swagger_doc/checkup_nik.yml')
 def api_pasien_checkup(decoded_token, nik):
     if nik == 'undefined':
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
@@ -1772,7 +1790,7 @@ def api_pasien_checkup(decoded_token, nik):
 @app.route('/api/checkup/<nik>/<id>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/checkup_detail.yml')
+@swag_from('swagger_doc/checkup_detail.yml')
 def api_detail_checkup(decoded_token, nik, id):
     if nik == 'undefined':
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
@@ -1793,7 +1811,7 @@ def api_detail_checkup(decoded_token, nik, id):
 @app.route('/api/checkup/<nik>/<id>', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/checkup_edit.yml')
+@swag_from('swagger_doc/checkup_edit.yml')
 def edit_checkup(decoded_token, nik, id):
     if nik == 'undefined':
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
@@ -1831,72 +1849,86 @@ def edit_checkup(decoded_token, nik, id):
     return jsonify(response.__dict__)
 
 
-# @app.route('/api/checkup/export')
-# @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/checkup_export.yml')
-# def export_checkup(decoded_token):
-#     user_id = ObjectId(decoded_token.get("uid"))
-#     username = db.users.find_one({"_id": user_id}).get('username')
-#     # Get startdate and enddate from query parameters
-#     startdate_str = request.args.get('startdate')
-#     enddate_str = request.args.get('enddate')
-#     if not startdate_str:
-#         raise HttpException(False, 400, "failed",
-#                             "startdate tidak boleh kosong")
-#     if not enddate_str:
-#         raise HttpException(False, 400, "failed",
-#                             "enddate tidak boleh kosong")
-#     if startdate_str and not is_valid_date(startdate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-#     if enddate_str and not is_valid_date(enddate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
-#     if parse_date(enddate_str) < parse_date(startdate_str):
-#         raise HttpException(False, 400, "failed",
-#                             "startdate harus lebih kecil dibanding enddate")
-#     # Parse startdate and enddate to datetime objects
-#     startdate_iso = {'$dateFromString': {
-#         'dateString': startdate_str, 'format': '%d-%m-%Y'}}
-#     enddate_iso = {'$dateFromString': {
-#         'dateString': enddate_str, 'format': '%d-%m-%Y'}}
-#     # Query registrations within the specified date range
-#     checkup = db.list_checkup_user.find({
-#         "$expr": {
-#             "$and": [
-#                 {"$gte": [{"$dateFromString": {
-#                     "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, startdate_iso]},
-#                 {"$lte": [{"$dateFromString": {
-#                     "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, enddate_iso]}
-#             ]
-#         }
-#     }, {"_id": False})
-#     # Convert MongoDB cursor to a list of dictionaries
-#     checkup_list = list(checkup)
-#     # Create a DataFrame from the list
-#     df = pd.DataFrame(checkup_list)
-#     # Create a custom header
-#     custom = pd.DataFrame({
-#         'Nama': df['nama'] if len(checkup_list) > 0 else [''],
-#         'NIK': df['nik'] if len(checkup_list) > 0 else [''],
-#         'Tanggal Periksa': df['tgl_periksa'] if len(checkup_list) > 0 else [''],
-#         'Keluhan': df['keluhan'] if len(checkup_list) > 0 else [''],
-#         'Poli': df['poli'] if len(checkup_list) > 0 else [''],
-#         'Dokter': df['dokter'] if len(checkup_list) > 0 else [''],
-#         'Hasil Anamnesa': df['hasil_anamnesa'] if len(checkup_list) > 0 else ['']
-#     })
-#     # Convert DataFrame to CSV format
-#     output = BytesIO()
-#     custom.to_csv(output, index=False, encoding='utf-8')
-#     output.seek(0)
-#     filename = f"checkup-{username}-{startdate_str}-{enddate_str}.csv"
-#     # Return CSV file as a response with a dynamic file name
-#     return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+@app.route('/api/checkup/export')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/checkup_export.yml')
+def export_checkup(decoded_token):
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+    # Get startdate and enddate from query parameters
+    startdate_str = request.args.get('startdate')
+    enddate_str = request.args.get('enddate')
+
+    if not startdate_str:
+        raise HttpException(False, 400, "failed",
+                            "startdate tidak boleh kosong")
+
+    if not enddate_str:
+        raise HttpException(False, 400, "failed",
+                            "enddate tidak boleh kosong")
+
+    if startdate_str and not is_valid_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+    if enddate_str and not is_valid_date(enddate_str):
+        raise HttpException(False, 400, "failed",
+                            "Format tanggal tidak valid, gunakan format dd-mm-yyyy")
+
+    if parse_date(enddate_str) < parse_date(startdate_str):
+        raise HttpException(False, 400, "failed",
+                            "startdate harus lebih kecil dibanding enddate")
+
+    # Parse startdate and enddate to datetime objects
+    startdate_iso = {'$dateFromString': {
+        'dateString': startdate_str, 'format': '%d-%m-%Y'}}
+    enddate_iso = {'$dateFromString': {
+        'dateString': enddate_str, 'format': '%d-%m-%Y'}}
+
+    # Query registrations within the specified date range
+    checkup = db.list_checkup_user.find({
+        "$expr": {
+            "$and": [
+                {"$gte": [{"$dateFromString": {
+                    "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, startdate_iso]},
+                {"$lte": [{"$dateFromString": {
+                    "dateString": "$tgl_periksa", "format": "%d-%m-%Y"}}, enddate_iso]}
+            ]
+        }
+    }, {"_id": False})
+
+    # Convert MongoDB cursor to a list of dictionaries
+    checkup_list = list(checkup)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(checkup_list)
+
+    # Create a custom header
+    custom = pd.DataFrame({
+        'Nama': df['nama'] if len(checkup_list) > 0 else [''],
+        'NIK': df['nik'] if len(checkup_list) > 0 else [''],
+        'Tanggal Periksa': df['tgl_periksa'] if len(checkup_list) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(checkup_list) > 0 else [''],
+        'Poli': df['poli'] if len(checkup_list) > 0 else [''],
+        'Dokter': df['dokter'] if len(checkup_list) > 0 else [''],
+        'Hasil Anamnesa': df['hasil_anamnesa'] if len(checkup_list) > 0 else ['']
+    })
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    custom.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"checkup-{username}-{startdate_str}-{enddate_str}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+
+
 # Return Profile User
 @app.route("/api/profile")
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @swag_from('swagger_doc/profile.yml')
+@swag_from('swagger_doc/profile.yml')
 def api_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -1909,7 +1941,7 @@ def api_profile(decoded_token):
 # Handle Edit Profile
 @app.route('/api/profile/edit', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @swag_from('swagger_doc/profile_edit.yml')
+@swag_from('swagger_doc/profile_edit.yml')
 def edit_profile(decoded_token):
     user_id = ObjectId(decoded_token.get("uid"))
     user_data = db.users.find_one({"_id": user_id}, {
@@ -2020,7 +2052,7 @@ def edit_profile(decoded_token):
 @app.route('/api/rekam_medis')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/rekam_medis.yml')
+@swag_from('swagger_doc/rekam_medis.yml')
 def api_rekam_medis(decoded_token):
     nik = request.args.get('nik')
     name = request.args.get('name')
@@ -2116,7 +2148,7 @@ def api_rekam_medis(decoded_token):
 @app.route('/api/rekam_medis', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/rekam_medis_post.yml')
+@swag_from('swagger_doc/rekam_medis_post.yml')
 def api_rekam_medis_post(decoded_token):
     body = request.is_json
     if body:
@@ -2195,7 +2227,7 @@ def api_rekam_medis_post(decoded_token):
 @app.route('/api/rekam_medis/<nik>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/rekam_medis_nik.yml')
+@swag_from('swagger_doc/rekam_medis_nik.yml')
 def api_detail_rekam_medis(decoded_token, nik):
     if nik == 'undefined':
         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
@@ -2210,58 +2242,71 @@ def api_detail_rekam_medis(decoded_token, nik):
     return jsonify(response.__dict__)
 
 
-# @app.route('/api/rekam_medis/export/<nik>')
-# @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
-# @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/rekam_medis_export.yml')
-# def export_rekam_medis(decoded_token, nik):
-#     if nik == 'undefined':
-#         raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
-#     if not is_valid_nik(nik):
-#         raise HttpException(False, 400, "failed", "NIK tidak valid")
-#     user_id = ObjectId(decoded_token.get("uid"))
-#     username = db.users.find_one({"_id": user_id}).get('username')
-#     # Query registrations within the specified date range
-#     checkup_user = db.list_checkup_user.find({"nik": nik}, {"_id": False})
-#     rekam_medis = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
-#     if not rekam_medis:
-#         raise HttpException(False, 400, "failed",
-#                             f"Rekam medis dengan NIK {nik} tidak ditemukan.")
-#     # Convert MongoDB cursor to a list of dictionaries
-#     list_checkup_user = list(checkup_user)
-#     # Create a DataFrame from the list
-#     df = pd.DataFrame(list_checkup_user)
-#     custom_row = pd.DataFrame({
-#         'No Kartu': [rekam_medis['no_kartu']],
-#         'Username': [rekam_medis['username']],
-#         'Nama': [rekam_medis['nama']],
-#         'NIK': [rekam_medis['nik']],
-#         'Umur': [rekam_medis['umur']],
-#         'Alamat': [rekam_medis['alamat']],
-#         'No Telp': [rekam_medis['no_telp']],
-#     })
-#     # Create second header DataFrame (corresponding to registration data fields)
-#     second_header = pd.DataFrame({
-#         'Nama Dokter': df['dokter'] if len(list_checkup_user) > 0 else [''],
-#         'Tanggal Periksa': df['tgl_periksa'] if len(list_checkup_user) > 0 else [''],
-#         'Poli': df['poli'] if len(list_checkup_user) > 0 else [''],
-#         'Keluhan': df['keluhan'] if len(list_checkup_user) > 0 else [''],
-#         'Hasil Anamnesa': df['hasil_anamnesa'] if len(list_checkup_user) > 0 else ['']
-#     })
-#     # Concatenate DataFrames
-#     final_df = pd.concat([custom_row, second_header],
-#                          axis=0, ignore_index=True,)
-#     # Convert DataFrame to CSV format
-#     output = BytesIO()
-#     final_df.to_csv(output, index=False, encoding='utf-8')
-#     output.seek(0)
-#     filename = f"rekam-medis-{username}-{nik}.csv"
-#     # Return CSV file as a response with a dynamic file name
-#     return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+@app.route('/api/rekam_medis/export/<nik>')
+@validate_token_api(SECRET_KEY, TOKEN_KEY, db)
+@authorized_roles_api(["pegawai"])
+@swag_from('swagger_doc/rekam_medis_export.yml')
+def export_rekam_medis(decoded_token, nik):
+    if nik == 'undefined':
+        raise HttpException(False, 400, "failed", "NIK tidak boleh kosong")
+    if not is_valid_nik(nik):
+        raise HttpException(False, 400, "failed", "NIK tidak valid")
+
+    user_id = ObjectId(decoded_token.get("uid"))
+    username = db.users.find_one({"_id": user_id}).get('username')
+
+    # Query registrations within the specified date range
+    checkup_user = db.list_checkup_user.find({"nik": nik}, {"_id": False})
+    rekam_medis = db.rekam_medis.find_one({"nik": nik}, {"_id": False})
+
+    if not rekam_medis:
+        raise HttpException(False, 400, "failed",
+                            f"Rekam medis dengan NIK {nik} tidak ditemukan.")
+
+    # Convert MongoDB cursor to a list of dictionaries
+    list_checkup_user = list(checkup_user)
+
+    # Create a DataFrame from the list
+    df = pd.DataFrame(list_checkup_user)
+
+    custom_row = pd.DataFrame({
+        'No Kartu': [rekam_medis['no_kartu']],
+        'Username': [rekam_medis['username']],
+        'Nama': [rekam_medis['nama']],
+        'NIK': [rekam_medis['nik']],
+        'Umur': [rekam_medis['umur']],
+        'Alamat': [rekam_medis['alamat']],
+        'No Telp': [rekam_medis['no_telp']],
+    })
+
+    # Create second header DataFrame (corresponding to registration data fields)
+    second_header = pd.DataFrame({
+        'Nama Dokter': df['dokter'] if len(list_checkup_user) > 0 else [''],
+        'Tanggal Periksa': df['tgl_periksa'] if len(list_checkup_user) > 0 else [''],
+        'Poli': df['poli'] if len(list_checkup_user) > 0 else [''],
+        'Keluhan': df['keluhan'] if len(list_checkup_user) > 0 else [''],
+        'Hasil Anamnesa': df['hasil_anamnesa'] if len(list_checkup_user) > 0 else ['']
+    })
+
+    # Concatenate DataFrames
+    final_df = pd.concat([custom_row, second_header],
+                         axis=0, ignore_index=True,)
+
+    # Convert DataFrame to CSV format
+    output = BytesIO()
+    final_df.to_csv(output, index=False, encoding='utf-8')
+    output.seek(0)
+
+    filename = f"rekam-medis-{username}-{nik}.csv"
+
+    # Return CSV file as a response with a dynamic file name
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='text/csv')
+
+
 @app.route('/api/users/pasien')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/users_pasien.yml')
+@swag_from('swagger_doc/users_pasien.yml')
 def api_users_pasien(decoded_token):
     name = request.args.get('name')
     nik = request.args.get('nik')
@@ -2391,7 +2436,7 @@ def api_users_pasien(decoded_token):
 
 
 @app.route('/api/jadwal')
-# @swag_from('swagger_doc/jadwal.yml')
+@swag_from('swagger_doc/jadwal.yml')
 def api_jadwal():
     nama = request.args.get('nama')
     poli = request.args.get('poli')
@@ -2499,7 +2544,7 @@ def api_jadwal():
 @app.route('/api/jadwal', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/jadwal_post.yml')
+@swag_from('swagger_doc/jadwal_post.yml')
 def api_jadwal_post(decoded_token):
     body = request.is_json
     if body:
@@ -2560,7 +2605,7 @@ def api_jadwal_post(decoded_token):
 @app.route('/api/jadwal/<id>')
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/jadwal_detail.yml')
+@swag_from('swagger_doc/jadwal_detail.yml')
 def api_detail_jadwal(decoded_token, id):
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
@@ -2578,7 +2623,7 @@ def api_detail_jadwal(decoded_token, id):
 @app.route('/api/jadwal/<id>', methods=['POST'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/jadwal_edit.yml')
+@swag_from('swagger_doc/jadwal_edit.yml')
 def api_jadwal_put(decoded_token, id):
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
@@ -2640,7 +2685,7 @@ def api_jadwal_put(decoded_token, id):
 @app.route('/api/jadwal/<id>', methods=['DELETE'])
 @validate_token_api(SECRET_KEY, TOKEN_KEY, db)
 @authorized_roles_api(["pegawai"])
-# @swag_from('swagger_doc/jadwal_delete.yml')
+@swag_from('swagger_doc/jadwal_delete.yml')
 def api_jadwal_delete(decoded_token, id):
     if id == 'undefined':
         raise HttpException(False, 400, "failed", "ID tidak boleh kosong")
@@ -2658,4 +2703,5 @@ def api_jadwal_delete(decoded_token, id):
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # do not use this in production
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)

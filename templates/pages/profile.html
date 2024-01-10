@@ -14,7 +14,7 @@
           <div class="card-body text-center">
             <div class="mt-3 mb-4">
               <img
-                src="{% if user_info.profile_pic %} {{ url_for('static', filename=user_info.profile_pic) }} {% else %} {{ url_for('static', filename='profile_pics/profile_placeholder.png') }} {% endif %}"
+                src="{% if user_info.profile_pic == 'profile_pics/profile_placeholder.png' %}https://cdn.glitch.global/3e2b63b2-5598-47b2-9a7a-f51a4c493164/profile_placeholder.png?v=1704861307243 {% else %} {{ url_for('static', filename=user_info.profile_pic) }} {% endif %}"
                 class="rounded-circle img-fluid"
                 style="width: 100px"
               />
