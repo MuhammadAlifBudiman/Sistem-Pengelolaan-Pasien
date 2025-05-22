@@ -1,9 +1,15 @@
 // rekam medis
+// This script handles the Rekam Medis (Medical Records) page functionality.
+// It includes DataTable initialization, filtering, CRUD operations for medical records, and dropdown population.
+
 $(document).ready(function () {
+  // Add filter icon to the card header and initialize Select2 dropdowns for NIK and Name filters
   $("#medis .card-header").append(
+    // FontAwesome filter icon triggers the filter modal
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#rekamFilterModal" style="color: #091e3e; cursor: pointer"></i>'
   );
 
+  // Initialize Select2 for NIK and Name dropdowns in the filter modal
   $("#nik-rekam").select2({
     dropdownParent: $("#rekamFilterModal"),
     dropdownAutoWidth: true,
@@ -15,19 +21,22 @@ $(document).ready(function () {
     placeholder: "Cari nama pasien",
   });
 
+  // Populate NIK and Name dropdowns with data from API
   fetchList("#nik-rekam", "/api/users/pasien?nik=nik");
   fetchList("#name-rekam", "/api/users/pasien?name=name");
 
   // Inisialisasi datatables
+  // Initialize the main DataTable for Rekam Medis
   let rekam_medisTable = $("#rekam_medisTable").DataTable({
-    deferRender: true,
-    serverSide: true,
-    processing: true,
+    deferRender: true, // Improves performance for large datasets
+    serverSide: true, // Data is loaded from the server
+    processing: true, // Show processing indicator
     responsive: {
       details: {
         type: "column",
         target: "tr",
         renderer: function (api, rowIdx, columns) {
+          // Custom renderer for responsive details
           let data = columns
             .map((col, i) => {
               return col.hidden
@@ -55,14 +64,16 @@ $(document).ready(function () {
       },
     },
     ajax: {
-      url: "/api/users/pasien",
+      url: "/api/users/pasien", // API endpoint for patient data
       data: function (d) {
+        // Add filter parameters to the AJAX request
         d.name = $("#name-rekam").val();
         d.nik = $("#nik-rekam").val();
         let status_filter = $("input[name='status-rekam']:checked").val();
         d.status_filter = status_filter;
       },
       dataFilter: function (data) {
+        // Adjust the response to fit DataTables format
         let json = jQuery.parseJSON(data);
         json.recordsTotal = json.datatables.recordsTotal;
         json.recordsFiltered = json.datatables.recordsFiltered;
@@ -76,16 +87,18 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row, meta) {
+          // Show row number
           return meta.row + meta.settings._iDisplayStart + 1;
         },
       },
-      { data: "name" },
-      { data: "nik" },
+      { data: "name" }, // Patient name
+      { data: "nik" }, // Patient NIK
       {
         data: null,
         orderable: false,
         searchable: false,
         render: function (data, type, row) {
+          // Show 'Lihat' (View) or 'Buat' (Create) button depending on record existence
           if (row.has_rekam_medis) {
             return `<button class='btn btn-sm btn-lihat text-light' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}' style='background-color: #091e3e'>Lihat</button>`;
           } else {
@@ -94,26 +107,30 @@ $(document).ready(function () {
         },
       },
     ],
-    order: [[1, "asc"]],
+    order: [[1, "asc"]], // Default sort by name
   });
 
+  // Apply filter button event
   $("#applyFilterRekam").on("click", function () {
-    rekam_medisTable.ajax.reload();
+    rekam_medisTable.ajax.reload(); // Reload table with new filters
     $("#rekamFilterModal").modal("hide"); // Close the modal
   });
 
-  // Event listener for Submit button
+  // Event listener for 'Buat' (Create) button
   $("#rekam_medisTable").on("click", ".btn-buat", function (e) {
     let rekamMedisNik = $(this).data("rekammedis-nik");
     let listDokter = $("#list-dokter");
+    // Initialize Select2 for doctor selection
     listDokter.select2({
       dropdownParent: $("#buatModal"),
       dropdownAutoWidth: true,
       placeholder: "--Silakan Pilih Dokter--",
     });
 
+    // Populate doctor dropdown
     fetchList("#list-dokter", "/api/jadwal?nama=nama");
 
+    // Handle form submission for creating a new medical record
     $("#buatrekam_medis")
       .off("submit")
       .submit(function (e) {
@@ -124,6 +141,7 @@ $(document).ready(function () {
         formData.push({ name: "nik", value: rekamMedisNik });
         formData.push({ name: "no", value: no });
 
+        // Send POST request to create new record
         $.ajax({
           url: `/api/rekam_medis`,
           type: "POST",
@@ -145,7 +163,7 @@ $(document).ready(function () {
       });
   });
 
-  // Event listener for Lihat button
+  // Event listener for 'Lihat' (View) button
   $("#rekam_medisTable").on("click", ".btn-lihat", function () {
     let rekamMedisNik = $(this).data("rekammedis-nik");
 
@@ -154,6 +172,7 @@ $(document).ready(function () {
       $("#list_checkup_user").DataTable().destroy();
     }
 
+    // Initialize DataTable for checkup history of selected patient
     let list_checkup_user = $("#list_checkup_user").DataTable({
       deferRender: true,
       serverSide: true,
@@ -163,6 +182,7 @@ $(document).ready(function () {
           type: "column",
           target: "tr",
           renderer: function (api, rowIdx, columns) {
+            // Custom renderer for responsive details
             let data = columns
               .map((col, i) => {
                 return col.hidden
@@ -192,6 +212,7 @@ $(document).ready(function () {
       ajax: {
         url: `/api/checkup/${rekamMedisNik}`,
         dataFilter: function (data) {
+          // Adjust the response to fit DataTables format
           let json = jQuery.parseJSON(data);
           json.recordsTotal = json.datatables.recordsTotal;
           json.recordsFiltered = json.datatables.recordsFiltered;
@@ -205,21 +226,24 @@ $(document).ready(function () {
           orderable: false,
           searchable: false,
           render: function (data, type, row, meta) {
+            // Show row number
             return meta.row + meta.settings._iDisplayStart + 1;
           },
         },
-        { data: "tgl_periksa" },
+        { data: "tgl_periksa" }, // Checkup date
         {
           data: null,
           render: function (data, type, row) {
+            // Show doctor name or fallback
             return row.dokter || "Belum ada dokter";
           },
         },
-        { data: "poli" },
-        { data: "keluhan" },
+        { data: "poli" }, // Poli/Department
+        { data: "keluhan" }, // Complaint
         {
           data: null,
           render: function (data, type, row) {
+            // Show anamnesis result or fallback
             return row.hasil_anamnesa || "Belum ada hasil anamnesa";
           },
         },
@@ -228,17 +252,20 @@ $(document).ready(function () {
           orderable: false,
           searchable: false,
           render: function (data, type, row) {
+            // Edit button for checkup record
             return `<button class='btn btn-sm btn-edit text-light' data-bs-toggle='modal'        data-bs-target='#editModal' data-checkup-id='${row._id}' data-rekammedis-nik='${rekamMedisNik}' style='background-color: #06a3da'>Edit</button>`;
           },
         },
       ],
-      order: [[1, "asc"]],
+      order: [[1, "asc"]], // Default sort by checkup date
     });
 
+    // Fetch and display patient Rekam Medis details
     $.ajax({
       url: `/api/rekam_medis/${rekamMedisNik}`,
       type: "GET",
       success: function (response) {
+        // Populate Rekam Medis details section
         $("#rekam-medis").empty();
         $("#rekam-medis").append(
           `<div class="row">
@@ -306,23 +333,27 @@ $(document).ready(function () {
     });
   });
 
-  // Event listener for Edit buttons
+  // Event listener for Edit buttons in checkup history
   $("#list_checkup_user").on("click", ".btn-edit", function () {
     let checkupId = $(this).data("checkup-id");
     let rekamMedisNik = $(this).data("rekammedis-nik");
     let editModal = $("#editModal");
     let listDokter = $("#list-edit-dokter");
+    // Initialize Select2 for doctor selection in edit modal
     listDokter.select2({
       dropdownParent: $("#editModal"),
       dropdownAutoWidth: true,
       placeholder: "--Silakan Pilih Dokter--",
     });
+    // Populate doctor dropdown
     fetchList("#list-edit-dokter", "/api/jadwal?nama=nama");
 
+    // Fetch checkup data for editing
     $.ajax({
       url: `/api/checkup/${rekamMedisNik}/${checkupId}`,
       type: "GET",
       success: function (response) {
+        // Set doctor and anamnesis fields in the edit modal
         editModal
           .find("#list-edit-dokter")
           .val(response.data.dokter)
@@ -338,7 +369,7 @@ $(document).ready(function () {
       },
     });
 
-    // Event listener for Edit form submission
+    // Handle form submission for editing checkup
     editModal
       .find("#edit")
       .off("submit")
@@ -347,6 +378,7 @@ $(document).ready(function () {
 
         let formData = $(this).serializeArray();
 
+        // Send POST request to update checkup
         $.ajax({
           url: `/api/checkup/${rekamMedisNik}/${checkupId}`,
           type: "POST",
@@ -373,7 +405,10 @@ $(document).ready(function () {
   });
 });
 
-// Function to generate nomor rekam medis
+/**
+ * Generate a random 6-digit nomor rekam medis (medical record number) in the format XX-XX-XX
+ * and set it to the input field with id 'no'.
+ */
 function generateNomorRekamMedis() {
   // Assuming 6-digit nomor rekam medis with the format XX-XX-XX
   var nomorRekamMedis = Array.from({ length: 3 }, () =>
@@ -386,7 +421,11 @@ function generateNomorRekamMedis() {
   document.getElementById("no").value = nomorRekamMedis;
 }
 
-// Function to fetch list dropdown options
+/**
+ * Fetch list data from the given URL and populate the dropdown specified by selector.
+ * @param {string} selector - jQuery selector for the dropdown
+ * @param {string} url - API endpoint to fetch data
+ */
 function fetchList(selector, url) {
   $.ajax({
     url: url,
@@ -401,7 +440,11 @@ function fetchList(selector, url) {
   });
 }
 
-// Function to populate dropdown with options
+/**
+ * Populate a dropdown with options.
+ * @param {string} selector - jQuery selector for the dropdown
+ * @param {Array} options - Array of option values
+ */
 function populateDropdown(selector, options) {
   let dropdown = $(selector);
   dropdown.empty();
@@ -413,6 +456,9 @@ function populateDropdown(selector, options) {
   }
 }
 
+/**
+ * Clear all Rekam Medis filters (NIK, Name, and status radio buttons)
+ */
 function clearFilterRekam() {
   let listNik = $("#nik-rekam");
   let listName = $("#name-rekam");

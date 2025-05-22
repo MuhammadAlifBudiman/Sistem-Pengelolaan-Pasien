@@ -1,15 +1,21 @@
+// pendaftaran.js - Handles patient registration and queue management UI logic
+//
+// This script manages the registration form, queue status, and interactions with the backend API for patient queueing.
+// It uses jQuery and Select2 for UI, and SweetAlert2 for confirmation dialogs.
+
 $(document).ready(async function () {
+  // Check if the user has a pending or approved queue entry
   const response = await fetch("/api/antrian/check");
   const dataResponse = await response.json();
   if (dataResponse.data.has_pending_or_approved) {
+    // If there is a pending/approved entry, set formStatus to 'pending' in sessionStorage
     sessionStorage.setItem("formStatus", "pending");
   } else {
-    // remove formstatus from session storage
+    // Otherwise, remove formStatus from sessionStorage
     sessionStorage.removeItem("formStatus");
   }
 
-  
-
+  // Initialize Select2 dropdown for 'poli' (clinic department)
   let listPoli = $("#poli");
   let uniquePoli = [];
   listPoli.select2({
@@ -17,26 +23,32 @@ $(document).ready(async function () {
     placeholder: "--Silakan Pilih Poli--",
   });
 
+  // Fetch and populate the 'poli' dropdown list
   fetchList("#poli", "/api/jadwal?poli=poli");
 
-  // Get today's date in the format YYYY-MM-DD
+  // Get today's date in YYYY-MM-DD format
   let today = new Date().toISOString().split("T")[0];
 
-  // Set the max attribute of the date input to today
+  // Set the minimum selectable date to today
   $("#tanggal").attr("min", today);
-  // Fungsi untuk merender tabel berdasarkan data yang diberikan
+
+  /**
+   * Render the queue table with the provided data
+   * @param {Array} data - List of queue entries
+   */
   function renderTable(data) {
     let table = $(".card-body");
-    // add class table-responsive to table
+    // Make table responsive
     table.addClass("table-responsive");
 
     let tbody = $("#antrian-container tbody");
     tbody.empty();
 
     data.forEach(function (item) {
+      // Remove any existing cancel button and add a new one for each entry
       $("#antrian-container .card-header button").remove();
       $("#antrian-container .card-header").append(
-        `<button class="btn text-light w-auto" onclick="confirmButton('/api/pendaftaran/${item._id}/cancel')" style="background-color: #091e3e;">Cancel</button>`
+        `<button class=\"btn text-light w-auto\" onclick=\"confirmButton('/api/pendaftaran/${item._id}/cancel')\" style=\"background-color: #091e3e;\">Cancel</button>`
       );
       let row = $("<tr>");
       let antrian = item.antrian || "-";
@@ -49,6 +61,7 @@ $(document).ready(async function () {
       tbody.append(row);
     });
 
+    // Show/hide form and queue table based on status
     toggleFormAndAntrian(
       data.some(
         (item) => item.status === "pending" || item.status === "approved"
@@ -56,7 +69,10 @@ $(document).ready(async function () {
     );
   }
 
-  // Fungsi untuk menampilkan atau menyembunyikan formulir dan antrian berdasarkan data
+  /**
+   * Show or hide the registration form and queue table based on queue status
+   * @param {boolean} hasPendingOrApproved - Whether there is a pending/approved queue
+   */
   function toggleFormAndAntrian(hasPendingOrApproved) {
     $("#formulir-container").toggle(!hasPendingOrApproved);
     $("#antrian-container").toggle(hasPendingOrApproved);
@@ -66,9 +82,10 @@ $(document).ready(async function () {
     );
   }
 
-  // Periksa sessionStorage saat halaman dimuat
+  // Get form status from sessionStorage
   let formStatus = sessionStorage.getItem("formStatus");
 
+  // Show/hide form and queue table based on form status
   if (
     formStatus === "done" ||
     formStatus === "rejected" ||
@@ -78,7 +95,7 @@ $(document).ready(async function () {
   } else {
     toggleFormAndAntrian(true);
 
-    // Jika formulir sudah dikirim, ambil dan tampilkan data antrian
+    // If form is pending/approved, fetch and display the user's queue data
     if (formStatus === "pending" || formStatus === "approved") {
       $.ajax({
         type: "GET",
@@ -93,10 +110,12 @@ $(document).ready(async function () {
     }
   }
 
-  // Perbarui peristiwa klik untuk tombol kirim
+  // Handle form submission
   $(".btn-submit-form").click(function (event) {
     event.preventDefault();
 
+    // Prevent resubmission if already done or rejected
+    let formStatus = sessionStorage.getItem("formStatus"); // re-fetch status on click
     if (formStatus === "done" || formStatus === "rejected") {
       showToast(
         "Formulir telah terkirim. Anda tidak dapat mengirim formulir lagi.",
@@ -106,10 +125,12 @@ $(document).ready(async function () {
       return;
     }
 
+    // Get form values
     let poli = $("#poli").val();
     let tanggal = $("#tanggal").val();
     let keluhan = $("#keluhan").val();
 
+    // Validate form fields
     if (!poli) {
       showToast(
         "Harap pilih jenis poli sebelum mengirim formulir",
@@ -137,13 +158,14 @@ $(document).ready(async function () {
       return;
     }
 
+    // Prepare form data for submission
     let formData = {
       poli: poli,
       tanggal: formatDateString(tanggal),
       keluhan: keluhan,
     };
 
-    // Permintaan Ajax untuk mengirim formulir
+    // Submit registration form via AJAX
     $.ajax({
       type: "POST",
       url: "/api/pendaftaran",
@@ -156,9 +178,10 @@ $(document).ready(async function () {
         let newStatus = "pending";
         showToast(data.message, "success", 3000);
 
+        // Update form status and UI
         sessionStorage.setItem("formStatus", newStatus);
         toggleFormAndAntrian(true);
-        // change object data.data to list data
+        // Convert single data object to list for rendering
         let listData = [];
         listData.push(data.data);
         renderTable(listData);
@@ -170,7 +193,11 @@ $(document).ready(async function () {
   });
 });
 
-// Function to fetch list dropdown options
+/**
+ * Fetch dropdown options from API and populate the selector
+ * @param {string} selector - jQuery selector for the dropdown
+ * @param {string} url - API endpoint to fetch options
+ */
 function fetchList(selector, url) {
   $.ajax({
     url: url,
@@ -185,7 +212,11 @@ function fetchList(selector, url) {
   });
 }
 
-// Function to populate dropdown with options
+/**
+ * Populate a dropdown with options
+ * @param {string} selector - jQuery selector for the dropdown
+ * @param {Array} options - List of options to add
+ */
 function populateDropdown(selector, options) {
   let dropdown = $(selector);
   dropdown.empty();
@@ -197,37 +228,44 @@ function populateDropdown(selector, options) {
   }
 }
 
-function confirmButton(url){
-  swal.fire({
-    title: "Apa kamu yakin ?",
-    text: "Tindakan ini tidak bisa dipulihkan!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Ya",
-    confirmButtonColor: "#06a3da",
-    cancelButtonText: "Tidak",
-    cancelButtonColor: "#091e3e",
-    reverseButtons: true
-  }).then((result) => {
-    if (result.isConfirmed) {
-      $.ajax({
-        url: url,
-        method: "POST",
-        success: function (response) {
-          swal.fire({
-            title: "Berhasil!",
-            text: response.message,
-            icon: "success"
-          });
-          window.location.reload();
-        },
-        error: function (error) {
-          showToast("Gagal mengubah status", "error", 3000);
-        },
-      });
-      
-    }
-  });
+/**
+ * Show a confirmation dialog and send a cancel request if confirmed
+ * @param {string} url - API endpoint to cancel the registration
+ */
+function confirmButton(url) {
+  swal
+    .fire({
+      title: "Apa kamu yakin ?",
+      text: "Tindakan ini tidak bisa dipulihkan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya",
+      confirmButtonColor: "#06a3da",
+      cancelButtonText: "Tidak",
+      cancelButtonColor: "#091e3e",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        // Send cancel request if confirmed
+        $.ajax({
+          url: url,
+          method: "POST",
+          success: function (response) {
+            swal.fire({
+              title: "Berhasil!",
+              text: response.message,
+              icon: "success",
+            });
+            window.location.reload();
+          },
+          error: function (error) {
+            showToast("Gagal mengubah status", "error", 3000);
+          },
+        });
+      }
+    });
 
+  // Style the SweetAlert2 button
   $("button.swal2-default-outline").addClass("w-auto");
 }

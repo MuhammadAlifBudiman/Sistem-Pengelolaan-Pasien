@@ -1,3 +1,25 @@
+# Sistem Pengelolaan Pasien (Patient Management System)
+# app.py
+#
+# This is the main application file for the Patient Management System web app.
+# It uses Flask as the web framework and MongoDB as the database.
+#
+# The application provides:
+# - User authentication (register, login, logout)
+# - Patient registration and queue management
+# - Medical record management
+# - Role-based access control (patients and staff)
+# - Real-time updates using SocketIO
+# - API documentation with Swagger
+#
+# Each route, class, and function is documented with docstrings and inline comments.
+#
+# For environment variables, see the .env file.
+#
+# Main dependencies: Flask, Flask-Bcrypt, Flask-SocketIO, PyMongo, python-dotenv, pandas, flasgger
+#
+# To run: python app.py
+
 import re
 import secrets
 from flask import Flask, render_template, request, jsonify, send_file, make_response
@@ -558,8 +580,10 @@ def sign_in():
     response = api_response(True, 200, "success",
                             "Login berhasil", {TOKEN_KEY: token})
     response_data = make_response(jsonify(response.__dict__))
-    response_data.headers.add(
-        "Set-Cookie", f"{TOKEN_KEY}={token}; HttpOnly; Secure; Max-Age={60 * 60 * 24}; Path=/")
+    cookie_flags = f"{TOKEN_KEY}={token}; HttpOnly; Max-Age={60 * 60 * 24}; Path=/"
+    if request.is_secure:
+        cookie_flags = f"{TOKEN_KEY}={token}; HttpOnly; Secure; Max-Age={60 * 60 * 24}; Path=/"
+    response_data.headers.add("Set-Cookie", cookie_flags)
     return response_data
 
 

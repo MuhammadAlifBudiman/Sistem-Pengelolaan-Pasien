@@ -118,3 +118,7 @@ TOKEN_KEY=your_token_key
 ## Kontribusi
 
 Silakan berkontribusi dengan melakukan _pull request_ ke repositori ini. Jangan ragu untuk melaporkan _issue_ jika menemui masalah.
+
+--- 
+
+**Proyek ini dikembangkan sebagai bagian dari program MSIB LearningX Full Stack Web Development.**

@@ -1,3 +1,18 @@
+# seeder.py
+# Seeder script for populating MongoDB collections for a Flask app.
+#
+# Usage examples:
+#   - Seed all collections:
+#       python3 seeder.py --user --jadwal --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user
+#   - Recreate database:
+#       python3 seeder.py --user --jadwal --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user --reload
+#   - Seed specific collections:
+#       python3 seeder.py --user
+#       python3 seeder.py --jadwal
+#       python3 seeder.py --registration
+#       python3 seeder.py --rekam-medis
+#       python3 seeder.py --list-checkup-user
+
 from attr import has
 from flask import Flask
 from flask_pymongo import PyMongo
@@ -10,9 +25,11 @@ from os.path import join, dirname
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
+# Load environment variables from .env file
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+# Initialize Flask app and MongoDB connection
 app = Flask(__name__)
 MONGODB_CONNECTION_STRING = os.environ.get("MONGODB_CONNECTION_STRING")
 if not MONGODB_CONNECTION_STRING:
@@ -27,50 +44,33 @@ app.config['MONGO_DBNAME'] = DB_NAME
 mongo = PyMongo(app)
 client = MongoClient(MONGODB_CONNECTION_STRING)
 
-# How to use
-
-# Seed all collections
-# python3 seeder.py --user --jadwal --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user
-
-# Recreate database
-# python3 seeder.py --user --jadwal --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user --reload
-
-# Seed registrations_pasien collection
-# python3 seeder.py --registration --approve-registrations --done-registrations --rekam-medis --list-checkup-user
-
-# Seed users collection
-# python3 seeder.py --user
-
-# Seed jadwal collection
-# python3 seeder.py --jadwal
-
-# Seed registrations_pasien collection
-# python3 seeder.py --registration 
-
-# Seed rekam_medis collection
-# python3 seeder.py --rekam-medis
-
-# Seed list_checkup_user collection
-# python3 seeder.py --list-checkup-user
-
+# Initialize Faker for generating fake data
 fake = Faker('id_ID')
 
-# Function to generate fake user data
+# --- Seeder Functions ---
+
+
 def generate_fake_user(role):
+    """
+    Generate a fake user document for the given role.
+    Ensures unique username and NIK (16 digits).
+    Args:
+        role (str): User role ('pasien' or 'pegawai').
+    Returns:
+        dict: User document.
+    """
     db = mongo.cx[app.config['MONGO_DBNAME']]
     while True:
         username = fake.unique.user_name()
         nik = str(fake.unique.random_number(16))
-
-        # Check if the generated username or nik already exists in the database
+        # Ensure username and NIK are unique in the database
         existing_user = db.users.find_one(
             {'$or': [{'username': username}, {'nik': nik}]})
-
         if existing_user is None and len(nik) == 16:
             break
-    password = "$2b$10$xm2V57w6d8/Q4RzMYp9GDeiahaWW5HLmD1TxaS2TLurYXscUAATHS"  # Password.12
+    # Password.12 (bcrypt hash)
+    password = "$2b$10$xm2V57w6d8/Q4RzMYp9GDeiahaWW5HLmD1TxaS2TLurYXscUAATHS"
     salt = "6da84944bc8be809e39d6e63257cb840"
-
     user_data = {
         'profile_pic': 'profile_pics/profile_placeholder.png',
         'username': username,
@@ -86,53 +86,53 @@ def generate_fake_user(role):
         'role': role,
         'salt': salt,
     }
-
     return user_data
 
-# Function to seed the users collection with a specific number of users for each role
+
 def seed_users(num_pasien=10, num_pegawai=2):
+    """
+    Seed the users collection with fake pasien and pegawai users.
+    Args:
+        num_pasien (int): Number of pasien users to create.
+        num_pegawai (int): Number of pegawai users to create.
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
         roles = {'pasien': num_pasien, 'pegawai': num_pegawai}
-
         for role, count in roles.items():
             for _ in range(count):
                 user_data = generate_fake_user(role)
                 db.users.insert_one(user_data)
-
         print("Users seeded.")
 
 
-# Function to seed the jadwal collection
 def seed_jadwal(num_jadwal=3):
+    """
+    Seed the jadwal collection with fake doctor schedules.
+    Args:
+        num_jadwal (int): Number of jadwal entries to create.
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
         poli_choices = ['Umum', 'Gigi', 'Mata', 'Jantung', 'THT',
                         'Syaraf', 'Kesehatan Jiwa', 'Anak', 'Fisioterapi']
-        hari_choices = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']
-
-        for _ in range(num_jadwal):  # Adjust the number of jadwal entries as needed
-            # Generate random time values
+        hari_choices = ['senin', 'selasa', 'rabu',
+                        'kamis', 'jumat', 'sabtu', 'minggu']
+        for _ in range(num_jadwal):
+            # Generate random opening and closing times (2-4 hours apart)
             jam_buka = fake.time(pattern="%H:%M")
             jam_tutup = fake.time(pattern="%H:%M")
-
-            # Ensure jam_buka is less than jam_tutup
             while jam_buka >= jam_tutup:
                 jam_buka = fake.time(pattern="%H:%M")
                 jam_tutup = fake.time(pattern="%H:%M")
-
-            # Calculate the difference between jam_buka and jam_tutup
             time_format = "%H:%M"
             diff = datetime.strptime(
                 jam_tutup, time_format) - datetime.strptime(jam_buka, time_format)
-
-            # Ensure the difference is at least 2 hours and at most 4 hours
             while diff < timedelta(hours=2) or diff > timedelta(hours=4):
                 jam_buka = fake.time(pattern="%H:%M")
                 jam_tutup = fake.time(pattern="%H:%M")
                 diff = datetime.strptime(
                     jam_tutup, time_format) - datetime.strptime(jam_buka, time_format)
-
             jadwal_data = {
                 'nama': fake.name(),
                 'poli': fake.random_element(elements=poli_choices),
@@ -140,22 +140,25 @@ def seed_jadwal(num_jadwal=3):
                 'jam_buka': jam_buka,
                 'jam_tutup': jam_tutup
             }
-
             # Sort the 'hari' list according to the specified order
             jadwal_data['hari'].sort(key=hari_choices.index)
-
             db.jadwal.insert_one(jadwal_data)
         print("Jadwal seeded.")
 
 
-# Function to seed the registrations_pasien collection
 def seed_registrations_pasien(num_registration=3):
+    """
+    Seed the registrations_pasien collection with fake patient registrations.
+    Args:
+        num_registration (int): Number of registrations per user.
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
         status_choices = ['done', 'rejected', 'canceled', 'expired']
-
         for user in db.users.find({'role': 'pasien'}):
-            has_pending_or_approved = db.registrations.find_one({'username': user['username'], 'status': {'$in': ['pending', 'approved']}})
+            # Ensure each user has at least one pending or approved registration
+            has_pending_or_approved = db.registrations.find_one(
+                {'username': user['username'], 'status': {'$in': ['pending', 'approved']}})
             if not has_pending_or_approved:
                 registration_data = {
                     'username': user['username'],
@@ -171,27 +174,21 @@ def seed_registrations_pasien(num_registration=3):
                     'keluhan': fake.sentence(),
                     'status': fake.random_element(elements=['approved', 'pending'])
                 }
-
                 # Choose poli randomly from jadwal collection
                 jadwal_poli = db.jadwal.aggregate([
                     {'$sample': {'size': 1}},
                     {'$project': {'_id': 0, 'poli': 1}}
                 ]).next()
-
                 registration_data['poli'] = jadwal_poli['poli']
-
                 if registration_data['status'] in ['approved']:
-                    # Calculate the antrian based on the number of registrations for the same date and poli
+                    # Calculate the antrian (queue number)
                     count_same_date_poli = db.registrations.count_documents({
                         'tanggal': registration_data['tanggal'],
                         'poli': registration_data['poli'],
                         'status': {'$in': ['approved', 'done']}
                     })
-
                     registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
-
                 db.registrations.insert_one(registration_data)
-
             # Create more registrations for the same user
             for _ in range(random.randint(1, num_registration)):
                 registration_data = {
@@ -208,124 +205,106 @@ def seed_registrations_pasien(num_registration=3):
                     'keluhan': fake.sentence(),
                     'status': fake.random_element(elements=status_choices)
                 }
-
                 # Choose poli randomly from jadwal collection
                 jadwal_poli = db.jadwal.aggregate([
                     {'$sample': {'size': 1}},
                     {'$project': {'_id': 0, 'poli': 1}}
                 ]).next()
-
                 registration_data['poli'] = jadwal_poli['poli']
-
                 if registration_data['status'] in ['approved', 'done']:
-                    # Calculate the antrian based on the number of registrations for the same date and poli
                     count_same_date_poli = db.registrations.count_documents({
                         'tanggal': registration_data['tanggal'],
                         'poli': registration_data['poli'],
                         'status': {'$in': ['approved', 'done']}
                     })
-
                     registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
-                # Check if there are more "done" registrations than "approved" registrations on the same date
+                # Ensure not more 'done' than 'approved' registrations for the same user/date
                 if registration_data['status'] == 'done':
                     approved_count = db.registrations.count_documents({
                         'username': user['username'],
                         'status': 'approved',
                         'tanggal': registration_data['tanggal']
                     })
-
                     done_count = db.registrations.count_documents({
                         'username': user['username'],
                         'status': 'done',
                         'tanggal': registration_data['tanggal']
                     })
-
                     if done_count >= approved_count:
-                        continue  # Skip this registration if the "done" count is greater or equal to "approved"
+                        continue
                 if registration_data['status'] == 'expired':
                     # Set expired registration to random date in the past
-                    registration_data['tanggal'] = (datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%d-%m-%Y')
-                    # Calculate the antrian based on the number of registrations for the same date and poli
+                    registration_data['tanggal'] = (
+                        datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%d-%m-%Y')
                     count_same_date_poli = db.registrations.count_documents({
                         'tanggal': registration_data['tanggal'],
                         'poli': registration_data['poli'],
                         'status': {'$in': ['approved', 'done']}
                     })
-
                     registration_data['antrian'] = f"{count_same_date_poli + 1:03d}"
-
                 db.registrations.insert_one(registration_data)
-
         print("Registrations seeded.")
 
 
-# Function to approve all pending registration
 def approve_registrations():
+    """
+    Approve all pending registrations in the registrations_pasien collection.
+    Sets status to 'approved' and assigns queue number (antrian).
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
-
-        # Iterate through the registrations_pasien collection
         for registration in db.registrations.find({'status': 'pending'}):
-            # Calculate the antrian based on the number of registrations for the same date and poli
             count_same_date_poli = db.registrations.count_documents({
                 'tanggal': registration['tanggal'],
                 'poli': registration['poli'],
                 'status': {'$in': ['approved', 'done']}
             })
-
             registration['antrian'] = f"{count_same_date_poli + 1:03d}"
             db.registrations.update_one(
                 {'_id': registration['_id']}, {'$set': {'antrian': registration['antrian'], 'status': 'approved'}})
-
         print("Registrations approved.")
 
-# Function to done all approved registraiton
+
 def done_registrations():
+    """
+    Mark all approved registrations as done in the registrations_pasien collection.
+    Sets status to 'done' and updates queue number (antrian).
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
-
-        # Iterate through the registrations_pasien collection
         for registration in db.registrations.find({'status': 'approved'}):
-            # Calculate the antrian based on the number of registrations for the same date and poli
             count_same_date_poli = db.registrations.count_documents({
                 'tanggal': registration['tanggal'],
                 'poli': registration['poli'],
                 'status': {'$in': ['approved', 'done']}
             })
-
             registration['antrian'] = f"{count_same_date_poli + 1:03d}"
             db.registrations.update_one(
                 {'_id': registration['_id']}, {'$set': {'antrian': registration['antrian'], 'status': 'done'}})
-
         print("Registrations done.")
 
-# Function to seed the rekam_medis collection
+
 def seed_rekam_medis():
+    """
+    Seed the rekam_medis collection for users with 'done' registrations.
+    Each user gets a unique medical record number (no_kartu).
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
-
-        # Iterate through the registrations_pasien collection
         for registration in db.registrations.find({'status': 'done'}):
-            # Check if rekam_medis already exists for this user
+            # Skip if rekam_medis already exists for this user
             existing_rekam_medis = db.rekam_medis.find_one(
                 {'nik': registration['nik']})
-
             if existing_rekam_medis:
-                continue  # Skip if rekam_medis already exists for this user
-
-            # Calculate umur based on tgl_lahir
+                continue
+            # Calculate age from tgl_lahir
             tgl_lahir = datetime.strptime(
                 registration['tgl_lahir'], '%d-%m-%Y')
             umur = (datetime.now() - tgl_lahir).days // 365
-
-            # Generate nomor rekam medis
+            # Generate unique nomor rekam medis
             nomor_rekam_medis = generate_nomor_rekam_medis()
-
             while db.rekam_medis.find_one({'no_kartu': nomor_rekam_medis}):
-                # Generate new nomor rekam medis if the generated nomor rekam medis already exists
                 nomor_rekam_medis = generate_nomor_rekam_medis()
-
-            # Create rekam_medis data
             rekam_medis_data = {
                 'no_kartu': nomor_rekam_medis,
                 'username': registration['username'],
@@ -335,42 +314,39 @@ def seed_rekam_medis():
                 'alamat': registration['alamat'],
                 'no_telp': registration['no_telp'],
             }
-
-            # Insert rekam_medis data into the rekam_medis collection
             db.rekam_medis.insert_one(rekam_medis_data)
-
         print("Rekam medis seeded.")
 
 
-# Function to generate nomor rekam medis
 def generate_nomor_rekam_medis():
-    # Assuming 6-digit nomor rekam medis with the format XX-XX-XX
+    """
+    Generate a unique 6-digit medical record number in the format XX-XX-XX.
+    Returns:
+        str: Medical record number.
+    """
     nomor_rekam_medis = '-'.join([str(random.randint(0, 99)).zfill(2)
                                  for _ in range(3)])
     return nomor_rekam_medis
 
-# Function to seed the list_checkup_user collection
+
 def seed_list_checkup_user():
+    """
+    Seed the list_checkup_user collection for users with 'done' registrations.
+    Each entry links a patient, doctor, and checkup details.
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
-
-        # Iterate through the registrations_pasien collection with status 'done'
         for registration in db.registrations.find({'status': 'done'}):
             has_checkup = db.list_checkup_user.find_one(
                 {'nik': registration['nik'], 'tgl_periksa': registration['tanggal'], 'poli': registration['poli'], 'dokter': {'$exists': True}, 'hasil_anamnesa': {'$exists': True}, 'keluhan': registration['keluhan'], 'nama': registration['name']})
-            
-            
             if has_checkup:
                 continue
-            
-            # Get dokter name from jadwal
+            # Get doctor name from jadwal
             dokter_name = db.jadwal.aggregate([
                 {'$match': {'poli': registration['poli']}},
                 {'$sample': {'size': 1}},
                 {'$project': {'_id': 0, 'nama': 1}}
             ]).next()['nama']
-
-            # Create list_checkup_user data
             checkup_data = {
                 'nik': registration['nik'],
                 'dokter': dokter_name,
@@ -380,14 +356,15 @@ def seed_list_checkup_user():
                 'poli': registration['poli'],
                 'tgl_periksa': registration['tanggal'],
             }
-
-            # Insert list_checkup_user data into the list_checkup_user collection
             db.list_checkup_user.insert_one(checkup_data)
-
         print("List checkup user seeded.")
 
-# Function to drop and recreate the database
+
 def recreate_database():
+    """
+    Drop and recreate all collections in the database.
+    Clears users, jadwal, registrations, rekam_medis, list_checkup_user, and user_sessions.
+    """
     with app.app_context():
         db = mongo.cx[app.config['MONGO_DBNAME']]
         db.users.delete_many({})
@@ -399,7 +376,9 @@ def recreate_database():
         print("Collections cleared.")
 
 
+# --- Main CLI Entrypoint ---
 if __name__ == '__main__':
+    # Parse command-line arguments for seeding options
     parser = argparse.ArgumentParser(
         description="Seed MongoDB database for Flask app.")
     parser.add_argument('--user', action='store_true',
@@ -410,36 +389,29 @@ if __name__ == '__main__':
                         help='Seed registrations_pasien collection')
     parser.add_argument('--rekam-medis', action='store_true',
                         help='Seed rekam_medis collection'),
-    parser.add_argument('--list-checkup-user', action='store_true', help='Seed list_checkup_user collection'),
+    parser.add_argument('--list-checkup-user', action='store_true',
+                        help='Seed list_checkup_user collection'),
     parser.add_argument('--approve-registrations', action='store_true',
-                        help='Approve all pending registrations'),
+                        help='Approve all pending registrations')
     parser.add_argument('--done-registrations', action='store_true',
-                        help='Done all approved registrations'),
+                        help='Done all approved registrations')
     parser.add_argument('--reload', action='store_true',
                         help='Drop and recreate the database')
-
     args = parser.parse_args()
-
+    # Run selected seeding operations based on arguments
     if args.reload:
         recreate_database()
-
     if args.user:
         seed_users(num_pasien=100, num_pegawai=1)
-
     if args.jadwal:
         seed_jadwal(num_jadwal=20)
-
     if args.registration:
         seed_registrations_pasien(num_registration=1)
-
     if args.rekam_medis:
         seed_rekam_medis()
-
     if args.list_checkup_user:
         seed_list_checkup_user()
-
     if args.approve_registrations:
         approve_registrations()
-
     if args.done_registrations:
         done_registrations()

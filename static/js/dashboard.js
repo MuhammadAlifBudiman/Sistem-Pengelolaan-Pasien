@@ -1,22 +1,29 @@
-// Jadwal Table
+// dashboard.js - Main dashboard logic for patient management system
+// This script handles DataTables initialization, filter modals, dropdown population, export functions, and AJAX interactions for the dashboard page.
+
+// On document ready, initialize UI components and event listeners
 $(document).ready(function () {
+  // Add Export button and filter icon to Pendaftaran card header
   $("#pendaftaran .card-header").prepend(
     '<button type="button" class="btn text-light" onclick="exportPendaftaran()" style="background-color: #06a3da; width: auto" id="btn-tambah">Export</button>'
   );
   $("#pendaftaran .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#daftarFilterModal" style="color: #091e3e; cursor: pointer"></i>'
   );
+  // Add Export button and filter icon to Checkup card header
   $("#checkup .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#checkupFilterModal" style="color: #091e3e; cursor: pointer"></i>'
   );
   $("#checkup .card-header").prepend(
     '<button type="button" class="btn text-light" onclick="exportCheckup()" style="background-color: #06a3da; width: auto" id="btn-tambah">Export</button>'
   );
+  // Add filter icon to Rekam Medis card header
   $("#rekam-medis .card-header").append(
     '<i class="fa-solid fa-sliders fa-xl" data-bs-toggle="modal" data-bs-target="#rekamFilterModal" style="color: #091e3e; cursor: pointer"></i>'
   );
 
-
+  // Initialize Select2 dropdowns for filter modals
+  // Pendaftaran filters
   $("#name-daftar").select2({
     dropdownParent: $("#daftarFilterModal"),
     dropdownAutoWidth: true,
@@ -33,6 +40,7 @@ $(document).ready(function () {
     placeholder: "Cari tanggal",
   });
 
+  // Checkup filters
   $("#name-pasien").select2({
     dropdownParent: $("#checkupFilterModal"),
     dropdownAutoWidth: true,
@@ -54,6 +62,7 @@ $(document).ready(function () {
     placeholder: "Cari poli",
   });
 
+  // Rekam Medis filters
   $("#nik-rekam").select2({
     dropdownParent: $("#rekamFilterModal"),
     dropdownAutoWidth: true,
@@ -65,55 +74,31 @@ $(document).ready(function () {
     placeholder: "Cari nama pasien",
   });
 
-  fetchList(
-    "#name-daftar",
-    "/api/pendaftaran?name=name"
-  );
-  fetchList(
-    "#poli-daftar",
-    "/api/pendaftaran?poli=poli"
-  );
-  fetchList(
-    "#tanggal-daftar",
-    "/api/pendaftaran?tanggal=tanggal"
-  );
+  // Populate dropdowns with data from API endpoints
+  fetchList("#name-daftar", "/api/pendaftaran?name=name");
+  fetchList("#poli-daftar", "/api/pendaftaran?poli=poli");
+  fetchList("#tanggal-daftar", "/api/pendaftaran?tanggal=tanggal");
 
-  fetchList(
-    "#name-pasien",
-    "/api/checkup?name=name"
-  );
-  fetchList(
-    "#name-dokter",
-    "/api/checkup?dokter=dokter"
-  );
-  fetchList(
-    "#tanggal-checkup",
-    "/api/checkup?tanggal=tanggal"
-  );
-  fetchList(
-    "#poli-checkup",
-    "/api/checkup?poli=poli"
-  );
+  fetchList("#name-pasien", "/api/checkup?name=name");
+  fetchList("#name-dokter", "/api/checkup?dokter=dokter");
+  fetchList("#tanggal-checkup", "/api/checkup?tanggal=tanggal");
+  fetchList("#poli-checkup", "/api/checkup?poli=poli");
 
-  fetchList(
-    "#nik-rekam",
-    "/api/rekam_medis?nik=nik"
-  );
-  fetchList(
-    "#name-rekam",
-    "/api/rekam_medis?name=name"
-  );
+  fetchList("#nik-rekam", "/api/rekam_medis?nik=nik");
+  fetchList("#name-rekam", "/api/rekam_medis?name=name");
 
-  // Inisialisasi DataTables
+  // Initialize DataTables for each main table
+  // Pendaftaran table
   let myTable = $("#pendaftaranTable").DataTable({
-    deferRender: true,
-    serverSide: true,
-    processing: true,
+    deferRender: true, // Improves performance for large datasets
+    serverSide: true, // Data is loaded from server
+    processing: true, // Show processing indicator
     responsive: {
       details: {
         type: "column",
         target: "tr",
         renderer: function (api, rowIdx, columns) {
+          // Custom renderer for responsive details
           let data = columns
             .map((col, i) => {
               return col.hidden
@@ -141,8 +126,9 @@ $(document).ready(function () {
       },
     },
     ajax: {
-      url: "/api/pendaftaran",
+      url: "/api/pendaftaran", // API endpoint for data
       data: function (d) {
+        // Attach filter values to request
         d.name = $("#name-daftar").val();
         d.poli = $("#poli-daftar").val();
         d.tanggal = $("#tanggal-daftar").val();
@@ -150,6 +136,7 @@ $(document).ready(function () {
         d.status_filter = status_filter;
       },
       dataFilter: function (data) {
+        // Adapt server response for DataTables
         let json = jQuery.parseJSON(data);
         json.recordsTotal = json.datatables.recordsTotal;
         json.recordsFiltered = json.datatables.recordsFiltered;
@@ -161,6 +148,7 @@ $(document).ready(function () {
       {
         data: null,
         render: function (data, type, row) {
+          // Show queue number or dash
           return row.antrian || "-";
         },
       },
@@ -171,9 +159,10 @@ $(document).ready(function () {
         data: "status",
       },
     ],
-    order: [[3, "asc"]],
+    order: [[3, "asc"]], // Default sort by date
   });
 
+  // Checkup table initialization
   let checkupTable = $("#checkupTable").DataTable({
     deferRender: true,
     serverSide: true,
@@ -183,6 +172,7 @@ $(document).ready(function () {
         type: "column",
         target: "tr",
         renderer: function (api, rowIdx, columns) {
+          // Custom renderer for responsive details
           let data = columns
             .map((col, i) => {
               return col.hidden
@@ -212,12 +202,14 @@ $(document).ready(function () {
     ajax: {
       url: "/api/checkup",
       data: function (d) {
+        // Attach filter values
         d.name = $("#name-pasien").val();
         d.dokter = $("#name-dokter").val();
         d.tanggal = $("#tanggal-checkup").val();
         d.poli = $("#poli-checkup").val();
       },
       dataFilter: function (data) {
+        // Adapt server response for DataTables
         let json = jQuery.parseJSON(data);
         json.recordsTotal = json.datatables.recordsTotal;
         json.recordsFiltered = json.datatables.recordsFiltered;
@@ -231,6 +223,7 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row, meta) {
+          // Show row number
           return meta.row + meta.settings._iDisplayStart + 1;
         },
       },
@@ -239,6 +232,7 @@ $(document).ready(function () {
       {
         data: null,
         render: function (data, type, row) {
+          // Show doctor or fallback
           return row.dokter || "Belum ada dokter";
         },
       },
@@ -247,12 +241,15 @@ $(document).ready(function () {
       {
         data: null,
         render: function (data, type, row) {
+          // Show anamnesa or fallback
           return row.hasil_anamnesa || "Belum ada hasil anamnesa";
         },
       },
     ],
     order: [[1, "asc"]],
   });
+
+  // Rekam Medis table initialization
   let rekamMedisTable = $("#rekamMedisTable").DataTable({
     deferRender: true,
     serverSide: true,
@@ -262,6 +259,7 @@ $(document).ready(function () {
         type: "column",
         target: "tr",
         renderer: function (api, rowIdx, columns) {
+          // Custom renderer for responsive details
           let data = columns
             .map((col, i) => {
               return col.hidden
@@ -291,11 +289,12 @@ $(document).ready(function () {
     ajax: {
       url: "/api/rekam_medis",
       data: function (d) {
+        // Attach filter values
         d.name = $("#name-rekam").val();
         d.nik = $("#nik-rekam").val();
-        
       },
       dataFilter: function (data) {
+        // Adapt server response for DataTables
         let json = jQuery.parseJSON(data);
         json.recordsTotal = json.datatables.recordsTotal;
         json.recordsFiltered = json.datatables.recordsFiltered;
@@ -309,6 +308,7 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row, meta) {
+          // Show row number
           return meta.row + meta.settings._iDisplayStart + 1;
         },
       },
@@ -319,14 +319,14 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (data, type, row) {
+          // Button to view medical record details
           return `<button class='btn text-light btn-lihat' data-bs-toggle='modal' data-bs-target='#lihatModal' data-rekammedis-nik='${row.nik}' style='background-color: #091e3e'>Lihat</button>`;
         },
       },
     ],
   });
 
-
-  // Event listener for Lihat button
+  // Event listener for Rekam Medis 'Lihat' button
   $("#rekamMedisTable").on("click", ".btn-lihat", function () {
     let rekamMedisNik = $(this).data("rekammedis-nik");
 
@@ -335,6 +335,7 @@ $(document).ready(function () {
       $("#list_checkup_user").DataTable().destroy();
     }
 
+    // Initialize DataTable for patient's checkup history
     let list_checkup_user = $("#list_checkup_user").DataTable({
       deferRender: true,
       serverSide: true,
@@ -344,6 +345,7 @@ $(document).ready(function () {
           type: "column",
           target: "tr",
           renderer: function (api, rowIdx, columns) {
+            // Custom renderer for responsive details
             let data = columns
               .map((col, i) => {
                 return col.hidden
@@ -362,10 +364,10 @@ $(document).ready(function () {
                   : "";
               })
               .join("");
-  
+
             let table = document.createElement("table");
             table.innerHTML = data;
-  
+
             return data ? table : false;
           },
         },
@@ -373,10 +375,11 @@ $(document).ready(function () {
       ajax: {
         url: `/api/checkup/${rekamMedisNik}`,
         dataFilter: function (data) {
+          // Adapt server response for DataTables
           let json = jQuery.parseJSON(data);
           json.recordsTotal = json.datatables.recordsTotal;
           json.recordsFiltered = json.datatables.recordsFiltered;
-  
+
           return JSON.stringify(json); // return JSON string
         },
       },
@@ -386,6 +389,7 @@ $(document).ready(function () {
           orderable: false,
           searchable: false,
           render: function (data, type, row, meta) {
+            // Show row number
             return meta.row + meta.settings._iDisplayStart + 1;
           },
         },
@@ -393,6 +397,7 @@ $(document).ready(function () {
         {
           data: null,
           render: function (data, type, row) {
+            // Show doctor or fallback
             return row.dokter || "Belum ada dokter";
           },
         },
@@ -401,6 +406,7 @@ $(document).ready(function () {
         {
           data: null,
           render: function (data, type, row) {
+            // Show anamnesa or fallback
             return row.hasil_anamnesa || "Belum ada hasil anamnesa";
           },
         },
@@ -408,10 +414,12 @@ $(document).ready(function () {
       order: [[1, "asc"]],
     });
 
+    // Fetch and display patient details in modal
     $.ajax({
       url: `/api/rekam_medis/${rekamMedisNik}`,
       type: "GET",
       success: function (response) {
+        // Populate modal with patient info
         $("#list-checkup").empty();
         $("#list-checkup").append(
           `<div class="row">
@@ -479,6 +487,7 @@ $(document).ready(function () {
     });
   });
 
+  // Filter apply button event listeners: reload tables and close modals
   $("#applyFilterDaftar").on("click", function () {
     myTable.ajax.reload();
     $("#daftarFilterModal").modal("hide"); // Close the modal
@@ -491,10 +500,13 @@ $(document).ready(function () {
     rekamMedisTable.ajax.reload();
     $("#rekamFilterModal").modal("hide"); // Close the modal
   });
-
 });
 
-// Function to fetch list dropdown options
+/**
+ * Fetches dropdown options from API and populates the given selector
+ * @param {string} selector - jQuery selector for dropdown
+ * @param {string} url - API endpoint to fetch options
+ */
 function fetchList(selector, url) {
   $.ajax({
     url: url,
@@ -509,7 +521,11 @@ function fetchList(selector, url) {
   });
 }
 
-// Function to populate dropdown with options
+/**
+ * Populates a dropdown with options
+ * @param {string} selector - jQuery selector for dropdown
+ * @param {Array} options - Array of option values
+ */
 function populateDropdown(selector, options) {
   let dropdown = $(selector);
   dropdown.empty();
@@ -521,7 +537,10 @@ function populateDropdown(selector, options) {
   }
 }
 
-// Function to clear all filters
+// Filter clearing functions for each filter modal
+/**
+ * Clears all filters in Pendaftaran filter modal
+ */
 function clearFilterDaftar() {
   let listName = $("#name-daftar");
   let listPoli = $("#poli-daftar");
@@ -532,6 +551,9 @@ function clearFilterDaftar() {
   $("input[name='status-daftar']").prop("checked", false);
 }
 
+/**
+ * Clears all filters in Checkup filter modal
+ */
 function clearFilterCheckup() {
   let listName = $("#name-pasien");
   let listDokter = $("#name-dokter");
@@ -543,6 +565,9 @@ function clearFilterCheckup() {
   listPoli.val(null).trigger("change");
 }
 
+/**
+ * Clears all filters in Rekam Medis filter modal
+ */
 function clearFilterRekam() {
   let listNik = $("#nik-rekam");
   let listName = $("#name-rekam");
@@ -550,34 +575,47 @@ function clearFilterRekam() {
   listName.val(null).trigger("change");
 }
 
-function exportPendaftaran(){
+/**
+ * Exports pendaftaran data for the last 30 days
+ * Opens download link in new window
+ */
+function exportPendaftaran() {
   let endDate = new Date();
   let startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
-  startDate = formatDate(startDate)
-  endDate = formatDate(endDate)
+  startDate = formatDate(startDate);
+  endDate = formatDate(endDate);
   let url = `/api/pendaftaran/export?startdate=${startDate}&enddate=${endDate}`;
   window.location.href = url;
 }
 
-function exportCheckup(){
+/**
+ * Exports checkup data for the last 30 days
+ * Opens download link in new window
+ */
+function exportCheckup() {
   let endDate = new Date();
   let startDate = new Date();
   startDate.setDate(startDate.getDate() - 30);
-  startDate = formatDate(startDate)
-  endDate = formatDate(endDate)
+  startDate = formatDate(startDate);
+  endDate = formatDate(endDate);
   let url = `/api/checkup/export?startdate=${startDate}&enddate=${endDate}`;
   window.location.href = url;
 }
 
+/**
+ * Formats a Date object as DD-MM-YYYY string
+ * @param {Date} date - Date object
+ * @returns {string} - Formatted date string
+ */
 function formatDate(date) {
   let d = new Date(date);
-  let month = '' + (d.getMonth() + 1);
-  let day = '' + d.getDate();
+  let month = "" + (d.getMonth() + 1);
+  let day = "" + d.getDate();
   let year = d.getFullYear();
 
-  if (month.length < 2) month = '0' + month;
-  if (day.length < 2) day = '0' + day;
+  if (month.length < 2) month = "0" + month;
+  if (day.length < 2) day = "0" + day;
 
-  return [day, month, year].join('-');
+  return [day, month, year].join("-");
 }
