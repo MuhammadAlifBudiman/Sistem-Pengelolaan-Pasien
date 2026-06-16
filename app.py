@@ -41,15 +41,24 @@ from flask_socketio import SocketIO, Namespace
 import pandas as pd
 from io import BytesIO
 from flasgger import Swagger, swag_from
+import logging
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 app = Flask(__name__)
+# Trust the single reverse-proxy hop that Render places in front of the app.
+# x_proto: lets request.is_secure reflect HTTPS correctly (used for Secure cookie).
+# x_for:   lets request.remote_addr reflect the real client IP.
+# x_host:  lets request.host reflect the public hostname.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 # Register the error handler
 app.errorhandler(HttpException)(handle_http_exception)
 bcrypt = Bcrypt(app)
-socketio = SocketIO(app)
+# Use threading async_mode for Gunicorn threaded workers + simple-websocket.
+# No eventlet or gevent required.
+socketio = SocketIO(app, async_mode="threading")
 # Swagger Configuration
 app.config['SWAGGER'] = {
     'title': 'Klinik Google',
@@ -165,6 +174,19 @@ socketio.on_namespace(JadwalNamespace('/jadwal'))
 
 
 #################### TEMPLATE ROUTES ####################
+
+# Health check — used by Render and monitoring tools.
+# Returns 200 {"status": "ok"} when MongoDB is reachable, 503 {"status": "unavailable"} otherwise.
+# Never exposes connection strings, credentials, hostnames, or stack traces.
+@app.route('/health')
+def health():
+    try:
+        client.admin.command("ping")
+        return jsonify({"status": "ok"}), 200
+    except Exception as exc:
+        logging.error("Health check failed: %s", exc)
+        return jsonify({"status": "unavailable"}), 503
+
 
 # Return Home Page
 @app.route('/')
@@ -499,8 +521,10 @@ def api_register():
     salt = secrets.token_hex(16)
 
     # Use a cost factor of 12, you can adjust it based on your security needs
+    # bcrypt hard-limits input to 72 bytes; truncate explicitly so behaviour
+    # is consistent across bcrypt versions (4.x silently truncated, 5.x raises).
     hashed_password = bcrypt.generate_password_hash(
-        salt + password + salt, 10).decode('utf-8')
+        (salt + password + salt)[:72], 10).decode('utf-8')
 
     # Simpan data pengguna ke MongoDB
     user_data = {
@@ -563,7 +587,7 @@ def sign_in():
 
     # Use bcrypt to verify the password with the stored salt
     check_password = bcrypt.check_password_hash(
-        user.get('password'), user.get('salt') + password_receive + user.get('salt'))
+        user.get('password'), (user.get('salt') + password_receive + user.get('salt'))[:72])
     if not check_password:
         raise HttpException(False, 400, "failed", "Username / password salah")
 
@@ -2055,6 +2079,9 @@ def edit_profile(decoded_token):
             raise HttpException(False, 400, "failed",
                                 "Profile picture harus berupa file gambar")
         file_path = f"profile_pics/{username}.{extension}"
+        # Ensure the directory exists; on Render Free the filesystem is ephemeral
+        # so this directory must be re-created at runtime after each restart.
+        os.makedirs("./static/profile_pics", exist_ok=True)
         file.save("./static/" + file_path)
         profile_doc["profile_pic"] = file_path
     # update collection users
@@ -2727,5 +2754,8 @@ def api_jadwal_delete(decoded_token, id):
 
 
 if __name__ == '__main__':
-    # do not use this in production
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    # Local development server only — not used in production.
+    # Production uses: gunicorn -w 1 --threads 20 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    _port = int(os.environ.get("PORT", "5000"))
+    _debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    socketio.run(app, host='0.0.0.0', port=_port, debug=_debug, allow_unsafe_werkzeug=True)

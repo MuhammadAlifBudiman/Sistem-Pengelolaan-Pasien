@@ -12,7 +12,7 @@ Sistem Pengelolaan Pasien ini dirancang sebagai solusi inovatif untuk meningkatk
 #### API Docs:
 
 [POSTMAN](https://documenter.getpostman.com/view/24748798/2s9YkuaeTS)
-[SWAGGER](https://klinik-google.glitch.me/apidocs)
+[SWAGGER](/apidocs) (tersedia setelah deploy — buka `https://<nama-service>.onrender.com/apidocs`)
 
 ## Tujuan
 
@@ -30,7 +30,7 @@ Sistem Pengelolaan Pasien ini dirancang sebagai solusi inovatif untuk meningkatk
 - **Bahasa Pemrograman:** HTML, CSS, Javascript, dan Python.
 - **Database:** MongoDB.
 - **Framework:** Flask.
-- **Deploy:** Glitch.
+- **Deploy:** Render.
 
 ## Fitur
 
@@ -86,34 +86,115 @@ Sistem Pengelolaan Pasien ini dirancang sebagai solusi inovatif untuk meningkatk
 
 ## Panduan Penggunaan
 
-1. Pastikan Python, Flask, dan MongoDB telah terinstal.
-2. Clone Repository
-3. Install venv
+### Kebutuhan Lokal
 
-```
-python3 -m venv your_venv_name
-```
+- Python 3.11.9+
+- MongoDB Atlas (atau MongoDB lokal untuk pengembangan)
 
-3. Aktifkan venv
+### Setup Lokal
 
-```
-source venv/bin/activate # for macos and linux
-```
+1. Clone repository.
+2. Buat virtual environment dan aktifkan:
 
-4. Install semua library yang diperlukan dengan menjalankan `pip install -r requirements.txt`.
-5. Konfigurasi file `.env` dengan informasi yang sesuai.
-
-```
-# Database configuration
-MONGODB_CONNECTION_STRING=your_mongodb_uri
-DB_NAME=your_database_name
-SECRET_KEY=your_secret_key
-TOKEN_KEY=your_token_key
+```bash
+python3.11 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# venv\Scripts\activate   # Windows
 ```
 
-6. Jalankan seeder (opsional)
-7. Jalankan aplikasi dengan perintah `python app.py`.
-8. Akses aplikasi melalui browser dengan URL [http://localhost:5000](http://localhost:5000).
+3. Install dependensi:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Buat file `.env` dari contoh:
+
+```bash
+cp .env.example .env
+# Edit .env dan isi nilai yang sesuai
+```
+
+Isi `.env`:
+
+```
+MONGODB_CONNECTION_STRING=mongodb+srv://USERNAME:PASSWORD@CLUSTER_HOST/?retryWrites=true&w=majority
+DB_NAME=sistem_pengelolaan_pasien
+TOKEN_KEY=access_token
+SECRET_KEY=<generate dengan perintah di bawah>
+FLASK_DEBUG=false
+PORT=5000
+```
+
+Generate `SECRET_KEY`:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+5. Jalankan seeder (opsional):
+
+```bash
+python seeder.py
+```
+
+6. Jalankan aplikasi (mode pengembangan):
+
+```bash
+python app.py
+```
+
+7. Akses melalui browser: [http://localhost:5000](http://localhost:5000)
+
+### Perintah Produksi Lokal (Linux/WSL)
+
+```bash
+PORT=8000 gunicorn -w 1 --threads 20 --timeout 120 --bind 0.0.0.0:$PORT app:app
+```
+
+---
+
+## Konfigurasi Render
+
+| Pengaturan         | Nilai                                                                             |
+|--------------------|-----------------------------------------------------------------------------------|
+| Runtime            | Python 3.11.9                                                                     |
+| Region             | Singapore                                                                         |
+| Plan               | Free                                                                              |
+| Build Command      | `pip install --upgrade pip && pip install -r requirements.txt`                   |
+| Start Command      | `gunicorn -w 1 --threads 20 --timeout 120 --bind 0.0.0.0:$PORT app:app`         |
+| Health Check Path  | `/health`                                                                         |
+
+### Environment Variables di Render
+
+| Nama                       | Keterangan                                   |
+|----------------------------|----------------------------------------------|
+| `MONGODB_CONNECTION_STRING` | Connection string MongoDB Atlas              |
+| `DB_NAME`                   | Nama database                               |
+| `TOKEN_KEY`                 | Nama field token JWT di cookie              |
+| `SECRET_KEY`                | Secret key untuk signing JWT                |
+
+### MongoDB Atlas — Network Access
+
+Setelah service Render dibuat:
+
+1. Buka dashboard Render, temukan **Outbound IP addresses** service Anda.
+2. Buka MongoDB Atlas → **Network Access** → **Add IP Address**.
+3. Tambahkan semua rentang CIDR outbound Render (bukan `0.0.0.0/0` secara permanen).
+4. Pastikan database user Atlas hanya memiliki izin minimum yang dibutuhkan aplikasi ini.
+
+> **Catatan:** `0.0.0.0/0` dapat digunakan sementara saat pengujian awal, tetapi harus diganti dengan IP spesifik Render secepatnya.
+
+---
+
+## Keterbatasan Render Free
+
+| Keterbatasan                | Detail                                                                               |
+|-----------------------------|--------------------------------------------------------------------------------------|
+| **Spin-down**               | Service mati otomatis setelah ~15 menit tidak aktif. Request pertama memerlukan cold start ~30–60 detik. |
+| **Filesystem efemeral**     | Semua file yang diupload (termasuk foto profil) akan **hilang** setelah restart atau redeploy. |
+| **Foto profil**             | Gunakan hanya data demo. Untuk produksi, migrasikan penyimpanan file ke Cloudinary atau AWS S3. |
+| **Data pasien**             | Deployment publik hanya boleh menggunakan data dummy/demo, bukan data pasien nyata. |
 
 ## Kontribusi
 

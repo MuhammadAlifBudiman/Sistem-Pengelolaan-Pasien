@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sistem-pengelolaan-pasien
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn -w 1 --threads 20 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_CONNECTION_STRING
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: TOKEN_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"

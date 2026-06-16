@@ -1,5 +1,8 @@
 .env
 .vscode
 /venv
+.venv-render-test
 static/profile_pics
 /__pycache__
+**/__pycache__
+*.pyc
