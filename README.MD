@@ -12,7 +12,7 @@ Sistem Pengelolaan Pasien ini dirancang sebagai solusi inovatif untuk meningkatk
 #### API Docs:
 
 [POSTMAN](https://documenter.getpostman.com/view/24748798/2s9YkuaeTS)
-[SWAGGER](/apidocs) (tersedia setelah deploy — buka `https://<nama-service>.onrender.com/apidocs`)
+[SWAGGER](/apidocs) (tersedia setelah deploy — buka `https://web--sistem-pengelolaan-pasien--5cd2xf2mwjg5.code.run/apidocs/`)
 
 ## Tujuan
 

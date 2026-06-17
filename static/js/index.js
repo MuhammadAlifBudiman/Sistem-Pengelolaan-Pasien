@@ -150,5 +150,9 @@ $(document).ready(function () {
           .draw(false);
       });
     },
+    error: function (xhr) {
+      console.error("Gagal memuat antrian hari ini:", xhr.status, xhr.statusText);
+      showToast("Antrian gagal dimuat. Silakan coba lagi.", "error", 3000);
+    },
   });
 });

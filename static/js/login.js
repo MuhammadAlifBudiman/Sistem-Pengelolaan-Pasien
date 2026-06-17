@@ -1,5 +1,8 @@
 // login.js - Handles login form submission and user authentication
 
+// Guard against duplicate in-flight submissions
+let _loginSubmitting = false;
+
 // Wait for the DOM to be fully loaded
 $(document).ready(function () {
   // If a global message exists, show it as a success toast
@@ -19,27 +22,38 @@ $(document).ready(function () {
  * and handles the response for login success or failure.
  */
 function sign_in() {
-  // Get username and password values from input fields
+  if (_loginSubmitting) return; // Prevent duplicate submission
+
   const username = $("#username").val();
   const password = $("#password").val();
+  const $btn = $("#loginForm button[type='submit']");
 
-  // Send AJAX POST request to /api/login with credentials
   $.ajax({
-    type: "POST", // HTTP method
-    url: "/api/login", // API endpoint
+    type: "POST",
+    url: "/api/login",
     data: {
-      username, // Username from form
-      password, // Password from form
+      username,
+      password,
     },
-    // Handle response from server
+    beforeSend: function () {
+      _loginSubmitting = true;
+      $btn.prop("disabled", true).text("Memuat...");
+    },
     success: function (response) {
-      if (response.success) {
-        // On success, redirect to home with message
-        window.location.replace(`/?msg=${response.message}`);
-      } else {
-        // On failure, show error toast
-        showToast(response.message, "error", 3000);
-      }
+      // Redirect on successful authentication
+      window.location.replace("/?msg=" + encodeURIComponent(response.message));
+    },
+    error: function (xhr) {
+      // Show backend message or safe generic fallback; never exposes server internals
+      var message =
+        (xhr.responseJSON && xhr.responseJSON.message) ||
+        "Login gagal. Silakan periksa data Anda dan coba lagi.";
+      showToast(message, "error", 3000);
+    },
+    complete: function () {
+      // Restore button regardless of outcome
+      _loginSubmitting = false;
+      $btn.prop("disabled", false).text("Login");
     },
   });
 }

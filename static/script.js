@@ -5,6 +5,29 @@ $(document).ready(function () {
   AOS.init();
 });
 
+// DataTables global defaults: processing spinner, empty/zero messages, ajax error toast
+if (window.jQuery && $.fn && $.fn.dataTable) {
+  $.extend(true, $.fn.dataTable.defaults, {
+    language: {
+      processing:
+        '<div class="datatable-processing-content">' +
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>' +
+        "<span>Memuat data...</span>" +
+        "</div>",
+      emptyTable: "Belum ada data",
+      zeroRecords: "Data tidak ditemukan",
+    },
+  });
+  // Suppress built-in alert; route errors through toast instead
+  $.fn.dataTable.ext.errMode = "none";
+  $(document).on("error.dt", function (e, settings, techNote, message) {
+    console.error("DataTables error:", message);
+    if (typeof showToast === "function") {
+      showToast("Data gagal dimuat. Silakan coba lagi.", "error", 4000);
+    }
+  });
+}
+
 /**
  * Asynchronously logs out the current user by sending a POST request to the logout API endpoint.
  * On success, redirects the user to the homepage with a logout message.
